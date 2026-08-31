@@ -1,0 +1,7 @@
+{
+  "cleanUrls": true,
+  "rewrites": [
+    { "source": "/precios", "destination": "/media_kit.html" },
+    { "source": "/admin", "destination": "/admin.html" }
+  ]
+}
