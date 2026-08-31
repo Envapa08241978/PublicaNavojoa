@@ -1,0 +1,7 @@
+*.pptx
+*.ai
+*.docx
+chat_store.json
+*.pyc
+__pycache__/
+.env

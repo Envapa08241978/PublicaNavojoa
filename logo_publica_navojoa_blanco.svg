@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 350" width="100%" height="100%">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800;900&amp;display=swap');
+      .brand-title-white {
+        font-family: 'Outfit', 'Montserrat', 'Helvetica Neue', sans-serif;
+        font-weight: 900;
+        font-size: 52px;
+        fill: #ffffff;
+        letter-spacing: -0.5px;
+      }
+      .brand-accent-green {
+        font-family: 'Outfit', 'Montserrat', 'Helvetica Neue', sans-serif;
+        font-weight: 800;
+        font-size: 52px;
+        fill: #25d366;
+        letter-spacing: -0.5px;
+      }
+      .brand-slogan-white {
+        font-family: 'Outfit', 'Montserrat', 'Helvetica Neue', sans-serif;
+        font-weight: 600;
+        font-size: 20px;
+        fill: #94a3b8;
+        letter-spacing: 0.5px;
+      }
+    </style>
+  </defs>
+
+  <!-- Background Canvas Oscuro -->
+  <rect width="100%" height="100%" fill="#0f172a" rx="16"/>
+
+  <!-- ISOTIPO VECTORIAL (Icono Geométrico: Globo de Mensaje + Monograma PN) -->
+  <g transform="translate(60, 50)">
+    <!-- Base Chat Bubble Frame (Blanco Puro) -->
+    <path d="M 120,30 
+             C 175,30 220,75 220,130 
+             C 220,185 175,230 120,230 
+             C 95,230 72,221 54,206 
+             L 20,235 
+             L 32,188 
+             C 24,171 20,151 20,130 
+             C 20,75 65,30 120,30 Z" 
+          fill="none" 
+          stroke="#ffffff" 
+          stroke-width="18" 
+          stroke-linejoin="round" 
+          stroke-linecap="round"/>
+
+    <!-- Monograma PN (P en Blanco, N en Verde WhatsApp) -->
+    <path d="M 68,75 L 115,75 C 135,75 145,85 145,105 C 145,125 135,135 115,135 L 92,135 L 92,175 L 68,175 Z" fill="#ffffff"/>
+    <path d="M 115,100 L 155,160 L 175,160 L 175,75 L 155,75 L 155,135 L 125,90 Z" fill="#25d366"/>
+  </g>
+
+  <!-- LOGOTIPO / TEXTO TIPOGRÁFICO -->
+  <text x="320" y="130" class="brand-title-white">PUBLICA</text>
+  <text x="320" y="185" class="brand-accent-green">NAVOJOA</text>
+
+  <!-- Barra divisoria sutil -->
+  <line x1="320" y1="205" x2="720" y2="205" stroke="#334155" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- Slogan Oficial Aprobado -->
+  <text x="320" y="235" class="brand-slogan-white">Privado, personalizado y directo.</text>
+</svg>

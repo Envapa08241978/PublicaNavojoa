@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Publica Navojoa - Panel CRM & Chat WhatsApp Cloud API</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-canvas: #f8fafc;
+            --card-bg: #ffffff;
+            --accent-green: #16a34a;
+            --accent-green-hover: #15803d;
+            --accent-blue: #2563eb;
+            --accent-gold: #d97706;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
+            --shadow-md: 0 10px 25px -5px rgba(15, 23, 42, 0.06);
+            --wa-bg: #efeae2;
+            --wa-bubble-out: #d9fdd3;
+            --wa-bubble-in: #ffffff;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-canvas);
+            color: var(--text-main);
+            padding: 25px 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .brand-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .header-logo {
+            max-height: 48px;
+            width: auto;
+            display: block;
+        }
+
+        h1 {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: var(--text-main);
+            letter-spacing: -0.5px;
+        }
+
+        /* Tabs Navigation */
+        .tab-nav {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 2px;
+        }
+
+        .tab-btn {
+            padding: 12px 24px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tab-btn.active {
+            color: var(--accent-green);
+            border-bottom-color: var(--accent-green);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-bottom: 25px;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .stat-val {
+            font-size: 2.1rem;
+            font-weight: 900;
+            color: var(--accent-green);
+            line-height: 1.1;
+        }
+
+        .stat-val.gold { color: var(--accent-gold); }
+        .stat-val.blue { color: var(--accent-blue); }
+
+        .stat-label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 10px 18px;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            border: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-green {
+            background: var(--accent-green);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(22, 163, 74, 0.2);
+        }
+
+        .btn-green:hover {
+            background: var(--accent-green-hover);
+            transform: translateY(-1px);
+        }
+
+        .btn-blue {
+            background: #f1f5f9;
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-blue:hover {
+            background: #e2e8f0;
+        }
+
+        /* Table */
+        .table-container {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            overflow-x: auto;
+            box-shadow: var(--shadow-sm);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th, td {
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.9rem;
+        }
+
+        th {
+            background: #f8fafc;
+            color: var(--text-muted);
+            font-weight: 700;
+            font-size: 0.82rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        tr:hover td { background: #f8fafc; }
+
+        .badge-optin {
+            background: rgba(22, 163, 74, 0.1);
+            color: var(--accent-green);
+            border: 1px solid rgba(22, 163, 74, 0.25);
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.78rem;
+            font-weight: 700;
+        }
+
+        /* Live Chat Layout */
+        .chat-app-container {
+            display: grid;
+            grid-template-columns: 320px 1fr 300px;
+            height: 680px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: var(--shadow-md);
+        }
+
+        @media (max-width: 1024px) {
+            .chat-app-container {
+                grid-template-columns: 280px 1fr;
+            }
+            .chat-info-panel { display: none; }
+        }
+
+        /* Chat Sidebar */
+        .chat-sidebar {
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            background: #ffffff;
+        }
+
+        .chat-search-box {
+            padding: 14px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .chat-search-box input {
+            width: 100%;
+            padding: 10px 14px;
+            background: #f1f5f9;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            font-size: 0.88rem;
+            outline: none;
+        }
+
+        .chat-list {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .chat-user-item {
+            padding: 14px 16px;
+            border-bottom: 1px solid #f1f5f9;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: background 0.15s ease;
+        }
+
+        .chat-user-item:hover, .chat-user-item.active {
+            background: #f0fdf4;
+        }
+
+        .chat-avatar {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: #16a34a;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+
+        .chat-user-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .chat-user-name {
+            font-weight: 700;
+            font-size: 0.92rem;
+            color: var(--text-main);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .chat-user-sub {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Chat Main Area */
+        .chat-main {
+            display: flex;
+            flex-direction: column;
+            background: var(--wa-bg);
+            background-image: radial-gradient(#cbd5e1 0.7px, transparent 0.7px);
+            background-size: 16px 16px;
+        }
+
+        .chat-main-header {
+            padding: 14px 20px;
+            background: #ffffff;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .chat-messages-area {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .msg-bubble {
+            max-width: 75%;
+            padding: 10px 14px;
+            border-radius: 14px;
+            font-size: 0.9rem;
+            line-height: 1.45;
+            position: relative;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+            word-wrap: break-word;
+        }
+
+        .msg-bubble.incoming {
+            background: var(--wa-bubble-in);
+            align-self: flex-start;
+            border-top-left-radius: 2px;
+            color: #0f172a;
+        }
+
+        .msg-bubble.outgoing {
+            background: var(--wa-bubble-out);
+            align-self: flex-end;
+            border-top-right-radius: 2px;
+            color: #0f172a;
+        }
+
+        .msg-meta {
+            font-size: 0.72rem;
+            color: #64748b;
+            text-align: right;
+            margin-top: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 4px;
+        }
+
+        .chat-input-bar {
+            padding: 14px 20px;
+            background: #ffffff;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .chat-input-bar input {
+            flex: 1;
+            padding: 12px 16px;
+            background: #f8fafc;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            font-size: 0.92rem;
+            outline: none;
+        }
+
+        /* Chat Right Info Panel */
+        .chat-info-panel {
+            border-left: 1px solid var(--border-color);
+            background: #ffffff;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            padding: 30px;
+            width: 100%;
+            max-width: 480px;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+        }
+
+        input[type="text"], input[type="tel"] {
+            width: 100%;
+            padding: 12px;
+            margin-top: 6px;
+            margin-bottom: 16px;
+            background: #f8fafc;
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            border-radius: 10px;
+            font-size: 0.92rem;
+            outline: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <div class="brand-header">
+            <img src="Publica navojoa logotipo oficial.png" alt="Publica Navojoa" class="header-logo">
+            <div>
+                <h1>Panel CRM & Chat WhatsApp API</h1>
+                <p style="color: var(--text-muted); font-size: 0.88rem;"><strong>Publica Navojoa</strong> — Linea Oficial Cloud API: <code>+52 642 152 0280</code></p>
+            </div>
+        </div>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button class="btn btn-green" onclick="exportCSV()">📥 Exportar Base a Meta Ads</button>
+            <button class="btn btn-blue" onclick="openModal()">+ Agregar Contacto FB</button>
+        </div>
+    </header>
+
+    <!-- Tabs Navigation -->
+    <div class="tab-nav">
+        <button class="tab-btn active" onclick="switchTab('chat')">💬 Chat WhatsApp Cloud API (En vivo)</button>
+        <button class="tab-btn" onclick="switchTab('crm')">📊 Base de Datos & Contactos CRM</button>
+    </div>
+
+    <!-- TAB 1: LIVE CHAT WHATSAPP API -->
+    <div id="tab-chat" class="tab-content active">
+        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 12px 18px; border-radius: 12px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <div style="font-size: 0.88rem; color: #166534; font-weight: 600;">
+                🟢 <strong>Estado de la API:</strong> Conectada en tiempo real a Meta (Phone ID: <code>1280742211792981</code>)
+            </div>
+            <button class="btn btn-blue" style="padding: 6px 12px; font-size: 0.8rem;" onclick="configureToken()">⚙️ Configurar Token API</button>
+        </div>
+
+        <div class="chat-app-container">
+            <!-- Sidebar contacts -->
+            <div class="chat-sidebar">
+                <div class="chat-search-box">
+                    <input type="text" id="chat-search" placeholder="🔍 Buscar conversación..." onkeyup="renderChatList()">
+                </div>
+                <div class="chat-list" id="chat-user-list">
+                    <!-- Loaded via JS -->
+                </div>
+            </div>
+
+            <!-- Main chat window -->
+            <div class="chat-main">
+                <div class="chat-main-header">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div class="chat-avatar" id="active-avatar">PN</div>
+                        <div>
+                            <div style="font-weight: 800; font-size: 1rem; color: #0f172a;" id="active-contact-name">Selecciona un contacto</div>
+                            <div style="font-size: 0.8rem; color: #64748b;" id="active-contact-phone">+52 642 152 0280</div>
+                        </div>
+                    </div>
+                    <div>
+                        <button class="btn btn-blue" style="padding: 6px 12px; font-size: 0.8rem;" onclick="sendTemplateWelcome()">🚀 Enviar Plantilla Bienvenida</button>
+                    </div>
+                </div>
+
+                <div class="chat-messages-area" id="chat-messages">
+                    <div style="text-align: center; color: #64748b; margin-top: 100px; font-size: 0.9rem;">
+                        💬 Selecciona una conversación a la izquierda para ver los mensajes.
+                    </div>
+                </div>
+
+                <div class="chat-input-bar">
+                    <input type="text" id="chat-input" placeholder="Escribe un mensaje de WhatsApp..." onkeypress="if(event.key==='Enter') sendChatMessage()">
+                    <button class="btn btn-green" onclick="sendChatMessage()">Enviar ➔</button>
+                </div>
+            </div>
+
+            <!-- Right Info Panel -->
+            <div class="chat-info-panel">
+                <h3 style="font-size: 1.05rem; font-weight: 800;">Detalles del Contacto</h3>
+                <div style="text-align: center; margin: 10px 0;">
+                    <div class="chat-avatar" style="width: 64px; height: 64px; margin: 0 auto 10px; font-size: 1.5rem;" id="info-avatar">PN</div>
+                    <div style="font-weight: 800; font-size: 1.1rem;" id="info-name">-</div>
+                    <div style="font-size: 0.88rem; color: var(--text-muted);" id="info-phone">-</div>
+                </div>
+                <hr style="border: 0; border-top: 1px solid var(--border-color);">
+                <div>
+                    <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Colonia / Zona</div>
+                    <div style="font-weight: 700; font-size: 0.95rem; margin-top: 2px;" id="info-colonia">-</div>
+                </div>
+                <div>
+                    <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Estado Opt-in</div>
+                    <div style="margin-top: 4px;"><span class="badge-optin">✓ Autorizado</span></div>
+                </div>
+                <div>
+                    <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Acciones Rápida</div>
+                    <button class="btn btn-blue" style="width: 100%; margin-top: 8px; justify-content: center;" onclick="sendTemplateWelcome()">📩 Enviar Plantilla VIP</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 2: CRM DATABASE -->
+    <div id="tab-crm" class="tab-content">
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-val" id="total-contacts">0</div>
+                <div class="stat-label">Contactos Totales con Opt-in WhatsApp</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-val gold">78,700</div>
+                <div class="stat-label">Miembros en Grupo de Facebook</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-val blue">100%</div>
+                <div class="stat-label">Cumplimiento Políticas Meta API</div>
+            </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 16px;">
+            <h2 style="font-size: 1.2rem; font-weight: 800;">Directorio de Contactos Registrados</h2>
+            <input type="text" id="search-input" placeholder="🔍 Buscar por nombre o teléfono..." style="max-width: 320px; margin: 0;" onkeyup="renderCrmTable()">
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Nombre</th>
+                        <th>WhatsApp</th>
+                        <th>Colonia / Zona</th>
+                        <th>Estado Opt-in</th>
+                        <th>Origen</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody id="table-body">
+                    <!-- CRM rows -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Manual Entry -->
+<div class="modal" id="add-modal">
+    <div class="modal-content">
+        <h3 style="margin-bottom: 16px; font-size: 1.2rem; font-weight: 800;">Agregar Contacto Manual (Preguntas FB)</h3>
+        <label style="font-size: 0.85rem; font-weight: 700;">Nombre Completo:</label>
+        <input type="text" id="m-nombre" placeholder="Ej. Carlos Mendoza">
+        
+        <label style="font-size: 0.85rem; font-weight: 700;">WhatsApp (10 dígitos):</label>
+        <input type="tel" id="m-phone" placeholder="Ej. 6421234567">
+        
+        <label style="font-size: 0.85rem; font-weight: 700;">Colonia / Zona:</label>
+        <input type="text" id="m-colonia" placeholder="Ej. Centro">
+        
+        <div style="display: flex; gap: 10px; margin-top: 10px;">
+            <button class="btn btn-green" style="flex:1;" onclick="addManual()">Guardar Contacto</button>
+            <button class="btn btn-blue" onclick="closeModal()">Cancelar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+<script>
+    // Configuración Firebase Oficial
+    const firebaseConfig = {
+      apiKey: "AIzaSyB6m8lHGJBnl3IalS7wYbQ-wHkYZHGPT3s",
+      authDomain: "loquese-app.firebaseapp.com",
+      projectId: "loquese-app",
+      storageBucket: "loquese-app.firebasestorage.app",
+      messagingSenderId: "654821705406",
+      appId: "1:654821705406:web:5e144cf5599f514046c0ef",
+      measurementId: "G-P7YSYCBPHC"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // Sincronización en tiempo real con Firebase Firestore
+    function listenFirebaseContacts() {
+        try {
+            db.collection('contacts').onSnapshot(snapshot => {
+                let firebaseLeads = [];
+                snapshot.forEach(doc => {
+                    let d = doc.data();
+                    firebaseLeads.push({
+                        id: doc.id,
+                        fecha: d.fecha || new Date().toLocaleString(),
+                        nombre: d.nombre || 'Cliente VIP',
+                        whatsapp: d.whatsapp || '',
+                        colonia: d.colonia || 'Navojoa',
+                        origen: d.origen || 'Firebase Cloud'
+                    });
+                });
+
+                if (firebaseLeads.length > 0) {
+                    let localLeads = getLeads();
+                    // Merge unique leads
+                    firebaseLeads.forEach(f => {
+                        let exists = localLeads.some(l => l.whatsapp === f.whatsapp);
+                        if (!exists) localLeads.push(f);
+                    });
+                    localStorage.setItem('vip_navojoa_leads', JSON.stringify(localLeads));
+                    renderCrmTable();
+                    renderChatList();
+                }
+            });
+        } catch (e) {
+            console.log('Firebase sync error:', e);
+        }
+    }
+
+    // Configuration Meta API
+    const META_PHONE_ID = '1280742211792981';
+    let META_TOKEN = localStorage.getItem('meta_api_token') || 'EAAUPiVpET1YBSaNSDZCiZBTWk1fBH2xq1EWatVjbZCuJgXs395I4bywHNZAqTAqCtUJnPMaewupwRgGoPK5uIzZA2k3ax1bDpcrZAJnofMlUVT8ZCqeZAKEIUbGMwiMgXZA27ZBTsF7npnX9trZCUVPxUcGzkdYlybk8q04iAZADz4v59jIXHOZBfxYih2ZClhOPsHKW9lT0aO5ISJlPQQEJKYWxFxhmbZAcfaujp4CGsGdREjutImzyPDTQzzNDHVfrXOOZAUtw7mKiwiSYZCmeZB9iMuNMuQRxoZD';
+    localStorage.setItem('meta_api_token', META_TOKEN);
+
+    const initialDemo = [
+        { id: 1, fecha: '27/08/2026 11:09', nombre: 'Enrique Valenzuela', whatsapp: '6421600559', colonia: 'Centro', origen: 'Landing Web Opt-in' },
+        { id: 2, fecha: '27/08/2026 18:56', nombre: 'Monica Obregon', whatsapp: '6474820862', colonia: 'Centro', origen: 'Landing Web Opt-in' },
+        { id: 3, fecha: '31/08/2026 10:37', nombre: 'Prueba WhatsApp VIP', whatsapp: '6421520280', colonia: 'Navojoa', origen: 'Meta WhatsApp Link' }
+    ];
+
+    let activeContactId = 1;
+
+    function formatPhoneForMeta(rawPhone) {
+        let digits = rawPhone.replace(/\D/g, '');
+        if (digits.length === 10) {
+            return '52' + digits;
+        }
+        return digits;
+    }
+
+    function getLeads() {
+        let leads = localStorage.getItem('vip_navojoa_leads');
+        if (!leads) {
+            localStorage.setItem('vip_navojoa_leads', JSON.stringify(initialDemo));
+            return initialDemo;
+        }
+        return JSON.parse(leads);
+    }
+
+    function getMessages(phone) {
+        let msgs = localStorage.getItem('chat_msgs_' + phone);
+        if (!msgs) {
+            const defaultMsgs = [
+                { text: '¡Hola! Quiero unirme al Club VIP de Publica Navojoa y recibir las ofertas semanales.', type: 'incoming', time: '10:37 AM' },
+                { text: '¡Hola! 👋 ¡Bienvenido al Club VIP de Publica Navojoa! 🎉 Ya estás en nuestra lista oficial.', type: 'outgoing', time: '10:37 AM' }
+            ];
+            localStorage.setItem('chat_msgs_' + phone, JSON.stringify(defaultMsgs));
+            return defaultMsgs;
+        }
+        return JSON.parse(msgs);
+    }
+
+    function saveMessage(phone, msgObj) {
+        let msgs = getMessages(phone);
+        msgs.push(msgObj);
+        localStorage.setItem('chat_msgs_' + phone, JSON.stringify(msgs));
+
+        // Guardar respaldo en Firebase
+        try {
+            db.collection('messages').add({
+                phone,
+                ...msgObj,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        } catch (e) {}
+    }
+
+    function switchTab(tabName) {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        if (tabName === 'chat') {
+            document.querySelectorAll('.tab-btn')[0].classList.add('active');
+            document.getElementById('tab-chat').classList.add('active');
+        } else {
+            document.querySelectorAll('.tab-btn')[1].classList.add('active');
+            document.getElementById('tab-crm').classList.add('active');
+            renderCrmTable();
+        }
+    }
+
+    function renderChatList() {
+        const leads = getLeads();
+        const search = document.getElementById('chat-search').value.toLowerCase();
+        const container = document.getElementById('chat-user-list');
+
+        const filtered = leads.filter(l => l.nombre.toLowerCase().includes(search) || l.whatsapp.includes(search));
+
+        container.innerHTML = filtered.map(item => `
+            <div class="chat-user-item ${String(item.id) === String(activeContactId) ? 'active' : ''}" onclick="selectContact('${item.id}')">
+                <div class="chat-avatar">${item.nombre.charAt(0)}</div>
+                <div class="chat-user-info">
+                    <div class="chat-user-name">${item.nombre}</div>
+                    <div class="chat-user-sub">+52 ${item.whatsapp} • ${item.colonia}</div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function selectContact(id) {
+        activeContactId = id;
+        renderChatList();
+        const leads = getLeads();
+        const contact = leads.find(l => String(l.id) === String(id)) || leads[0];
+
+        document.getElementById('active-avatar').innerText = contact.nombre.charAt(0);
+        document.getElementById('active-contact-name').innerText = contact.nombre;
+        document.getElementById('active-contact-phone').innerText = '+52 ' + contact.whatsapp;
+
+        document.getElementById('info-avatar').innerText = contact.nombre.charAt(0);
+        document.getElementById('info-name').innerText = contact.nombre;
+        document.getElementById('info-phone').innerText = '+52 ' + contact.whatsapp;
+        document.getElementById('info-colonia').innerText = contact.colonia;
+
+        renderMessages(contact.whatsapp);
+    }
+
+    function renderMessages(phone) {
+        const msgs = getMessages(phone);
+        const container = document.getElementById('chat-messages');
+
+        container.innerHTML = msgs.map(m => `
+            <div class="msg-bubble ${m.type}">
+                <div>${m.text}</div>
+                <div class="msg-meta">${m.time} ${m.type === 'outgoing' ? '✓✓' : ''}</div>
+            </div>
+        `).join('');
+
+        container.scrollTop = container.scrollHeight;
+    }
+
+    async function sendChatMessage() {
+        const input = document.getElementById('chat-input');
+        const text = input.value.trim();
+        if (!text) return;
+
+        const leads = getLeads();
+        const contact = leads.find(l => String(l.id) === String(activeContactId));
+        if (!contact) return;
+
+        const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const formattedPhone = formatPhoneForMeta(contact.whatsapp);
+
+        // Save locally & Firebase
+        saveMessage(contact.whatsapp, { text, type: 'outgoing', time: timeStr });
+        input.value = '';
+        renderMessages(contact.whatsapp);
+
+        // Send via Meta Cloud API
+        try {
+            const res = await fetch(`https://graph.facebook.com/v20.0/${META_PHONE_ID}/messages`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${META_TOKEN}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    messaging_product: 'whatsapp',
+                    to: formattedPhone,
+                    type: 'text',
+                    text: { body: text }
+                })
+            });
+            const data = await res.json();
+            console.log('Meta API Response:', data);
+
+            if (data.error) {
+                alert('⚠️ Respuesta de Meta API:\n' + data.error.message);
+            } else {
+                console.log('Mensaje entregado con éxito por Meta!');
+            }
+        } catch (err) {
+            console.log('Enviado localmente. Error de conexión:', err);
+        }
+    }
+
+    async function sendTemplateWelcome() {
+        const leads = getLeads();
+        const contact = leads.find(l => String(l.id) === String(activeContactId));
+        if (!contact) return;
+
+        const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const formattedPhone = formatPhoneForMeta(contact.whatsapp);
+        const templateText = '👑 ¡Bienvenido al Club VIP de Publica Navojoa! Ya estás registrado para recibir las ofertas semanales.';
+
+        saveMessage(contact.whatsapp, { text: templateText, type: 'outgoing', time: timeStr });
+        renderMessages(contact.whatsapp);
+
+        try {
+            let res = await fetch(`https://graph.facebook.com/v20.0/${META_PHONE_ID}/messages`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${META_TOKEN}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    messaging_product: 'whatsapp',
+                    to: formattedPhone,
+                    type: 'template',
+                    template: {
+                        name: 'bienvenida_club_vip',
+                        language: { code: 'es' }
+                    }
+                })
+            });
+            let data = await res.json();
+
+            if (data.error) {
+                res = await fetch(`https://graph.facebook.com/v20.0/${META_PHONE_ID}/messages`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${META_TOKEN}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        messaging_product: 'whatsapp',
+                        to: formattedPhone,
+                        type: 'template',
+                        template: {
+                            name: 'bienvenida_club_vip',
+                            language: { code: 'es_MX' }
+                        }
+                    })
+                });
+                data = await res.json();
+            }
+
+            if (data.error) {
+                alert('⚠️ Error Meta al enviar plantilla:\n' + data.error.message);
+            } else {
+                alert('✅ Plantilla enviada con éxito a +52 ' + contact.whatsapp);
+            }
+        } catch (err) {
+            alert('Plantilla registrada localmente.');
+        }
+    }
+
+    function configureToken() {
+        const newToken = prompt('Token de Acceso Meta Graph API:', META_TOKEN);
+        if (newToken) {
+            META_TOKEN = newToken;
+            localStorage.setItem('meta_api_token', newToken);
+            alert('Token guardado correctamente.');
+        }
+    }
+
+    function renderCrmTable() {
+        const leads = getLeads();
+        const search = document.getElementById('search-input').value.toLowerCase();
+        const tbody = document.getElementById('table-body');
+
+        document.getElementById('total-contacts').innerText = leads.length;
+
+        const filtered = leads.filter(l => 
+            l.nombre.toLowerCase().includes(search) || 
+            l.whatsapp.includes(search) ||
+            l.colonia.toLowerCase().includes(search)
+        );
+
+        if (filtered.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color: var(--text-muted); padding: 30px;">No se encontraron contactos.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = filtered.map(item => `
+            <tr>
+                <td style="color: var(--text-muted); font-size: 0.85rem;">${item.fecha}</td>
+                <td style="font-weight: 700; color: var(--text-main);">${item.nombre}</td>
+                <td style="font-family: monospace; font-weight: 700; color: var(--accent-green);">${item.whatsapp}</td>
+                <td style="color: #334155;">${item.colonia}</td>
+                <td><span class="badge-optin">✓ Autorizado</span></td>
+                <td style="color: var(--text-muted);">${item.origen || 'Landing Web'}</td>
+                <td>
+                    <button class="btn btn-blue" style="padding: 4px 10px; font-size: 0.8rem;" onclick="switchTab('chat'); selectContact('${item.id}');">💬 Chatear</button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function exportCSV() {
+        const leads = getLeads();
+        let csvContent = "data:text/csv;charset=utf-8,ID,Fecha,Nombre,Phone,Colonia,Origen,OptInStatus\n";
+        leads.forEach(l => {
+            csvContent += `${l.id},"${l.fecha}","${l.nombre}",+52${l.whatsapp},"${l.colonia}","${l.origen || 'Landing'}","Authorized"\n`;
+        });
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `base_datos_publica_navojoa_${Date.now()}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    function openModal() { document.getElementById('add-modal').style.display = 'flex'; }
+    function closeModal() { document.getElementById('add-modal').style.display = 'none'; }
+
+    function addManual() {
+        const nombre = document.getElementById('m-nombre').value;
+        const whatsapp = document.getElementById('m-phone').value;
+        const colonia = document.getElementById('m-colonia').value;
+        if(!nombre || !whatsapp) return alert('Ingresa nombre y teléfono');
+
+        let leads = getLeads();
+        const newId = Date.now();
+        const newLead = {
+            id: newId,
+            fecha: new Date().toLocaleString(),
+            nombre,
+            whatsapp,
+            colonia: colonia || 'Navojoa',
+            origen: 'Preguntas FB Grupo'
+        };
+        leads.push(newLead);
+        localStorage.setItem('vip_navojoa_leads', JSON.stringify(leads));
+
+        // Guardar en Firebase
+        try {
+            db.collection('contacts').add(newLead);
+        } catch(e) {}
+
+        closeModal();
+        renderCrmTable();
+        renderChatList();
+    }
+
+    // Auto Polling del Servidor Webhook local
+    async function syncIncomingMessages() {
+        try {
+            const res = await fetch('http://localhost:5000/get_messages');
+            if (res.ok) {
+                const data = await res.json();
+                let leads = getLeads();
+                let updated = false;
+
+                if (data.contacts) {
+                    Object.values(data.contacts).forEach(c => {
+                        let existing = leads.find(l => l.whatsapp === c.phone);
+                        if (!existing) {
+                            let newContact = {
+                                id: Date.now() + Math.floor(Math.random() * 1000),
+                                fecha: new Date().toLocaleString(),
+                                nombre: c.name,
+                                whatsapp: c.phone,
+                                colonia: 'Navojoa VIP',
+                                origen: 'WhatsApp Entrante Directo'
+                            };
+                            leads.push(newContact);
+                            updated = true;
+                            // Guardar en Firebase
+                            try { db.collection('contacts').add(newContact); } catch(e) {}
+                        }
+                    });
+                    if (updated) {
+                        localStorage.setItem('vip_navojoa_leads', JSON.stringify(leads));
+                        renderCrmTable();
+                        renderChatList();
+                    }
+                }
+
+                if (data.messages && data.messages.length > 0) {
+                    data.messages.forEach(m => {
+                        let msgs = getMessages(m.phone);
+                        let exists = msgs.some(existingMsg => existingMsg.text === m.text && existingMsg.time === m.time);
+                        if (!exists) {
+                            msgs.push({ text: m.text, type: 'incoming', time: m.time });
+                            localStorage.setItem('chat_msgs_' + m.phone, JSON.stringify(msgs));
+                            
+                            const activeContact = leads.find(l => String(l.id) === String(activeContactId));
+                            if (activeContact && activeContact.whatsapp === m.phone) {
+                                renderMessages(m.phone);
+                            }
+                        }
+                    });
+                }
+            }
+        } catch (e) {}
+    }
+
+    // Initialize
+    renderChatList();
+    selectContact(1);
+    listenFirebaseContacts();
+    setInterval(syncIncomingMessages, 2500);
+</script>
+</body>
+</html>
