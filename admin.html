@@ -663,7 +663,8 @@
 
     // Configuración Meta API
     const META_PHONE_ID = '1280742211792981';
-    let META_TOKEN = localStorage.getItem('meta_api_token') || 'EAAUPiVpET1YBSaNSDZCiZBTWk1fBH2xq1EWatVjbZCuJgXs395I4bywHNZAqTAqCtUJnPMaewupwRgGoPK5uIzZA2k3ax1bDpcrZAJnofMlUVT8ZCqeZAKEIUbGMwiMgXZA27ZBTsF7npnX9trZCUVPxUcGzkdYlybk8q04iAZADz4v59jIXHOZBfxYih2ZClhOPsHKW9lT0aO5ISJlPQQEJKYWxFxhmbZAcfaujp4CGsGdREjutImzyPDTQzzNDHVfrXOOZAUtw7mKiwiSYZCmeZB9iMuNMuQRxoZD';
+    let META_TOKEN = 'EAAUPiVpET1YBSe4v0v87fNRoh0t6IILKqXUFjSsbUWi0mhL7F5N1xyQz0tzxan9feYVWPGbQP4RmOXMCh0XqnMkwwcK1pkC2vNXSxm1PRhdBKZCGf8HHLyZCYUwmClhdwty2mQ3M22AmoH4y7jvoAnA6xeOL24i9X84N2mVbvlvZCs8oXChQ6Lp7qHlAzfjZBgZDZD';
+    localStorage.setItem('meta_api_token', META_TOKEN);
 
     function configureToken() {
         let current = localStorage.getItem('meta_api_token') || META_TOKEN;
