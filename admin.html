@@ -791,9 +791,9 @@
 
     function selectContact(id) {
         activeContactId = id;
-        renderChatList();
         const leads = getLeads();
-        const contact = leads.find(l => String(l.id) === String(id)) || leads[0];
+        const contact = leads.find(l => String(l.id) === String(id));
+        if (!contact) return;
 
         document.getElementById('active-avatar').innerText = contact.nombre.charAt(0);
         document.getElementById('active-contact-name').innerText = contact.nombre;
@@ -804,7 +804,38 @@
         document.getElementById('info-phone').innerText = '+52 ' + contact.whatsapp;
         document.getElementById('info-colonia').innerText = contact.colonia;
 
-        renderMessages(contact.whatsapp);
+        let clean = contact.whatsapp.replace(/\D/g, '');
+        if (clean.startsWith('52') && clean.length === 12) clean = clean.slice(2);
+
+        // Desconectar listener de chat anterior
+        if (activeMessagesUnsubscribe) activeMessagesUnsubscribe();
+
+        // Escuchar subcolección de mensajes en Firebase en tiempo real
+        try {
+            activeMessagesUnsubscribe = db.collection('contacts').doc(clean).collection('messages')
+                .orderBy('timestamp', 'asc')
+                .onSnapshot(snapshot => {
+                    let fsMsgs = [];
+                    snapshot.forEach(doc => {
+                        let d = doc.data();
+                        fsMsgs.push({
+                            text: d.text || '',
+                            type: d.type || 'incoming',
+                            time: d.time || '',
+                            fileUrl: d.fileUrl || '',
+                            fileType: d.fileType || '',
+                            fileName: d.fileName || ''
+                        });
+                    });
+                    if (fsMsgs.length > 0) {
+                        localStorage.setItem('chat_msgs_' + clean, JSON.stringify(fsMsgs));
+                    }
+                    renderMessages(clean);
+                });
+        } catch (e) {
+            console.log('Firebase messages sync error:', e);
+            renderMessages(clean);
+        }
     }
 
     function renderMessages(phone) {
@@ -852,7 +883,7 @@
         if (!contact) return alert('Selecciona un contacto primero.');
 
         const reader = new FileReader();
-        reader.onload = function(e) {
+        reader.onload = async function(e) {
             const fileUrl = e.target.result;
             const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             const fileName = file.name;
@@ -868,6 +899,23 @@
             });
 
             renderMessages(contact.whatsapp);
+
+            // Enviar vía API backend Vercel /api/send-message
+            try {
+                await fetch('/api/send-message', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        phone: contact.whatsapp,
+                        text: fileType.startsWith('image/') ? `🖼️ Imagen: ${fileName}` : `📄 PDF: ${fileName}`,
+                        fileUrl: fileUrl,
+                        fileType: fileType,
+                        fileName: fileName
+                    })
+                });
+            } catch(err) {
+                console.log('Error al enviar archivo por API backend:', err);
+            }
         };
 
         reader.readAsDataURL(file);
@@ -884,42 +932,25 @@
         if (!contact) return;
 
         const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        const formattedPhone = formatPhoneForMeta(contact.whatsapp);
 
-        // Save locally & Firebase
         saveMessage(contact.whatsapp, { text, type: 'outgoing', time: timeStr });
         input.value = '';
         renderMessages(contact.whatsapp);
 
-        // Send via Meta Cloud API
+        // Enviar vía API backend Vercel /api/send-message
         try {
-            const res = await fetch(`https://graph.facebook.com/v20.0/${META_PHONE_ID}/messages`, {
+            const res = await fetch('/api/send-message', {
                 method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${META_TOKEN}`,
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    messaging_product: 'whatsapp',
-                    to: formattedPhone,
-                    type: 'text',
-                    text: { body: text }
+                    phone: contact.whatsapp,
+                    text: text
                 })
             });
             const data = await res.json();
-            console.log('Meta API Response:', data);
-
-            if (data.error) {
-                if (data.error.code === 190 || (data.error.message && (data.error.message.includes('Authentication') || data.error.message.includes('expired')))) {
-                    alert('⚠️ El Token de Meta API ha caducado (los tokens temporales duran 24 horas).\n\nHaz clic arriba en "⚙️ Configurar Token API" para pegar tu nuevo token de Meta Developers.');
-                } else {
-                    alert('⚠️ Respuesta de Meta API:\n' + data.error.message);
-                }
-            } else {
-                console.log('Mensaje entregado con éxito por Meta!');
-            }
+            console.log('Respuesta del Servidor de Envío:', data);
         } catch (err) {
-            console.log('Enviado localmente. Error de conexión:', err);
+            console.log('Error enviando mensaje vía API backend:', err);
         }
     }
 

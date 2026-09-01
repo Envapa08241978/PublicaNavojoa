@@ -31,9 +31,57 @@ async function saveToFirestore(cleanPhone, senderName, text, type) {
     }
 }
 
+async function saveOutgoingMessageToFirestore(cleanPhone, text) {
+    try {
+        const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const docId = `msg_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        await fetch(`https://firestore.googleapis.com/v1/projects/loquese-app/databases/(default)/documents/contacts/${cleanPhone}/messages/${docId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                fields: {
+                    text: { stringValue: text },
+                    type: { stringValue: 'outgoing' },
+                    time: { stringValue: timeStr },
+                    timestamp: { integerValue: Date.now().toString() }
+                }
+            })
+        });
+    } catch (e) {}
+}
+
+async function saveIncomingMessageToFirestore(cleanPhone, msgText, fileUrl = '', fileType = '', fileName = '') {
+    try {
+        const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const docId = `msg_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        const fields = {
+            text: { stringValue: msgText || '' },
+            type: { stringValue: 'incoming' },
+            time: { stringValue: timeStr },
+            timestamp: { integerValue: Date.now().toString() }
+        };
+
+        if (fileUrl) fields.fileUrl = { stringValue: fileUrl };
+        if (fileType) fields.fileType = { stringValue: fileType };
+        if (fileName) fields.fileName = { stringValue: fileName };
+
+        await fetch(`https://firestore.googleapis.com/v1/projects/loquese-app/databases/(default)/documents/contacts/${cleanPhone}/messages/${docId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fields })
+        });
+    } catch (e) {
+        console.error('[FIRESTORE INCOMING MSG ERR]', e);
+    }
+}
+
 async function sendWhatsAppMessage(toPhone, text, cleanPhone = '', senderName = '') {
     const url = `https://graph.facebook.com/v20.0/${PHONE_ID}/messages`;
     try {
+        if (cleanPhone) {
+            await saveOutgoingMessageToFirestore(cleanPhone, text);
+            await saveToFirestore(cleanPhone, senderName || 'Publica Navojoa', text, 'outgoing');
+        }
         const response = await fetch(url, {
             method: 'POST',
             headers: {
@@ -48,14 +96,9 @@ async function sendWhatsAppMessage(toPhone, text, cleanPhone = '', senderName = 
             })
         });
         const data = await response.json();
-        console.log('[BOT RES]', response.status, data);
-
-        // Guardar respuesta del bot en Firestore
-        if (cleanPhone) {
-            await saveToFirestore(cleanPhone, senderName || 'Publica Navojoa', text, 'outgoing');
-        }
+        console.log('[SEND WA RES]', data);
     } catch (e) {
-        console.error('[BOT ERROR]', e);
+        console.error('[SEND WA ERR]', e);
     }
 }
 
@@ -207,9 +250,20 @@ module.exports = async function handler(req, res) {
 
                 const senderName = contacts?.profile?.name || 'Cliente WhatsApp';
                 let msgText = '';
+                let fileUrl = '';
+                let fileType = '';
+                let fileName = '';
 
                 if (msg.type === 'text') {
                     msgText = msg.text?.body || '';
+                } else if (msg.type === 'image') {
+                    msgText = msg.image?.caption || '🖼️ Imagen recibida';
+                    fileType = 'image/jpeg';
+                    fileName = 'Foto WhatsApp';
+                } else if (msg.type === 'document') {
+                    fileName = msg.document?.filename || 'Documento PDF';
+                    msgText = msg.document?.caption || `📄 PDF: ${fileName}`;
+                    fileType = 'application/pdf';
                 } else if (msg.type === 'button') {
                     msgText = msg.button?.text || '';
                 } else if (msg.type === 'interactive') {
@@ -221,9 +275,12 @@ module.exports = async function handler(req, res) {
                     }
                 }
 
-                if (msgText) {
-                    console.log(`[MENSAJE EN NUBE] De ${senderName} (${cleanPhone}): ${msgText}`);
-                    await processBotRules(senderPhone, cleanPhone, senderName, msgText);
+                if (cleanPhone) {
+                    await saveIncomingMessageToFirestore(cleanPhone, msgText, fileUrl, fileType, fileName);
+                    if (msgText) {
+                        console.log(`[MENSAJE EN NUBE] De ${senderName} (${cleanPhone}): ${msgText}`);
+                        await processBotRules(senderPhone, cleanPhone, senderName, msgText);
+                    }
                 }
             }
         } catch (err) {
