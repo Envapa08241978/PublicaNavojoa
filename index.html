@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Publica Navojoa - Registro al Club VIP de Ofertas & Avisos</title>
+    <title>Publica Navojoa - Kit de Medios & Tarifario Publicitario</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-canvas: #f1f5f9;
+            --bg-canvas: #f8fafc;
             --card-bg: #ffffff;
             --accent-green: #16a34a;
             --accent-green-hover: #15803d;
@@ -18,363 +18,379 @@
             --text-main: #0f172a;
             --text-muted: #64748b;
             --border-color: #e2e8f0;
-            --shadow-card: 0 20px 40px -10px rgba(15, 23, 42, 0.1);
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
+            --shadow-md: 0 10px 25px -5px rgba(15, 23, 42, 0.08);
+            --shadow-lg: 0 20px 35px -10px rgba(15, 23, 42, 0.12);
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Outfit', sans-serif;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Outfit', sans-serif; }
 
         body {
             background-color: var(--bg-canvas);
             color: var(--text-main);
+            padding: 40px 20px;
             min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 30px 20px;
             background-image: 
-                radial-gradient(circle at 15% 15%, rgba(22, 163, 74, 0.08) 0%, transparent 45%),
-                radial-gradient(circle at 85% 85%, rgba(217, 119, 6, 0.08) 0%, transparent 45%);
+                radial-gradient(circle at 10% 10%, rgba(22, 163, 74, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 90% 90%, rgba(217, 119, 6, 0.05) 0%, transparent 40%);
         }
 
-        .container {
-            width: 100%;
-            max-width: 500px;
-            background: var(--card-bg);
+        .container { max-width: 1050px; margin: 0 auto; }
+
+        .hero-banner {
+            text-align: center;
+            padding: 45px 30px;
+            background: #ffffff;
             border: 1px solid var(--border-color);
             border-radius: 28px;
-            padding: 36px 28px;
-            box-shadow: var(--shadow-card);
+            margin-bottom: 40px;
+            box-shadow: var(--shadow-md);
             position: relative;
         }
 
-        .logo-wrap {
-            text-align: center;
-            margin-bottom: 20px;
+        .logo-container {
+            margin-bottom: 24px;
+            display: inline-block;
         }
 
         .logo-img {
-            max-width: 280px;
+            max-width: 340px;
             width: 100%;
             height: auto;
             display: block;
             margin: 0 auto;
         }
 
-        .badge-admin {
+        .badge-premium {
             display: inline-flex;
             align-items: center;
-            justify-content: center;
-            width: 100%;
             gap: 6px;
             background: var(--accent-gold-light);
             color: var(--accent-gold);
-            border: 1px solid rgba(217, 119, 6, 0.25);
-            padding: 7px 16px;
+            font-weight: 800;
+            padding: 6px 18px;
             border-radius: 20px;
             font-size: 0.85rem;
-            font-weight: 800;
-            margin-bottom: 18px;
+            margin-bottom: 14px;
+            border: 1px solid rgba(217, 119, 6, 0.2);
+            letter-spacing: 0.5px;
         }
 
-        h1 {
-            font-size: 1.7rem;
-            font-weight: 900;
-            line-height: 1.2;
+        h1 { 
+            font-size: 2.3rem; 
+            font-weight: 900; 
             color: var(--text-main);
-            margin-bottom: 6px;
-            text-align: center;
+            margin-bottom: 8px; 
             letter-spacing: -0.5px;
         }
 
-        .slogan-sub {
-            text-align: center;
+        .slogan-tagline {
             color: var(--accent-green);
             font-weight: 700;
-            font-size: 1.05rem;
-            margin-bottom: 14px;
-        }
-
-        p.subtitle {
-            color: var(--text-muted);
-            font-size: 0.92rem;
-            line-height: 1.5;
-            margin-bottom: 22px;
-            text-align: center;
-        }
-
-        .benefits-list {
-            list-style: none;
-            margin-bottom: 24px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .benefit-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 0.9rem;
-            color: #334155;
-            background: #f8fafc;
-            padding: 11px 14px;
-            border-radius: 14px;
-            border: 1px solid var(--border-color);
-        }
-
-        .benefit-icon {
-            color: var(--accent-green);
-            font-weight: 900;
-            font-size: 1.1rem;
-        }
-
-        .form-group {
+            font-size: 1.25rem;
             margin-bottom: 16px;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
         }
 
-        label {
-            font-size: 0.85rem;
-            font-weight: 700;
-            color: #334155;
+        .hero-desc {
+            color: var(--text-muted);
+            max-width: 650px;
+            margin: 0 auto;
+            font-size: 1.05rem;
+            line-height: 1.6;
         }
 
-        input, select {
-            width: 100%;
-            padding: 13px 16px;
-            border-radius: 12px;
+        .metrics-bar {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            margin-top: 35px;
+        }
+
+        .metric-box {
+            background: #f8fafc;
             border: 1px solid var(--border-color);
-            background: #ffffff;
-            color: var(--text-main);
-            font-size: 0.98rem;
-            outline: none;
+            border-radius: 18px;
+            padding: 22px;
             transition: all 0.2s ease;
         }
 
-        input:focus, select:focus {
-            border-color: var(--accent-green);
-            box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.15);
+        .metric-box:hover {
+            transform: translateY(-2px);
+            border-color: #cbd5e1;
+            box-shadow: var(--shadow-sm);
         }
 
-        .checkbox-group {
+        .metric-number { 
+            font-size: 2.3rem; 
+            font-weight: 900; 
+            color: var(--text-main); 
+            line-height: 1.1;
+            margin-bottom: 4px;
+        }
+        
+        .metric-number.highlight { color: var(--accent-green); }
+        .metric-number.gold { color: var(--accent-gold); }
+
+        .metric-desc { 
+            font-size: 0.85rem; 
+            font-weight: 600;
+            color: var(--text-muted); 
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 1.9rem;
+            font-weight: 800;
+            color: var(--text-main);
+            margin-bottom: 30px;
+        }
+
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 28px;
+            margin-bottom: 50px;
+        }
+
+        .price-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            padding: 35px 30px;
             display: flex;
-            align-items: flex-start;
-            gap: 10px;
-            margin: 20px 0;
-            font-size: 0.8rem;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.3s ease;
+        }
+
+        .price-card:hover { 
+            transform: translateY(-6px); 
+            box-shadow: var(--shadow-lg);
+            border-color: #cbd5e1;
+        }
+
+        .price-card.featured {
+            border: 2px solid var(--accent-green);
+            box-shadow: 0 15px 30px -5px rgba(22, 163, 74, 0.15);
+        }
+
+        .popular-tag {
+            position: absolute;
+            top: -14px;
+            right: 24px;
+            background: var(--accent-green);
+            color: #fff;
+            font-size: 0.75rem;
+            font-weight: 800;
+            padding: 6px 16px;
+            border-radius: 20px;
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 10px rgba(22, 163, 74, 0.3);
+        }
+
+        .package-title { 
+            font-size: 1.4rem; 
+            font-weight: 800; 
+            color: var(--text-main); 
+            margin-bottom: 8px; 
+        }
+
+        .package-desc {
+            font-size: 0.88rem;
             color: var(--text-muted);
+            margin-bottom: 18px;
             line-height: 1.4;
         }
 
-        .checkbox-group input {
-            width: 18px;
-            height: 18px;
-            accent-color: var(--accent-green);
-            margin-top: 2px;
-            cursor: pointer;
-        }
-
-        .btn-submit {
-            width: 100%;
-            padding: 16px;
-            background: var(--accent-green);
-            color: #fff;
-            font-size: 1.05rem;
-            font-weight: 800;
-            border: none;
-            border-radius: 14px;
-            cursor: pointer;
-            box-shadow: 0 8px 20px rgba(22, 163, 74, 0.25);
-            transition: all 0.2s ease;
+        .package-price { 
+            font-size: 2.4rem; 
+            font-weight: 900; 
+            color: var(--text-main); 
+            margin-bottom: 24px; 
             display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
+            align-items: baseline;
+            gap: 6px;
         }
 
-        .btn-submit:hover {
+        .package-price span { 
+            font-size: 0.95rem; 
+            color: var(--text-muted); 
+            font-weight: 600; 
+        }
+
+        .feature-list { 
+            list-style: none; 
+            margin-bottom: 30px; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 14px; 
+        }
+
+        .feature-item { 
+            font-size: 0.92rem; 
+            color: #334155; 
+            display: flex; 
+            align-items: flex-start; 
+            gap: 10px; 
+            line-height: 1.4;
+        }
+
+        .feature-item .check { 
+            color: var(--accent-green); 
+            font-weight: 900; 
+            font-size: 1rem;
+            line-height: 1;
+        }
+
+        .btn-select {
+            width: 100%;
+            padding: 15px;
+            border-radius: 14px;
+            font-weight: 800;
+            font-size: 1rem;
+            cursor: pointer;
+            text-align: center;
+            text-decoration: none;
+            display: block;
+            transition: all 0.2s ease;
+        }
+
+        .btn-secondary {
+            background: #f1f5f9;
+            color: #0f172a;
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: #e2e8f0;
+        }
+
+        .btn-primary {
+            background: var(--accent-green);
+            color: #ffffff;
+            border: none;
+            box-shadow: 0 4px 14px rgba(22, 163, 74, 0.3);
+        }
+
+        .btn-primary:hover {
             background: var(--accent-green-hover);
             transform: translateY(-2px);
-            box-shadow: 0 12px 25px rgba(22, 163, 74, 0.35);
         }
 
-        .success-box {
-            display: none;
+        .btn-gold {
+            background: var(--accent-gold);
+            color: #ffffff;
+            border: none;
+            box-shadow: 0 4px 14px rgba(217, 119, 6, 0.3);
+        }
+
+        .btn-gold:hover {
+            background: #b45309;
+            transform: translateY(-2px);
+        }
+
+        .contact-cta {
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            padding: 40px 30px;
             text-align: center;
-            padding: 30px 10px;
-        }
-
-        .success-icon {
-            width: 70px;
-            height: 70px;
-            background: rgba(22, 163, 74, 0.12);
-            color: var(--accent-green);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2.2rem;
-            margin: 0 auto 16px;
-            border: 2px solid var(--accent-green);
-        }
-
-        .footer-note {
-            text-align: center;
-            font-size: 0.75rem;
-            color: #94a3b8;
-            margin-top: 22px;
+            box-shadow: var(--shadow-md);
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div id="form-wrapper">
-        <div class="logo-wrap">
+    <div class="hero-banner">
+        <div class="logo-container">
             <img src="Publica navojoa logotipo oficial.png" alt="Publica Navojoa" class="logo-img">
         </div>
+        <br>
+        <span class="badge-premium">⭐ MEDIA KIT COMERCIAL 2026</span>
+        <h1>Difusión & Publicidad Directa en Navojoa</h1>
+        <p class="slogan-tagline">Privado, personalizado y directo.</p>
+        <p class="hero-desc">Llega directamente a la pantalla de miles de clientes potenciales en Navojoa a través de nuestra comunidad de Facebook (78,700 miembros) y nuestra Red Exclusiva de Envíos Masivos por WhatsApp.</p>
 
-        <div class="badge-admin">
-            👑 Red de Difusión Navojoa • 78.7K Miembros
+        <div class="metrics-bar">
+            <div class="metric-box">
+                <div class="metric-number highlight">78,700+</div>
+                <div class="metric-desc">Miembros en Grupo FB</div>
+            </div>
+            <div class="metric-box">
+                <div class="metric-number">92%</div>
+                <div class="metric-desc">Audiencia Local Navojoa</div>
+            </div>
+            <div class="metric-box">
+                <div class="metric-number gold">1 a 1</div>
+                <div class="metric-desc">WhatsApp Directo Opt-in</div>
+            </div>
+        </div>
+    </div>
+
+    <h2 class="section-title">Paquetes de Publicidad y Difusión</h2>
+
+    <div class="pricing-grid">
+        <!-- Paquete 1: Bronce -->
+        <div class="price-card">
+            <div>
+                <div class="package-title">Paquete Bronce</div>
+                <div class="package-desc">Ideal para probar el servicio o anunciar promociones rápidas.</div>
+                <div class="package-price">$600 <span>MXN</span></div>
+                <ul class="feature-list">
+                    <li class="feature-item"><span class="check">✓</span> 1 Publicación Destacada/Fijada (48h en FB)</li>
+                    <li class="feature-item"><span class="check">✓</span> Presencia en Bot de WhatsApp por 1 semana</li>
+                    <li class="feature-item"><span class="check">✓</span> 1 Broadcast Masivo al Catálogo de Ofertas</li>
+                    <li class="feature-item"><span class="check">✓</span> Reporte básico de impresiones</li>
+                </ul>
+            </div>
+            <a href="https://wa.me/526421520280?text=Hola,%20me%20interesa%20contratar%20el%20Paquete%20Bronce%20de%20Publica%20Navojoa" class="btn-select btn-secondary">Contratar Bronce</a>
         </div>
 
-        <h1>Club VIP de Ofertas & Avisos</h1>
-        <p class="slogan-sub">Privado, personalizado y directo.</p>
-        <p class="subtitle">Recibe en tu celular las mejores ofertas, remates, novedades y promociones exclusivas antes que nadie en Navojoa.</p>
-
-        <ul class="benefits-list">
-            <li class="benefit-item">
-                <span class="benefit-icon">✓</span>
-                <span>Acceso anticipado a remates y oportunidades locales.</span>
-            </li>
-            <li class="benefit-item">
-                <span class="benefit-icon">✓</span>
-                <span>Cupones y promociones exclusivas en comercios.</span>
-            </li>
-            <li class="benefit-item">
-                <span class="benefit-icon">✓</span>
-                <span>100% Gratuito y sin spam (1 o 2 mensajes por semana).</span>
-            </li>
-        </ul>
-
-        <form id="lead-form" onsubmit="handleSubmit(event)">
-            <div class="form-group">
-                <label for="nombre">Nombre Completo *</label>
-                <input type="text" id="nombre" placeholder="Ej. María Elena López" required>
+        <!-- Paquete 2: Plata VIP -->
+        <div class="price-card featured">
+            <div class="popular-tag">MÁS POPULAR</div>
+            <div>
+                <div class="package-title">Paquete Plata VIP</div>
+                <div class="package-desc">Máxima exposición orgánica y recurrente para comercios.</div>
+                <div class="package-price">$1,200 <span>MXN</span></div>
+                <ul class="feature-list">
+                    <li class="feature-item"><span class="check">✓</span> Publicación Fijada por 7 Días completos en FB</li>
+                    <li class="feature-item"><span class="check">✓</span> 2 Broadcasts Masivos por WhatsApp al mes</li>
+                    <li class="feature-item"><span class="check">✓</span> Presencia permanente en buscador del bot (1 mes)</li>
+                    <li class="feature-item"><span class="check">✓</span> Mención en Historias + Badge 'Anunciante Verificado'</li>
+                </ul>
             </div>
+            <a href="https://wa.me/526421520280?text=Hola,%20me%20interesa%20contratar%20el%20Paquete%20Plata%20VIP%20de%20Publica%20Navojoa" class="btn-select btn-primary">Contratar Plata VIP</a>
+        </div>
 
-            <div class="form-group">
-                <label for="whatsapp">Teléfono WhatsApp (10 dígitos) *</label>
-                <input type="tel" id="whatsapp" placeholder="Ej. 6421234567" pattern="[0-9]{10}" maxlength="10" required>
+        <!-- Paquete 3: Oro / Meta Ads -->
+        <div class="price-card">
+            <div>
+                <div class="package-title">Paquete Oro Premium</div>
+                <div class="package-desc">Para marcas que buscan liderar la visibilidad total en la ciudad.</div>
+                <div class="package-price">$2,500 <span>MXN</span></div>
+                <ul class="feature-list">
+                    <li class="feature-item"><span class="check">✓</span> Todo lo del Paquete Plata VIP incluido</li>
+                    <li class="feature-item"><span class="check">✓</span> Publicación Fijada por 15 Días completos</li>
+                    <li class="feature-item"><span class="check">✓</span> 4 Broadcasts Masivos (1 semanal) por WhatsApp</li>
+                    <li class="feature-item"><span class="check">✓</span> Banner en portada de Facebook + Posición #1 en Bot</li>
+                </ul>
             </div>
-
-            <div class="form-group">
-                <label for="colonia">Colonia / Zona de Navojoa *</label>
-                <select id="colonia" required>
-                    <option value="">Selecciona tu zona...</option>
-                    <option value="Centro">Centro / Mercado</option>
-                    <option value="Sonora">Colonia Sonora</option>
-                    <option value="Constitución">Colonia Constitución</option>
-                    <option value="Naranjos">Los Naranjos / Tetanchopo</option>
-                    <option value="Brisas">Las Brisas / Aeropuerto</option>
-                    <option value="Javier Gaxiola">Javier Gaxiola / Deportiva</option>
-                    <option value="Otra">Otra Colonia de Navojoa</option>
-                </select>
-            </div>
-
-            <div class="checkbox-group">
-                <input type="checkbox" id="consent" required>
-                <label for="consent">
-                    Autorizo recibir información, ofertas y catálogos en mi WhatsApp por parte de Publica Navojoa. Puedo cancelar en cualquier momento enviando 'BAJA'.
-                </label>
-            </div>
-
-            <button type="submit" class="btn-submit" id="btn-submit">
-                <span>¡Quiero Recibir Ofertas VIP!</span>
-                💬
-            </button>
-        </form>
+            <a href="https://wa.me/526421520280?text=Hola,%20me%20interesa%20contratar%20el%20Paquete%20Oro%20Premium%20de%20Publica%20Navojoa" class="btn-select btn-gold">Contratar Oro Premium</a>
+        </div>
     </div>
 
-    <div id="success-view" class="success-box">
-        <div class="success-icon">✓</div>
-        <h2 style="font-size: 1.5rem; color: #0f172a; margin-bottom: 8px;">¡Registro Exitoso!</h2>
-        <p style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.5; margin-bottom: 20px;">
-            Gracias por unirte al Club VIP. Ya estás registrado en nuestra base oficial. Muy pronto recibirás nuestro primer catálogo semanal directo a tu WhatsApp.
-        </p>
-        <a href="https://wa.me/?text=Me%20acabo%20de%20unir%20al%20Club%20VIP%20de%20Publica%20Navojoa" target="_blank" style="display: inline-block; padding: 12px 20px; background: rgba(22,163,74,0.1); color: var(--accent-green); border: 1px solid var(--accent-green); border-radius: 12px; font-weight: 700; text-decoration: none;">
-            Compartir con un amigo 📲
-        </a>
-    </div>
-
-    <div class="footer-note">
-        🔒 Tus datos están protegidos bajo la Ley Federal de Protección de Datos Personales (LFPDPPP).
+    <div class="contact-cta">
+        <h2 style="font-size: 1.6rem; margin-bottom: 8px;">¿Tienes una campaña política, evento o negocio especial?</h2>
+        <p style="color: var(--text-muted); max-width: 600px; margin: 0 auto 24px; font-size: 0.95rem;">Diseñamos planes a la medida para difusión de eventos, campañas institucionales, bienes raíces y comercio en Navojoa.</p>
+        <a href="https://wa.me/526421520280?text=Hola,%20me%20interesa%20informacion%20para%20una%20campaña%20especial%20en%20Publica%20Navojoa" class="btn-select btn-primary" style="max-width: 280px; margin: 0 auto;">Contactar por WhatsApp 📲</a>
     </div>
 </div>
-
-<!-- Firebase SDKs -->
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-
-<script>
-    // Firebase Config Oficial
-    const firebaseConfig = {
-      apiKey: "AIzaSyB6m8lHGJBnl3IalS7wYbQ-wHkYZHGPT3s",
-      authDomain: "loquese-app.firebaseapp.com",
-      projectId: "loquese-app",
-      storageBucket: "loquese-app.firebasestorage.app",
-      messagingSenderId: "654821705406",
-      appId: "1:654821705406:web:5e144cf5599f514046c0ef",
-      measurementId: "G-P7YSYCBPHC"
-    };
-
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
-
-    async function handleSubmit(e) {
-        e.preventDefault();
-        const btn = document.getElementById('btn-submit');
-        btn.disabled = true;
-        btn.innerText = 'Guardando...';
-
-        const nombre = document.getElementById('nombre').value;
-        const whatsapp = document.getElementById('whatsapp').value;
-        const colonia = document.getElementById('colonia').value;
-
-        const newLead = {
-            fecha: new Date().toLocaleString(),
-            timestamp: Date.now(),
-            nombre,
-            whatsapp,
-            colonia,
-            origen: 'Landing Web Opt-in'
-        };
-
-        // Guardar localmente
-        let leads = JSON.parse(localStorage.getItem('vip_navojoa_leads') || '[]');
-        leads.push(newLead);
-        localStorage.setItem('vip_navojoa_leads', JSON.stringify(leads));
-
-        // Guardar en Firebase Firestore
-        try {
-            await db.collection('contacts').add(newLead);
-            console.log('✅ Contacto guardado en Firebase!');
-        } catch (err) {
-            console.log('Guardado localmente. Error Firebase:', err);
-        }
-
-        document.getElementById('form-wrapper').style.display = 'none';
-        document.getElementById('success-view').style.display = 'block';
-    }
-</script>
 
 </body>
 </html>

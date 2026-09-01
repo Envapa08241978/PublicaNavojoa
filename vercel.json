@@ -1,9 +1,10 @@
 {
   "cleanUrls": true,
   "rewrites": [
-    { "source": "/", "destination": "/registro.html" },
+    { "source": "/", "destination": "/index.html" },
+    { "source": "/precios", "destination": "/index.html" },
+    { "source": "/media_kit", "destination": "/index.html" },
     { "source": "/registro", "destination": "/registro.html" },
-    { "source": "/precios", "destination": "/media_kit.html" },
     { "source": "/admin", "destination": "/admin.html" },
     { "source": "/privacidad", "destination": "/privacidad.html" }
   ]
