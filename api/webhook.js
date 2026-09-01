@@ -1,6 +1,6 @@
 const VERIFY_TOKEN = process.env.META_VERIFY_TOKEN || 'publica_navojoa_token_2026';
 const PHONE_ID = process.env.META_PHONE_ID || '1280742211792981';
-const ACCESS_TOKEN = process.env.META_ACCESS_TOKEN || 'EAAUPiVpET1YBSQ8qkBXZAVUmr6HkAPrWM9hnF2fd6wSFqZA5AYsKa6rE8pDpBb1jE1qHWrKmzrv3xZBvJNOXNJPsWl3JEW6G7vWmJUbWzVq8w8wdrX6IQZCpmMznEwW4RSIX5vQ62vPLxRXvZBQZCF1u6HzDIiCmubU1IkrdRKAYAQ27CTr8oNeiJtrC6ZB5dS2wQZDZD';
+const ACCESS_TOKEN = process.env.META_ACCESS_TOKEN || 'EAAUPiVpET1YBST456Cx6ZAuNEXN8iEghj5W3msjAvZC4q8unGAcJrpeOdMBNNokantyZBcAYJS64NEx7XAV9tneN0MY6s3K2KphrgvJLzeVvpWZAvXXhDxxdMsUyQZBBaYzzDfNrcdZCFWNyaCvZBvQpyZB7wdp0m33Ytwy0uwZAN0W57js1ag6ZBAtZCNL4p2A4nRLTAZDZD';
 
 async function sendWhatsAppMessage(toPhone, text) {
     const url = `https://graph.facebook.com/v20.0/${PHONE_ID}/messages`;
@@ -62,7 +62,8 @@ async function processBotRules(senderPhone, rawPhone, senderName, msgText) {
 
     // Regla 1: Registro al Club VIP / Mensaje de Bienvenida
     if (textLower.includes('club vip') || textLower.includes('unirme') || textLower.includes('hola') || textLower.includes('bienvenid')) {
-        await sendWhatsAppTemplate(metaTo, 'bienvenida_club_vip', 'es');
+        const welcomeText = "👑 *¡Bienvenido al Club VIP de Publica Navojoa!* 🎉\n\nYa estás registrado en nuestra lista oficial de difusión para recibir:\n✅ Catálogo Semanal de Ofertas y Remates\n✅ Descuentos exclusivos en comercios locales\n✅ Avisos comunitarios prioritarios\n\n📌 Escribe *OFERTAS* para ver las promociones activas.\n📌 Escribe *ANUNCIAR* si tienes un negocio y quieres llegar a más de 78,700 personas en Navojoa.";
+        await sendWhatsAppMessage(metaTo, welcomeText);
         return;
     }
 
