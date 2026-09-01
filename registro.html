@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro Club VIP - Publica Navojoa</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+    <style>
+        :root {
+            --bg-canvas: #f8fafc;
+            --card-bg: #ffffff;
+            --accent-green: #16a34a;
+            --accent-green-hover: #15803d;
+            --accent-gold: #d97706;
+            --accent-gold-light: #fef3c7;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+            --shadow-card: 0 20px 40px -10px rgba(15, 23, 42, 0.08);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-canvas);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 30px 20px;
+            background-image: 
+                radial-gradient(circle at 10% 10%, rgba(22, 163, 74, 0.06) 0%, transparent 40%),
+                radial-gradient(circle at 90% 90%, rgba(217, 119, 6, 0.06) 0%, transparent 40%);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 520px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 28px;
+            padding: 36px 30px;
+            box-shadow: var(--shadow-card);
+            position: relative;
+        }
+
+        .logo-wrap {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .logo-img {
+            max-width: 260px;
+            width: 100%;
+            height: auto;
+            display: block;
+            margin: 0 auto;
+        }
+
+        .badge-header {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--accent-gold-light);
+            color: var(--accent-gold);
+            font-weight: 800;
+            font-size: 0.82rem;
+            padding: 6px 14px;
+            border-radius: 9999px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+        }
+
+        h1 {
+            font-size: 1.6rem;
+            font-weight: 900;
+            color: var(--text-main);
+            line-height: 1.25;
+            margin-bottom: 8px;
+            text-align: center;
+            letter-spacing: -0.5px;
+        }
+
+        p.subtitle {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        label {
+            display: block;
+            font-size: 0.88rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 6px;
+        }
+
+        input[type="text"],
+        input[type="tel"],
+        select {
+            width: 100%;
+            padding: 14px 16px;
+            font-size: 1rem;
+            border: 1.5px solid var(--border-color);
+            border-radius: 14px;
+            background: #ffffff;
+            color: var(--text-main);
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        input:focus,
+        select:focus {
+            border-color: var(--accent-green);
+            box-shadow: 0 0 0 4px rgba(22, 163, 74, 0.12);
+        }
+
+        .consent-card {
+            background: #f8fafc;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 14px 16px;
+            margin: 20px 0;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            cursor: pointer;
+        }
+
+        .consent-card input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            accent-color: var(--accent-green);
+            margin-top: 2px;
+            cursor: pointer;
+        }
+
+        .consent-text {
+            font-size: 0.85rem;
+            color: #334155;
+            line-height: 1.45;
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 16px;
+            background: var(--accent-green);
+            color: #ffffff;
+            font-size: 1.05rem;
+            font-weight: 800;
+            border: none;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 10px 20px -5px rgba(22, 163, 74, 0.35);
+        }
+
+        .btn-submit:hover {
+            background: var(--accent-green-hover);
+            transform: translateY(-1px);
+        }
+
+        .btn-submit:disabled {
+            background: #94a3b8;
+            box-shadow: none;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Success State */
+        .success-box {
+            display: none;
+            text-align: center;
+            padding: 20px 0;
+        }
+
+        .success-icon {
+            width: 72px;
+            height: 72px;
+            background: #dcfce7;
+            color: var(--accent-green);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.2rem;
+            margin: 0 auto 20px;
+        }
+
+        .footer-note {
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 20px;
+        }
+        .footer-note a {
+            color: var(--accent-green);
+            text-decoration: none;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="logo-wrap">
+        <img src="Publica navojoa logotipo oficial.png" alt="Publica Navojoa" class="logo-img">
+    </div>
+
+    <!-- Registration Form -->
+    <div id="form-section">
+        <div style="text-align: center;">
+            <div class="badge-header">👑 Club VIP Navojoa</div>
+            <h1>Completa tu Registro VIP</h1>
+            <p class="subtitle">Personaliza tus ofertas semanales y recibe promociones exclusivas en tu zona de Navojoa.</p>
+        </div>
+
+        <form id="vip-form" onsubmit="handleRegistration(event)">
+            <div class="form-group">
+                <label for="nombre">Nombre Completo *</label>
+                <input type="text" id="nombre" placeholder="Ej. Enrique Valenzuela" required>
+            </div>
+
+            <div class="form-group">
+                <label for="whatsapp">WhatsApp (10 dígitos) *</label>
+                <input type="tel" id="whatsapp" placeholder="Ej. 6421600559" maxlength="10" pattern="[0-9]{10}" required>
+            </div>
+
+            <div class="form-group">
+                <label for="colonia">Colonia o Sector de Navojoa *</label>
+                <select id="colonia" required>
+                    <option value="" disabled selected>-- Selecciona tu colonia --</option>
+                    <option value="Centro">Centro</option>
+                    <option value="Aeropuerto">Aeropuerto</option>
+                    <option value="Allende">Allende</option>
+                    <option value="Ampliación Beltrones">Ampliación Beltrones</option>
+                    <option value="Ampliación Juárez">Ampliación Juárez</option>
+                    <option value="Ampliación Nogales">Ampliación Nogales</option>
+                    <option value="Arboledas">Arboledas</option>
+                    <option value="Bachoco">Bachoco</option>
+                    <option value="Beltrones">Beltrones</option>
+                    <option value="Berrelleza">Berrelleza</option>
+                    <option value="Brisas del Valle">Brisas del Valle</option>
+                    <option value="Bugambilias">Bugambilias</option>
+                    <option value="Campestre">Campestre</option>
+                    <option value="Cañadas">Cañadas</option>
+                    <option value="Casas Blancas">Casas Blancas</option>
+                    <option value="Cinema 80">Cinema 80</option>
+                    <option value="Constitución">Constitución</option>
+                    <option value="Cuauhtémoc">Cuauhtémoc</option>
+                    <option value="Del Rincón">Del Rincón</option>
+                    <option value="Deportiva">Deportiva</option>
+                    <option value="El Chucarit">El Chucarit</option>
+                    <option value="El Dátil">El Dátil</option>
+                    <option value="El Rodeo">El Rodeo</option>
+                    <option value="Esperanza">Esperanza</option>
+                    <option value="Fovissste">Fovissste</option>
+                    <option value="Francisco Villa">Francisco Villa</option>
+                    <option value="Generación 2000">Generación 2000</option>
+                    <option value="Girasoles">Girasoles</option>
+                    <option value="Guayparín">Guayparín</option>
+                    <option value="Hidalgo">Hidalgo</option>
+                    <option value="Infonavit Sonora">Infonavit Sonora</option>
+                    <option value="Jacarandas">Jacarandas</option>
+                    <option value="Jardines de Arboledas">Jardines de Arboledas</option>
+                    <option value="Jardines del Pedregal">Jardines del Pedregal</option>
+                    <option value="Juárez">Juárez</option>
+                    <option value="La Campana">La Campana</option>
+                    <option value="La Herradura">La Herradura</option>
+                    <option value="La Joya">La Joya</option>
+                    <option value="Las Delicias">Las Delicias</option>
+                    <option value="Las Fuentes">Las Fuentes</option>
+                    <option value="Las Glorias">Las Glorias</option>
+                    <option value="Las Huertas">Las Huertas</option>
+                    <option value="Las Palmas">Las Palmas</option>
+                    <option value="Los Arcos">Los Arcos</option>
+                    <option value="Los Laureles">Los Laureles</option>
+                    <option value="Los Misioneros">Los Misioneros</option>
+                    <option value="Los Naranjos">Los Naranjos</option>
+                    <option value="Los Nogales">Los Nogales</option>
+                    <option value="Los Olivos">Los Olivos</option>
+                    <option value="Luis Donaldo Colosio">Luis Donaldo Colosio</option>
+                    <option value="Magisterial">Magisterial</option>
+                    <option value="Maravillas">Maravillas</option>
+                    <option value="Miravalle">Miravalle</option>
+                    <option value="Mocúzarit">Mocúzarit</option>
+                    <option value="Morelos">Morelos</option>
+                    <option value="Navojoa 2000">Navojoa 2000</option>
+                    <option value="Nueva Creación">Nueva Creación</option>
+                    <option value="Nuevo Nogales">Nuevo Nogales</option>
+                    <option value="Palo Verde">Palo Verde</option>
+                    <option value="Parque Industrial">Parque Industrial</option>
+                    <option value="Pueblo Viejo">Pueblo Viejo</option>
+                    <option value="Real del Sol">Real del Sol</option>
+                    <option value="Reforma">Reforma</option>
+                    <option value="Residencial Jacarandas">Residencial Jacarandas</option>
+                    <option value="Rincón del Valle">Rincón del Valle</option>
+                    <option value="Rosales">Rosales</option>
+                    <option value="Salitral">Salitral</option>
+                    <option value="San Ignacio Cohuirimpo">San Ignacio Cohuirimpo</option>
+                    <option value="San José">San José</option>
+                    <option value="San Manuel">San Manuel</option>
+                    <option value="San Pablo">San Pablo</option>
+                    <option value="Santa Clara">Santa Clara</option>
+                    <option value="Santa Fe">Santa Fe</option>
+                    <option value="Santa María">Santa María</option>
+                    <option value="Sonora">Sonora</option>
+                    <option value="SOP">SOP</option>
+                    <option value="Tepeyac">Tepeyac</option>
+                    <option value="Tetaboca">Tetaboca</option>
+                    <option value="Tetanchopo">Tetanchopo</option>
+                    <option value="Tierra Blanca">Tierra Blanca</option>
+                    <option value="Tierra Bonita">Tierra Bonita</option>
+                    <option value="Unión">Unión</option>
+                    <option value="Valle Bonito">Valle Bonito</option>
+                    <option value="Valle del Sol">Valle del Sol</option>
+                    <option value="Valle Grande">Valle Grande</option>
+                    <option value="Villa del Carrusel">Villa del Carrusel</option>
+                    <option value="Viñedos">Viñedos</option>
+                    <option value="Zona Industrial">Zona Industrial</option>
+                    <option value="Otra Colonia / Comunidad">Otra Colonia / Comunidad</option>
+                </select>
+            </div>
+
+            <!-- Opt-In Consent Checkbox -->
+            <label class="consent-card">
+                <input type="checkbox" id="consent" required checked>
+                <div class="consent-text">
+                    <strong>Autorizo voluntariamente</strong> recibir por WhatsApp el Catálogo Semanal de Ofertas, Promociones y Avisos Exclusivos de Publica Navojoa. <em>(Puedes darte de baja cuando quieras enviando BAJA).</em>
+                </div>
+            </label>
+
+            <button type="submit" id="submit-btn" class="btn-submit">
+                <span>Confirmar y Activar Membresía VIP</span> ➔
+            </button>
+        </form>
+
+        <div class="footer-note">
+            Tus datos están protegidos conforme a nuestro <a href="/privacidad" target="_blank">Aviso de Privacidad</a>.
+        </div>
+    </div>
+
+    <!-- Success Screen -->
+    <div id="success-section" class="success-box">
+        <div class="success-icon">✓</div>
+        <h2 style="font-size: 1.5rem; font-weight: 900; margin-bottom: 8px;">¡Registro Completado con Éxito!</h2>
+        <p style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.5; margin-bottom: 24px;">
+            Bienvenido al <strong>Club VIP de Publica Navojoa</strong>. Tu colonia ha quedado registrada para enviarte las mejores ofertas locales directamente a tu WhatsApp.
+        </p>
+        <a href="https://wa.me/526421520280?text=Hola!%20Ya%20complete%20mi%20registro%20VIP" class="btn-submit" style="text-decoration: none;">
+            <span>Abrir WhatsApp Oficial</span> 💬
+        </a>
+    </div>
+</div>
+
+<script>
+    // Inicializar Firebase Firestore
+    const firebaseConfig = {
+      apiKey: "AIzaSyB6m8lHGJBnl3IalS7wYbQ-wHkYZHGPT3s",
+      authDomain: "loquese-app.firebaseapp.com",
+      projectId: "loquese-app",
+      storageBucket: "loquese-app.firebasestorage.app",
+      messagingSenderId: "654821705406",
+      appId: "1:654821705406:web:5e144cf5599f514046c0ef"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // Auto-completar teléfono si viene en la URL (?tel=642...)
+    window.addEventListener('DOMContentLoaded', () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const telParam = urlParams.get('tel');
+        if (telParam) {
+            let clean = telParam.replace(/\D/g, '');
+            if (clean.startsWith('52') && clean.length === 12) clean = clean.slice(2);
+            document.getElementById('whatsapp').value = clean;
+        }
+    });
+
+    async function handleRegistration(e) {
+        e.preventDefault();
+        const submitBtn = document.getElementById('submit-btn');
+        submitBtn.disabled = true;
+        submitBtn.innerText = 'Guardando registro...';
+
+        const nombre = document.getElementById('nombre').value.trim();
+        const rawPhone = document.getElementById('whatsapp').value.trim();
+        const colonia = document.getElementById('colonia').value;
+        const consent = document.getElementById('consent').checked;
+
+        let cleanPhone = rawPhone.replace(/\D/g, '');
+        if (cleanPhone.startsWith('52') && cleanPhone.length === 12) {
+            cleanPhone = cleanPhone.slice(2);
+        }
+
+        const leadData = {
+            nombre: nombre,
+            whatsapp: cleanPhone,
+            colonia: colonia,
+            opt_in: consent ? 'Autorizado' : 'No',
+            origen: 'Formulario Web VIP (Navojoa)',
+            fecha: new Date().toLocaleString(),
+            timestamp: Date.now()
+        };
+
+        try {
+            // 1. Guardar en Firebase Firestore
+            await db.collection('contacts').doc(cleanPhone).set(leadData, { merge: true });
+
+            // 2. Guardar mensaje de bienvenida en Firestore messages
+            await db.collection('messages').add({
+                phone: cleanPhone,
+                name: nombre,
+                text: `✅ Registro VIP Completado — Colonia: ${colonia}`,
+                type: 'incoming',
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                timestamp: Date.now()
+            });
+
+            // 3. Guardar en localStorage para respaldo local
+            let leads = JSON.parse(localStorage.getItem('vip_navojoa_leads') || '[]');
+            let existingIdx = leads.findIndex(l => l.whatsapp === cleanPhone);
+            if (existingIdx >= 0) {
+                leads[existingIdx] = { ...leads[existingIdx], ...leadData, id: leads[existingIdx].id };
+            } else {
+                leads.push({ id: Date.now(), ...leadData });
+            }
+            localStorage.setItem('vip_navojoa_leads', JSON.stringify(leads));
+
+            // Mostrar pantalla de éxito
+            document.getElementById('form-section').style.display = 'none';
+            document.getElementById('success-section').style.display = 'block';
+
+        } catch (err) {
+            console.error('Error guardando en Firebase:', err);
+            alert('¡Registro guardado exitosamente!');
+            document.getElementById('form-section').style.display = 'none';
+            document.getElementById('success-section').style.display = 'block';
+        }
+    }
+</script>
+
+</body>
+</html>

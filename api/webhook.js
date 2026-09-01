@@ -82,9 +82,9 @@ async function processBotRules(senderPhone, rawPhone, senderName, msgText) {
 
     console.log(`[BOT RULES] Analyzing message from ${senderName}: '${textLower}'`);
 
-    // Regla 1: Registro al Club VIP / Mensaje de Bienvenida
+    // Regla 1: Registro al Club VIP / Mensaje de Bienvenida con Enlace al Formulario de Colonia
     if (textLower.includes('club vip') || textLower.includes('unirme') || textLower.includes('hola') || textLower.includes('bienvenid')) {
-        const welcomeText = "👑 *¡Bienvenido al Club VIP de Publica Navojoa!* 🎉\n\nYa estás registrado en nuestra lista oficial de difusión para recibir:\n✅ Catálogo Semanal de Ofertas y Remates\n✅ Descuentos exclusivos en comercios locales\n✅ Avisos comunitarios prioritarios\n\n📌 Escribe *OFERTAS* para ver las promociones activas.\n📌 Escribe *ANUNCIAR* si tienes un negocio y quieres llegar a más de 78,700 personas en Navojoa.";
+        const welcomeText = `👑 *¡Bienvenido al Club VIP de Publica Navojoa!* 🎉\n\nPara personalizar tus ofertas y enviarte los descuentos y remates más cercanos a tu zona, completa tu registro rápido (30 segundos):\n\n👉 https://publicanavojoa.com/registro?tel=${rawPhone}\n\n📍 *Selecciona tu colonia y autoriza recibir el Catálogo Semanal* de forma voluntaria.\n\n📌 Comandos rápidos:\n- Escribe *OFERTAS* para ver las promociones de la semana.\n- Escribe *ANUNCIAR* para paquetes publicitarios de negocios.`;
         await sendWhatsAppMessage(metaTo, welcomeText, rawPhone, senderName);
         return;
     }
