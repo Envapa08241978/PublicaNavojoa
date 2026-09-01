@@ -477,9 +477,11 @@
     <div id="tab-chat" class="tab-content active">
         <div style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 12px 18px; border-radius: 12px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
             <div style="font-size: 0.88rem; color: #166534; font-weight: 600;">
-                🟢 <strong>Estado de la API:</strong> Conectada en tiempo real a Meta (Phone ID: <code>1280742211792981</code>)
+                🟢 <strong>Estado de la API:</strong> Conectada en tiempo real a Meta WhatsApp Cloud API (Línea Oficial: <code>+52 642 152 0280</code>)
             </div>
-            <button class="btn btn-blue" style="padding: 6px 12px; font-size: 0.8rem;" onclick="configureToken()">⚙️ Configurar Token API</button>
+            <div style="font-size: 0.8rem; color: #15803d; font-weight: 700; background: #dcfce7; padding: 4px 10px; border-radius: 6px;">
+                ✓ Token Permanente Activo
+            </div>
         </div>
 
         <div class="chat-app-container">
@@ -663,18 +665,8 @@
 
     // Configuración Meta API
     const META_PHONE_ID = '1280742211792981';
-    let META_TOKEN = 'EAAUPiVpET1YBSQ8qkBXZAVUmr6HkAPrWM9hnF2fd6wSFqZA5AYsKa6rE8pDpBb1jE1qHWrKmzrv3xZBvJNOXNJPsWl3JEW6G7vWmJUbWzVq8w8wdrX6IQZCpmMznEwW4RSIX5vQ62vPLxRXvZBQZCF1u6HzDIiCmubU1IkrdRKAYAQ27CTr8oNeiJtrC6ZB5dS2wQZDZD';
-    localStorage.setItem('meta_api_token', META_TOKEN);
+    const META_TOKEN = 'EAAUPiVpET1YBSQ8qkBXZAVUmr6HkAPrWM9hnF2fd6wSFqZA5AYsKa6rE8pDpBb1jE1qHWrKmzrv3xZBvJNOXNJPsWl3JEW6G7vWmJUbWzVq8w8wdrX6IQZCpmMznEwW4RSIX5vQ62vPLxRXvZBQZCF1u6HzDIiCmubU1IkrdRKAYAQ27CTr8oNeiJtrC6ZB5dS2wQZDZD';
 
-    function configureToken() {
-        let current = localStorage.getItem('meta_api_token') || META_TOKEN;
-        let newToken = prompt('🔑 Pega aquí tu nuevo Token de Meta WhatsApp Cloud API:\n(Lo encuentras en developers.facebook.com -> WhatsApp -> Configuración de API)', current);
-        if (newToken && newToken.trim().length > 10) {
-            localStorage.setItem('meta_api_token', newToken.trim());
-            META_TOKEN = newToken.trim();
-            alert('✅ Token de Meta API actualizado correctamente.');
-        }
-    }
 
     const initialDemo = [
         { id: 1, fecha: '27/08/2026 11:09', nombre: 'Enrique Valenzuela', whatsapp: '6421600559', colonia: 'Centro', origen: 'Landing Web Opt-in' },
