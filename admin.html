@@ -642,13 +642,12 @@
                         nombre: d.nombre || 'Cliente VIP',
                         whatsapp: d.whatsapp || '',
                         colonia: d.colonia || 'Navojoa',
-                        origen: d.origen || 'Firebase Cloud'
+                        origen: d.origen || 'WhatsApp Bot Cloud'
                     });
                 });
 
                 if (firebaseLeads.length > 0) {
                     let localLeads = getLeads();
-                    // Merge unique leads
                     firebaseLeads.forEach(f => {
                         let exists = localLeads.some(l => l.whatsapp === f.whatsapp);
                         if (!exists) localLeads.push(f);
@@ -660,6 +659,42 @@
             });
         } catch (e) {
             console.log('Firebase sync error:', e);
+        }
+    }
+
+    function listenFirebaseMessages() {
+        try {
+            db.collection('messages').onSnapshot(snapshot => {
+                let hasChanges = false;
+                snapshot.docChanges().forEach(change => {
+                    if (change.type === 'added') {
+                        let m = change.doc.data();
+                        if (m.phone) {
+                            let cleanPhone = m.phone.replace(/\D/g, '');
+                            if (cleanPhone.startsWith('52') && cleanPhone.length === 12) cleanPhone = cleanPhone.slice(2);
+                            let msgs = getMessages(cleanPhone);
+                            let exists = msgs.some(existing => existing.text === m.text && existing.time === m.time);
+                            if (!exists) {
+                                msgs.push({
+                                    text: m.text,
+                                    type: m.type || 'incoming',
+                                    time: m.time || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                                });
+                                localStorage.setItem('chat_msgs_' + cleanPhone, JSON.stringify(msgs));
+                                hasChanges = true;
+
+                                const leads = getLeads();
+                                const activeContact = leads.find(l => String(l.id) === String(activeContactId));
+                                if (activeContact && activeContact.whatsapp === cleanPhone) {
+                                    renderMessages(cleanPhone);
+                                }
+                            }
+                        }
+                    }
+                });
+            });
+        } catch (e) {
+            console.log('Firebase messages sync error:', e);
         }
     }
 
@@ -1040,7 +1075,7 @@
     renderChatList();
     selectContact(1);
     listenFirebaseContacts();
-    setInterval(syncIncomingMessages, 2500);
+    listenFirebaseMessages();
 </script>
 </body>
 </html>

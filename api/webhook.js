@@ -2,7 +2,47 @@ const VERIFY_TOKEN = process.env.META_VERIFY_TOKEN || 'publica_navojoa_token_202
 const PHONE_ID = process.env.META_PHONE_ID || '1280742211792981';
 const ACCESS_TOKEN = process.env.META_ACCESS_TOKEN || 'EAAUPiVpET1YBST456Cx6ZAuNEXN8iEghj5W3msjAvZC4q8unGAcJrpeOdMBNNokantyZBcAYJS64NEx7XAV9tneN0MY6s3K2KphrgvJLzeVvpWZAvXXhDxxdMsUyQZBBaYzzDfNrcdZCFWNyaCvZBvQpyZB7wdp0m33Ytwy0uwZAN0W57js1ag6ZBAtZCNL4p2A4nRLTAZDZD';
 
-async function sendWhatsAppMessage(toPhone, text) {
+async function saveToFirestore(cleanPhone, senderName, text, type) {
+    const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const now = Date.now();
+    try {
+        // Guardar mensaje
+        await fetch('https://firestore.googleapis.com/v1/projects/loquese-app/databases/(default)/documents/messages', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                fields: {
+                    phone: { stringValue: cleanPhone },
+                    name: { stringValue: senderName },
+                    text: { stringValue: text },
+                    type: { stringValue: type },
+                    time: { stringValue: timeStr },
+                    timestamp: { integerValue: String(now) }
+                }
+            })
+        });
+
+        // Actualizar/Crear Contacto
+        await fetch(`https://firestore.googleapis.com/v1/projects/loquese-app/databases/(default)/documents/contacts/${cleanPhone}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                fields: {
+                    nombre: { stringValue: senderName },
+                    whatsapp: { stringValue: cleanPhone },
+                    colonia: { stringValue: 'Navojoa' },
+                    origen: { stringValue: 'WhatsApp Cloud Bot' },
+                    last_msg: { stringValue: text },
+                    last_time: { stringValue: timeStr }
+                }
+            })
+        });
+    } catch (e) {
+        console.error('[FIRESTORE ERR]', e);
+    }
+}
+
+async function sendWhatsAppMessage(toPhone, text, cleanPhone = '', senderName = '') {
     const url = `https://graph.facebook.com/v20.0/${PHONE_ID}/messages`;
     try {
         const response = await fetch(url, {
@@ -20,34 +60,13 @@ async function sendWhatsAppMessage(toPhone, text) {
         });
         const data = await response.json();
         console.log('[BOT RES]', response.status, data);
+
+        // Guardar respuesta del bot en Firestore
+        if (cleanPhone) {
+            await saveToFirestore(cleanPhone, senderName || 'Publica Navojoa', text, 'outgoing');
+        }
     } catch (e) {
         console.error('[BOT ERROR]', e);
-    }
-}
-
-async function sendWhatsAppTemplate(toPhone, templateName = 'bienvenida_club_vip', lang = 'es') {
-    const url = `https://graph.facebook.com/v20.0/${PHONE_ID}/messages`;
-    try {
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${ACCESS_TOKEN}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                messaging_product: 'whatsapp',
-                to: toPhone,
-                type: 'template',
-                template: {
-                    name: templateName,
-                    language: { code: lang }
-                }
-            })
-        });
-        const data = await response.json();
-        console.log('[BOT TEMPLATE]', response.status, data);
-    } catch (e) {
-        console.error('[BOT TEMPLATE ERROR]', e);
     }
 }
 
@@ -58,39 +77,42 @@ async function processBotRules(senderPhone, rawPhone, senderName, msgText) {
         metaTo = '52' + rawPhone;
     }
 
+    // 1. Guardar mensaje entrante del usuario en Firestore
+    await saveToFirestore(rawPhone, senderName, msgText, 'incoming');
+
     console.log(`[BOT RULES] Analyzing message from ${senderName}: '${textLower}'`);
 
     // Regla 1: Registro al Club VIP / Mensaje de Bienvenida
     if (textLower.includes('club vip') || textLower.includes('unirme') || textLower.includes('hola') || textLower.includes('bienvenid')) {
         const welcomeText = "👑 *¡Bienvenido al Club VIP de Publica Navojoa!* 🎉\n\nYa estás registrado en nuestra lista oficial de difusión para recibir:\n✅ Catálogo Semanal de Ofertas y Remates\n✅ Descuentos exclusivos en comercios locales\n✅ Avisos comunitarios prioritarios\n\n📌 Escribe *OFERTAS* para ver las promociones activas.\n📌 Escribe *ANUNCIAR* si tienes un negocio y quieres llegar a más de 78,700 personas en Navojoa.";
-        await sendWhatsAppMessage(metaTo, welcomeText);
+        await sendWhatsAppMessage(metaTo, welcomeText, rawPhone, senderName);
         return;
     }
 
     // Regla 2: Catálogo de Ofertas
     if (textLower.includes('catálogo') || textLower.includes('catalogo') || textLower.includes('oferta') || textLower.includes('remate')) {
         const respuesta = "🛍️ *Catálogo Semanal de Ofertas de Navojoa* 🛍️\n\nAquí tienes los remates de la semana:\n1. 🪑 Mueblería y Decoración — Muebles de Ocasión\n2. 👗 Ropa y Accesorios — Descuentos de Temporada\n3. 🍽️ Restaurantes Locales — Promociones 2x1\n\n📌 ¿Te interesa anunciar tu negocio o vender algún producto? Responde con *ANUNCIAR*.";
-        await sendWhatsAppMessage(metaTo, respuesta);
+        await sendWhatsAppMessage(metaTo, respuesta, rawPhone, senderName);
         return;
     }
 
     // Regla 3: Paquetes Publicitarios para Negocios
     if (textLower.includes('anunciar') || textLower.includes('paquete') || textLower.includes('publicidad') || textLower.includes('precio')) {
         const respuesta = "📢 *Paquetes Publicitarios — Publica Navojoa* 🚀\n\nLlega a más de 78,700 personas en la ciudad:\n\n🥉 *Bronce ($600 MXN)*: Publicación fijada en Grupo FB por 7 días + Envío a lista VIP.\n🥈 *Plata VIP ($1,200 MXN)*: Publicación fijada 15 días + Difusión WhatsApp + Campaña Meta Ads.\n🥇 *Oro Premium ($2,500 MXN)*: Cobertura total 30 días + Campaña pagada prioritaria + Bot personalizado.\n\n📲 Responde *QUIERO ANUNCIAR* para coordinar con un asesor humano.";
-        await sendWhatsAppMessage(metaTo, respuesta);
+        await sendWhatsAppMessage(metaTo, respuesta, rawPhone, senderName);
         return;
     }
 
     // Regla 4: Cancelar suscripción
     if (textLower.includes('baja') || textLower.includes('cancelar')) {
         const respuesta = "✅ Has sido dado de baja de la lista de difusión de Publica Navojoa. ¡Gracias por habernos acompañado!";
-        await sendWhatsAppMessage(metaTo, respuesta);
+        await sendWhatsAppMessage(metaTo, respuesta, rawPhone, senderName);
         return;
     }
 
     // Regla 5: Respuesta por defecto
     const respuestaDefault = `¡Hola ${senderName}! 👋 Recibimos tu mensaje en *Publica Navojoa*.\n\nUn asesor humano te responderá a la brevedad.\n\n📌 Comandos rápidos:\n- Escribe *OFERTAS* para ver el catálogo semanal.\n- Escribe *ANUNCIAR* para ver nuestros paquetes publicitarios.`;
-    await sendWhatsAppMessage(metaTo, respuestaDefault);
+    await sendWhatsAppMessage(metaTo, respuestaDefault, rawPhone, senderName);
 }
 
 module.exports = async function handler(req, res) {
