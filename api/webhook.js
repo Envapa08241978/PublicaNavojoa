@@ -145,17 +145,25 @@ async function processBotRules(senderPhone, rawPhone, senderName, msgText) {
         const respuesta = `📢 *Atención Comercial — Publica Navojoa* 🚀\n\n${nameSalute} Qué gusto que desees dar a conocer tus productos o negocio ante nuestros más de *78,700 miembros locales* en Navojoa.\n\n👤 *Un asesor comercial de nuestro equipo te contactará directamente en este chat a la brevedad* para conocer tu negocio y brindarte la atención personalizada.\n\n🌟 *Nuestra red incluye publicaciones fijadas en el grupo de Facebook más grande de la ciudad y difusión directa al celular de nuestra comunidad de WhatsApp.*`;
         await sendWhatsAppMessage(metaTo, respuesta, rawPhone, finalName);
         return;
+    // Regla 4: Agradecimiento / Confirmación (ok, gracias, perfecto, listo, etc.)
+    const confirmWords = ['ok', 'okay', 'gracias', 'perfecto', 'esta bien', 'está bien', 'entendido', 'excelente', 'listo', 'sale', 'va', 'super', 'súper', 'muy bien', 'de acuerdo', 'muchas gracias'];
+    const isConfirm = confirmWords.some(w => textLower === w || textLower.startsWith(w + ' ') || textLower.endsWith(' ' + w) || textLower.includes(w));
+
+    if (isConfirm) {
+        const respuestaConfirm = `¡Excelente! 👍 Quedamos a la orden${firstName ? `, ${firstName}` : ''}.\n\nUn asesor comercial de nuestro equipo se comunicará contigo directamente por este chat a la brevedad. ¡Que tengas un excelente día! ☀️`;
+        await sendWhatsAppMessage(metaTo, respuestaConfirm, rawPhone, finalName);
+        return;
     }
 
-    // Regla 4: Cancelar suscripción
+    // Regla 5: Cancelar suscripción
     if (textLower.includes('baja') || textLower.includes('cancelar')) {
         const respuesta = `✅ ${nameSalute} Has sido dado de baja de la lista de difusión de Publica Navojoa. ¡Gracias por habernos acompañado!`;
         await sendWhatsAppMessage(metaTo, respuesta, rawPhone, finalName);
         return;
     }
 
-    // Regla 5: Respuesta por defecto
-    const respuestaDefault = `${nameSalute} 👋 Recibimos tu mensaje en *Publica Navojoa*.\n\nUn asesor humano te responderá a la brevedad.\n\n📌 Comandos rápidos:\n- Escribe *OFERTAS* para ver el catálogo semanal.\n- Escribe *ANUNCIAR* para ver nuestros paquetes publicitarios.`;
+    // Regla 6: Respuesta por defecto (Mensajes libres)
+    const respuestaDefault = `¡Hola ${firstName || ''}! 👋 Recibimos tu mensaje en *Publica Navojoa*.\n\nUn asesor de nuestro equipo te responderá aquí mismo a la brevedad.`;
     await sendWhatsAppMessage(metaTo, respuestaDefault, rawPhone, finalName);
 }
 
