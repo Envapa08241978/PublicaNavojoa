@@ -564,9 +564,16 @@
             </div>
         </div>
 
-        <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 16px; flex-wrap: wrap;">
             <h2 style="font-size: 1.2rem; font-weight: 800;">Directorio de Contactos Registrados</h2>
-            <input type="text" id="search-input" placeholder="🔍 Buscar por nombre o teléfono..." style="max-width: 320px; margin: 0;" onkeyup="renderCrmTable()">
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <select id="filter-perfil" onchange="renderCrmTable()" style="padding: 10px 14px; border-radius: 10px; border: 1.5px solid #e2e8f0; font-size: 0.9rem; font-weight: 600; cursor: pointer;">
+                    <option value="todos">Todos los perfiles</option>
+                    <option value="anunciante">💼 Solo Anunciantes</option>
+                    <option value="comprador">🛍️ Solo Compradores</option>
+                </select>
+                <input type="text" id="search-input" placeholder="🔍 Buscar por nombre o teléfono..." style="max-width: 320px; margin: 0;" onkeyup="renderCrmTable()">
+            </div>
         </div>
 
         <div class="table-container">
@@ -577,6 +584,7 @@
                         <th>Nombre</th>
                         <th>WhatsApp</th>
                         <th>Colonia / Zona</th>
+                        <th>Perfil</th>
                         <th>Estado Opt-in</th>
                         <th>Origen</th>
                         <th>Acción</th>
@@ -602,6 +610,12 @@
         
         <label style="font-size: 0.85rem; font-weight: 700;">Colonia / Zona:</label>
         <input type="text" id="m-colonia" placeholder="Ej. Centro">
+        
+        <label style="font-size: 0.85rem; font-weight: 700;">Perfil del Contacto:</label>
+        <select id="m-perfil" style="padding: 10px 14px; border-radius: 10px; border: 1.5px solid #e2e8f0; font-size: 0.9rem; width: 100%;">
+            <option value="No">🛍️ Comprador (Solo ofertas)</option>
+            <option value="Sí">💼 Anunciante (Quiere vender/anunciar)</option>
+        </select>
         
         <div style="display: flex; gap: 10px; margin-top: 10px;">
             <button class="btn btn-green" style="flex:1;" onclick="addManual()">Guardar Contacto</button>
@@ -655,7 +669,8 @@
                             whatsapp: phone,
                             colonia: d.colonia || 'Navojoa',
                             origen: d.origen || 'WhatsApp Bot Cloud',
-                            opt_in: d.opt_in || 'Autorizado'
+                            opt_in: d.opt_in || 'Autorizado',
+                            interes_anunciar: d.interes_anunciar || 'No'
                         };
 
                         if (idx >= 0) {
@@ -934,34 +949,48 @@
     function renderCrmTable() {
         const leads = getLeads();
         const search = document.getElementById('search-input').value.toLowerCase();
+        const perfilFilter = document.getElementById('filter-perfil').value;
         const tbody = document.getElementById('table-body');
 
         document.getElementById('total-contacts').innerText = leads.length;
 
-        const filtered = leads.filter(l => 
+        let filtered = leads.filter(l => 
             l.nombre.toLowerCase().includes(search) || 
             l.whatsapp.includes(search) ||
             l.colonia.toLowerCase().includes(search)
         );
 
+        // Filtro por perfil (Anunciante / Comprador)
+        if (perfilFilter === 'anunciante') {
+            filtered = filtered.filter(l => l.interes_anunciar === 'Sí');
+        } else if (perfilFilter === 'comprador') {
+            filtered = filtered.filter(l => !l.interes_anunciar || l.interes_anunciar === 'No');
+        }
+
         if (filtered.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color: var(--text-muted); padding: 30px;">No se encontraron contactos.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color: var(--text-muted); padding: 30px;">No se encontraron contactos.</td></tr>`;
             return;
         }
 
-        tbody.innerHTML = filtered.map(item => `
+        tbody.innerHTML = filtered.map(item => {
+            const isAnunciante = item.interes_anunciar === 'Sí';
+            const perfilBadge = isAnunciante 
+                ? '<span style="background: #fef3c7; color: #d97706; font-weight: 700; font-size: 0.78rem; padding: 3px 10px; border-radius: 9999px;">💼 Anunciante</span>'
+                : '<span style="background: #f0fdf4; color: #16a34a; font-weight: 700; font-size: 0.78rem; padding: 3px 10px; border-radius: 9999px;">🛍️ Comprador</span>';
+            return `
             <tr>
                 <td style="color: var(--text-muted); font-size: 0.85rem;">${item.fecha}</td>
                 <td style="font-weight: 700; color: var(--text-main);">${item.nombre}</td>
                 <td style="font-family: monospace; font-weight: 700; color: var(--accent-green);">${item.whatsapp}</td>
                 <td style="color: #334155;">${item.colonia}</td>
+                <td>${perfilBadge}</td>
                 <td><span class="badge-optin">✓ Autorizado</span></td>
                 <td style="color: var(--text-muted);">${item.origen || 'Landing Web'}</td>
                 <td>
                     <button class="btn btn-blue" style="padding: 4px 10px; font-size: 0.8rem;" onclick="switchTab('chat'); selectContact('${item.id}');">💬 Chatear</button>
                 </td>
-            </tr>
-        `).join('');
+            </tr>`;
+        }).join('');
     }
 
     function exportCSV() {
@@ -986,24 +1015,28 @@
         const nombre = document.getElementById('m-nombre').value;
         const whatsapp = document.getElementById('m-phone').value;
         const colonia = document.getElementById('m-colonia').value;
+        const perfil = document.getElementById('m-perfil').value;
         if(!nombre || !whatsapp) return alert('Ingresa nombre y teléfono');
 
+        let cleanPhone = whatsapp.replace(/\D/g, '');
+        if (cleanPhone.startsWith('52') && cleanPhone.length === 12) cleanPhone = cleanPhone.slice(2);
+
         let leads = getLeads();
-        const newId = Date.now();
         const newLead = {
-            id: newId,
+            id: cleanPhone,
             fecha: new Date().toLocaleString(),
             nombre,
-            whatsapp,
+            whatsapp: cleanPhone,
             colonia: colonia || 'Navojoa',
-            origen: 'Preguntas FB Grupo'
+            origen: 'Preguntas FB Grupo',
+            interes_anunciar: perfil
         };
         leads.push(newLead);
         localStorage.setItem('vip_navojoa_leads', JSON.stringify(leads));
 
-        // Guardar en Firebase
+        // Guardar en Firebase con teléfono como ID (Sin Duplicados)
         try {
-            db.collection('contacts').add(newLead);
+            db.collection('contacts').doc(cleanPhone).set(newLead, { merge: true });
         } catch(e) {}
 
         closeModal();

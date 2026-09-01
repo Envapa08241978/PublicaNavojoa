@@ -73,8 +73,9 @@
   * `nombre` *(String)*: Nombre del cliente.
   * `whatsapp` *(String)*: Teléfono a 10 dígitos (ej. `6421600559`).
   * `colonia` *(String)*: Colonia o sector de Navojoa.
+  * `interes_anunciar` *(String)*: `Sí` o `No` — indica si la persona quiere anunciar sus productos/servicios.
   * `opt_in` *(String)*: `Autorizado`.
-  * `origen` *(String)*: Origen del lead (*Formulario Web VIP*, *WhatsApp Bot Cloud*, etc.).
+  * `origen` *(String)*: Origen del lead (*Formulario Web VIP*, *WhatsApp Bot Cloud*, *Preguntas FB Grupo*, etc.).
   * `fecha` *(String)*: Fecha de registro.
 
 ---
@@ -97,10 +98,12 @@
 1. **Reconocimiento Automático por Nombre:**
    * Al recibir un mensaje, el bot consulta `/contacts/{phone}` en Firestore.
    * Si el usuario ya está registrado (ej. *Enrique Valenzuela*), **lo saluda por su nombre de pila en todas las respuestas** (*"¡Hola Enrique!"*) y reconoce su membresía activa sin pedirle volver a registrarse.
-2. **Onboarding para Nuevos Usuarios:**
-   * Si el número es nuevo, le envía una bienvenida y su enlace personalizado pre-llenado: `https://publicanavojoa.com/registro?tel=642XXXXXXX`.
-3. **Comandos y Reglas por Palabras Clave:**
-   * **`HOLA` / `CLUB VIP` / `UNIRME`:** Saludo personalizado y estado de membresía o invitación al registro.
+2. **Bloqueo Inteligente para Usuarios No Registrados:**
+   * Si el número es nuevo o no tiene colonia registrada, el bot **no le permite acceder a comandos** (OFERTAS, ANUNCIAR, etc.).
+   * Solo le envía un mensaje con su enlace personalizado pre-llenado: `https://publicanavojoa.com/registro?tel=642XXXXXXX`.
+   * Una vez que completa el formulario y regresa a WhatsApp, el bot lo reconoce de inmediato por su nombre y colonia.
+3. **Comandos y Reglas por Palabras Clave (Solo para Registrados):**
+   * **`HOLA` / `CLUB VIP` / `UNIRME`:** Saludo personalizado y estado de membresía.
    * **`CATÁLOGO` / `OFERTAS` / `REMATE`:** Envío del catálogo de ofertas de la semana.
    * **`ANUNCIAR` / `PAQUETES` / `PRECIOS`:** Desglose de los 3 paquetes publicitarios (Bronce, Plata VIP, Oro Premium) y opción de contactar con un asesor humano.
    * **`BAJA` / `CANCELAR`:** Confirmación inmediata de baja de la lista de difusión.
@@ -111,9 +114,10 @@
 ## 6. FORMULARIO WEB VIP & LISTA DE COLONIAS DE NAVOJOA
 El formulario en `/registro` cuenta con:
 * Pre-llenado inteligente del teléfono desde la URL (`?tel=...`).
-* **Selector exhaustivo de +75 colonias y sectores de Navojoa, Sonora:**
-  * *Centro, Aeropuerto, Allende, Ampliación Beltrones, Ampliación Juárez, Ampliación Nogales, Arboledas, Bachoco, Beltrones, Berrelleza, Brisas del Valle, Bugambilias, Campestre, Cañadas, Casas Blancas, Cinema 80, Constitución, Cuauhtémoc, Del Rincón, Deportiva, El Chucarit, El Dátil, El Rodeo, Esperanza, Fovissste, Francisco Villa, Generación 2000, Girasoles, Guayparín, Hidalgo, Infonavit Sonora, Jacarandas, Jardines de Arboledas, Jardines del Pedregal, Juárez, La Campana, La Herradura, La Joya, Las Delicias, Las Fuentes, Las Glorias, Las Huertas, Las Palmas, Los Arcos, Los Laureles, Los Misioneros, Los Naranjos, Los Nogales, Los Olivos, Luis Donaldo Colosio, Magisterial, Maravillas, Miravalle, Mocúzarit, Morelos, Navojoa 2000, Nueva Creación, Nuevo Nogales, Palo Verde, Parque Industrial, Pueblo Viejo, Real del Sol, Reforma, Residencial Jacarandas, Rincón del Valle, Rosales, Salitral, San Ignacio Cohuirimpo, San José, San Manuel, San Pablo, Santa Clara, Santa Fe, Santa María, Sonora, SOP, Tepeyac, Tetaboca, Tetanchopo, Tierra Blanca, Tierra Bonita, Unión, Valle Bonito, Valle del Sol, Valle Grande, Villa del Carrusel, Viñedos, Zona Industrial, etc.*
-* **Deduplicación Estricta:** Al enviar el formulario, actualiza el registro existente en Firebase sin crear documentos duplicados.
+* **Selector exhaustivo de +75 colonias y sectores de Navojoa, Sonora.**
+* **Cualificación Comercial Rápida:** Toggle Sí / No para *"¿Te gustaría también anunciar tus productos o servicios?"* que etiqueta al contacto como `💼 Anunciante` o `🛍️ Comprador` en Firebase y en el Panel Admin.
+* **Redirección Automática a WhatsApp:** Al confirmar el registro, el usuario es redirigido automáticamente al chat de WhatsApp con un mensaje pre-cargado (*"¡Hola! Envío este mensaje para confirmar mi registro al Club VIP"*), donde el Bot toma el control y lo saluda por su nombre de pila.
+* **Deduplicación Estricta:** Al enviar el formulario, actualiza el registro existente en Firebase sin crear documentos duplicados (`set(..., { merge: true })`).
 
 ---
 

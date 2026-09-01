@@ -11,12 +11,12 @@
 > ¿Aceptas respetar las reglas de convivencia y compras/ventas del grupo?
 > - **Opción de respuesta:** *(Opción múltiple: Sí / No)*
 
-### 📌 Pregunta 2 (Ubicación):
-> ¿En qué colonia o zona de Navojoa radicas?
-> - **Opción de respuesta:** *(Respuesta escrita libre)*
+### 📌 Pregunta 2 (Cualificación Comercial):
+> ¿Cuál es tu actividad principal al unirte a este grupo?
+> - **Opción de respuesta:** *(Opción múltiple: 🛍️ Comprar y buscar ofertas/remates / 💼 Vender artículos, productos o mi negocio)*
 
 ### 📌 Pregunta 3 (Captación de WhatsApp Opt-in):
-> ¿Deseas recibir en tu celular el Catálogo Semanal de Ofertas, Remates y Descuentos Exclusivos en Navojoa? Escribe tu número de WhatsApp (10 dígitos) y confirma con un 'SÍ':
+> ¿Deseas recibir en tu celular el Catálogo Semanal de Ofertas, Remates y Descuentos Exclusivos en Navojoa? Escribe tu número de WhatsApp (10 dígitos) y confirma con un 'SÍ': (Conoce más en publicanavojoa.com)
 > - **Opción de respuesta:** *(Respuesta escrita libre — Ej: "6421234567 SÍ")*
 
 ---
@@ -25,10 +25,10 @@
 
 He programado 3 herramientas interactivas listas para usar dentro de tu carpeta:
 
-1. 🌐 **Página de Captación VIP:** [index.html](file:///c:/Users/ENRIQ/OneDrive/Documents/PROYECTO%20CON%20MONICA/index.html)
-   - Publica este enlace en el grupo para que los miembros actuales se registren y den su autorización de WhatsApp de forma voluntaria.
+1. 🌐 **Página de Captación VIP:** [registro.html](file:///c:/Users/ENRIQ/OneDrive/Documents/PROYECTO%20CON%20MONICA/registro.html)
+   - Formulario de registro que captura Nombre, WhatsApp, Colonia (+75 sectores de Navojoa) y cualificación comercial (Sí/No para anunciar). Al completarse, redirige automáticamente a WhatsApp con mensaje pre-cargado para activar al usuario en el Bot.
 2. 📊 **Panel de Administración de Base de Datos:** [admin.html](file:///c:/Users/ENRIQ/OneDrive/Documents/PROYECTO%20CON%20MONICA/admin.html)
-   - Aquí se guardan los datos, puedes agregar manualmente los teléfonos de las preguntas de FB y **Exportar en 1 clic el archivo CSV para Meta Ads**.
+   - CRM con filtro por perfil (💼 Anunciante / 🛍️ Comprador), directorio en tiempo real desde Firebase y **Exportar en 1 clic el archivo CSV para Meta Ads**.
 3. 💎 **Kit de Medios / Tarifario para Anunciantes:** [media_kit.html](file:///c:/Users/ENRIQ/OneDrive/Documents/PROYECTO%20CON%20MONICA/media_kit.html)
    - Presentación comercial con tus 3 paquetes ($600, $1,200 y $2,500 MXN) lista para enviar por WhatsApp a negocios de Navojoa.
 

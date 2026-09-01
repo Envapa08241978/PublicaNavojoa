@@ -212,6 +212,44 @@
             margin: 0 auto 20px;
         }
 
+        /* Anunciar Toggle */
+        .toggle-group {
+            margin-bottom: 18px;
+        }
+        .toggle-group label.toggle-label {
+            display: block;
+            font-size: 0.88rem;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 8px;
+        }
+        .toggle-options {
+            display: flex;
+            gap: 10px;
+        }
+        .toggle-options input[type="radio"] {
+            display: none;
+        }
+        .toggle-options label {
+            flex: 1;
+            text-align: center;
+            padding: 12px 10px;
+            border: 1.5px solid var(--border-color);
+            border-radius: 14px;
+            font-size: 0.92rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: #ffffff;
+        }
+        .toggle-options input[type="radio"]:checked + label {
+            border-color: var(--accent-green);
+            background: #f0fdf4;
+            color: var(--accent-green);
+            box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.12);
+        }
+
         .footer-note {
             text-align: center;
             font-size: 0.8rem;
@@ -222,6 +260,17 @@
             color: var(--accent-green);
             text-decoration: none;
             font-weight: 600;
+        }
+
+        .redirect-text {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-top: 16px;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
         }
     </style>
 </head>
@@ -347,6 +396,17 @@
                 </select>
             </div>
 
+            <!-- ¿Te gustaría anunciar? Toggle Sí / No -->
+            <div class="toggle-group">
+                <label class="toggle-label">¿Te gustaría también anunciar tus productos o servicios?</label>
+                <div class="toggle-options">
+                    <input type="radio" id="anunciar-no" name="anunciar" value="No" checked>
+                    <label for="anunciar-no">🛍️ No, solo ofertas</label>
+                    <input type="radio" id="anunciar-si" name="anunciar" value="Sí">
+                    <label for="anunciar-si">💼 Sí, me interesa</label>
+                </div>
+            </div>
+
             <!-- Opt-In Consent Checkbox -->
             <label class="consent-card">
                 <input type="checkbox" id="consent" required checked>
@@ -372,8 +432,9 @@
         <p style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.5; margin-bottom: 24px;">
             Bienvenido al <strong>Club VIP de Publica Navojoa</strong>. Tu colonia ha quedado registrada para enviarte las mejores ofertas locales directamente a tu WhatsApp.
         </p>
-        <a href="https://wa.me/526421520280?text=Hola!%20Ya%20complete%20mi%20registro%20VIP" class="btn-submit" style="text-decoration: none;">
-            <span>Abrir WhatsApp Oficial</span> 💬
+        <p class="redirect-text">Abriendo WhatsApp en un momento... 💬</p>
+        <a id="wa-manual-link" href="#" class="btn-submit" style="text-decoration: none; margin-top: 12px;">
+            <span>Abrir WhatsApp Ahora</span> 💬
         </a>
     </div>
 </div>
@@ -413,6 +474,7 @@
         const rawPhone = document.getElementById('whatsapp').value.trim();
         const colonia = document.getElementById('colonia').value;
         const consent = document.getElementById('consent').checked;
+        const anunciar = document.querySelector('input[name="anunciar"]:checked').value;
 
         let cleanPhone = rawPhone.replace(/\D/g, '');
         if (cleanPhone.startsWith('52') && cleanPhone.length === 12) {
@@ -423,6 +485,7 @@
             nombre: nombre,
             whatsapp: cleanPhone,
             colonia: colonia,
+            interes_anunciar: anunciar,
             opt_in: consent ? 'Autorizado' : 'No',
             origen: 'Formulario Web VIP (Navojoa)',
             fecha: new Date().toLocaleString(),
@@ -443,15 +506,23 @@
             }
             localStorage.setItem('vip_navojoa_leads', JSON.stringify(leads));
 
-            // Mostrar pantalla de éxito
+            // 3. Mostrar pantalla de éxito brevemente y redirigir a WhatsApp en automático
             document.getElementById('form-section').style.display = 'none';
             document.getElementById('success-section').style.display = 'block';
 
+            // Redirigir a WhatsApp con mensaje pre-cargado después de 1.5 segundos
+            const waMsg = encodeURIComponent('¡Hola! Envío este mensaje para confirmar mi registro al Club VIP de Publica Navojoa.');
+            const waUrl = `https://wa.me/526421520280?text=${waMsg}`;
+            setTimeout(() => {
+                window.location.href = waUrl;
+            }, 1500);
+
         } catch (err) {
             console.error('Error guardando en Firebase:', err);
-            alert('¡Registro guardado exitosamente!');
-            document.getElementById('form-section').style.display = 'none';
-            document.getElementById('success-section').style.display = 'block';
+            // Aún en caso de error de Firestore, redirigir a WhatsApp para no perder al usuario
+            const waMsg = encodeURIComponent('¡Hola! Envío este mensaje para confirmar mi registro al Club VIP de Publica Navojoa.');
+            const waUrl = `https://wa.me/526421520280?text=${waMsg}`;
+            window.location.href = waUrl;
         }
     }
 </script>

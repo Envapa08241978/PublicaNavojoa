@@ -13,7 +13,6 @@ async function saveToFirestore(cleanPhone, senderName, text, type) {
                 fields: {
                     nombre: { stringValue: senderName },
                     whatsapp: { stringValue: cleanPhone },
-                    colonia: { stringValue: 'Navojoa' },
                     origen: { stringValue: 'WhatsApp Cloud Bot' },
                     last_msg: { stringValue: text },
                     last_time: { stringValue: timeStr }
@@ -62,14 +61,15 @@ async function getContactFromFirestore(cleanPhone) {
             const nombre = fields?.nombre?.stringValue || '';
             const colonia = fields?.colonia?.stringValue || '';
             const optIn = fields?.opt_in?.stringValue || '';
-            if (nombre && nombre !== '??' && nombre !== 'Cliente VIP' && nombre !== 'Cliente WhatsApp') {
-                return { isRegistered: true, nombre, colonia, optIn };
+            const interesAnunciar = fields?.interes_anunciar?.stringValue || '';
+            if (nombre && nombre !== '??' && nombre !== 'Cliente VIP' && nombre !== 'Cliente WhatsApp' && colonia && colonia !== 'Navojoa') {
+                return { isRegistered: true, nombre, colonia, optIn, interesAnunciar };
             }
         }
     } catch (e) {
         console.error('[GET CONTACT ERR]', e);
     }
-    return { isRegistered: false, nombre: '', colonia: '', optIn: '' };
+    return { isRegistered: false, nombre: '', colonia: '', optIn: '', interesAnunciar: '' };
 }
 
 async function processBotRules(senderPhone, rawPhone, senderName, msgText) {
@@ -92,22 +92,41 @@ async function processBotRules(senderPhone, rawPhone, senderName, msgText) {
 
     console.log(`[BOT RULES] User: '${finalName || senderName}' (${rawPhone}) Registered: ${isRegistered} Msg: '${textLower}'`);
 
-    // Regla 1: Registro al Club VIP / Mensaje de Bienvenida / Saludo
-    if (textLower.includes('club vip') || textLower.includes('unirme') || textLower.includes('hola') || textLower.includes('bienvenid')) {
-        if (isRegistered) {
-            // Usuario ya registrado: Lo reconoce por su nombre y no le pide volver a registrarse
-            const welcomeText = `${nameSalute} 👋 Qué gusto saludarte de nuevo en *Publica Navojoa*.\n\n👑 Tu Membresía VIP al Catálogo de Ofertas sigue activa${coloniaText}.\n\n📌 Comandos rápidos:\n- Escribe *OFERTAS* para ver los descuentos y remates de esta semana.\n- Escribe *ANUNCIAR* si deseas promocionar tu negocio.`;
-            await sendWhatsAppMessage(metaTo, welcomeText, rawPhone, finalName);
-            return;
-        } else {
-            // Usuario nuevo no registrado: Lo invita a completar el formulario con su colonia
-            const welcomeText = `👑 *¡Bienvenido al Club VIP de Publica Navojoa!* 🎉\n\nPara personalizar tus ofertas y enviarte los descuentos y remates más cercanos a tu zona, completa tu registro rápido (30 segundos):\n\n👉 https://publicanavojoa.com/registro?tel=${rawPhone}\n\n📍 *Selecciona tu colonia y autoriza recibir el Catálogo Semanal* de forma voluntaria.\n\n📌 Comandos rápidos:\n- Escribe *OFERTAS* para ver las promociones de la semana.\n- Escribe *ANUNCIAR* para paquetes publicitarios de negocios.`;
-            await sendWhatsAppMessage(metaTo, welcomeText, rawPhone, senderName);
-            return;
+    // ═══════════════════════════════════════════════════════════════════
+    // BLOQUEO PARA USUARIOS NO REGISTRADOS: Redirigir al formulario web
+    // ═══════════════════════════════════════════════════════════════════
+    if (!isRegistered) {
+        // Detectar si viene del formulario (mensaje de confirmación de registro)
+        if (textLower.includes('confirmar mi registro') || textLower.includes('terminar mi registro')) {
+            // El usuario acaba de completar el formulario, reconsultar Firestore tras 2 segundos
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            const freshInfo = await getContactFromFirestore(rawPhone);
+            if (freshInfo.isRegistered) {
+                const fName = freshInfo.nombre.split(' ')[0];
+                const welcomeText = `${fName ? `¡Hola ${fName}!` : '¡Hola!'} 👋 Tu registro al *Club VIP de Publica Navojoa* ha quedado 100% confirmado para la colonia *${freshInfo.colonia}*.\n\nPor favor *guarda este número en tus contactos* para que te llegue el Catálogo Semanal de Ofertas y Remates de tu zona. ¡Bienvenido! 🎉\n\n📌 Comandos rápidos:\n- Escribe *OFERTAS* para ver los descuentos de esta semana.\n- Escribe *ANUNCIAR* si deseas promocionar tu negocio.`;
+                await sendWhatsAppMessage(metaTo, welcomeText, rawPhone, freshInfo.nombre);
+                return;
+            }
         }
+
+        // Cualquier otro mensaje de un usuario no registrado: solo enlace de registro
+        const regText = `👑 *¡Bienvenido al Club VIP de Publica Navojoa!* 🎉\n\nPara desbloquear el *Catálogo Semanal de Ofertas y Remates* y recibir las promociones más exclusivas de tu zona, activa tu membresía gratuita en 15 segundos:\n\n👉 https://publicanavojoa.com/registro?tel=${rawPhone}\n\n📍 *(Tu número ya está cargado, solo selecciona tu colonia y confirma para empezar a recibir las ofertas).*`;
+        await sendWhatsAppMessage(metaTo, regText, rawPhone, senderName);
+        return;
     }
 
-    // Regla 2: Catálogo de Ofertas
+    // ═══════════════════════════════════════════════════════════════════
+    // USUARIOS REGISTRADOS: Acceso completo a comandos y funcionalidades
+    // ═══════════════════════════════════════════════════════════════════
+
+    // Regla 1: Saludo / Bienvenida / Club VIP
+    if (textLower.includes('club vip') || textLower.includes('unirme') || textLower.includes('hola') || textLower.includes('bienvenid') || textLower.includes('confirmar mi registro') || textLower.includes('terminar mi registro')) {
+        const welcomeText = `${nameSalute} 👋 Qué gusto saludarte de nuevo en *Publica Navojoa*.\n\n👑 Tu Membresía VIP al Catálogo de Ofertas sigue activa${coloniaText}.\n\n📌 Comandos rápidos:\n- Escribe *OFERTAS* para ver los descuentos y remates de esta semana.\n- Escribe *ANUNCIAR* si deseas promocionar tu negocio.`;
+        await sendWhatsAppMessage(metaTo, welcomeText, rawPhone, finalName);
+        return;
+    }
+
+    // Regla 2: Catálogo de Ofertas (Solo para registrados)
     if (textLower.includes('catálogo') || textLower.includes('catalogo') || textLower.includes('oferta') || textLower.includes('remate')) {
         const respuesta = `🛍️ *Catálogo Semanal de Ofertas — Navojoa* 🛍️\n\n${nameSalute} Aquí tienes los remates de la semana:\n1. 🪑 Mueblería y Decoración — Muebles de Ocasión\n2. 👗 Ropa y Accesorios — Descuentos de Temporada\n3. 🍽️ Restaurantes Locales — Promociones 2x1\n\n📌 ¿Te interesa anunciar tu negocio o vender algún producto? Responde con *ANUNCIAR*.`;
         await sendWhatsAppMessage(metaTo, respuesta, rawPhone, finalName);
