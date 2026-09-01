@@ -864,11 +864,20 @@
 
         container.innerHTML = msgs.map(m => {
             let contentHtml = m.text || '';
+            const isImage = (m.fileType && m.fileType.startsWith('image/')) || (m.text && m.text.includes('Imagen')) || (m.fileUrl && m.fileUrl.startsWith('data:image'));
+            const isPdf = (m.fileType === 'application/pdf') || (m.text && m.text.includes('PDF')) || (m.fileUrl && m.fileUrl.startsWith('data:application/pdf'));
+
             if (m.fileUrl) {
-                if (m.fileType && m.fileType.startsWith('image/')) {
-                    contentHtml = `<img src="${m.fileUrl}" style="max-width: 100%; max-height: 220px; border-radius: 10px; margin-bottom: 6px; display: block;">${m.text ? `<div>${m.text}</div>` : ''}`;
-                } else if (m.fileType === 'application/pdf') {
-                    contentHtml = `<div style="display:flex; align-items:center; gap:8px; background:rgba(0,0,0,0.05); padding:8px 12px; border-radius:8px; margin-bottom:6px;"><span style="font-size:1.5rem;">📄</span> <div><strong>${m.fileName || 'Documento PDF'}</strong></div></div>${m.text ? `<div>${m.text}</div>` : ''}`;
+                if (isImage) {
+                    contentHtml = `<img src="${m.fileUrl}" style="max-width: 100%; max-height: 240px; border-radius: 12px; margin-bottom: 6px; display: block; cursor: pointer;" onclick="window.open('${m.fileUrl}')">${m.text ? `<div>${m.text}</div>` : ''}`;
+                } else if (isPdf) {
+                    contentHtml = `<a href="${m.fileUrl}" target="_blank" download="${m.fileName || 'documento.pdf'}" style="display:flex; align-items:center; gap:10px; background:rgba(255,255,255,0.9); padding:10px 14px; border-radius:10px; border:1px solid #cbd5e1; text-decoration:none; color:#0f172a; margin-bottom:6px;"><span style="font-size:1.8rem;">📄</span> <div><strong style="display:block; font-size:0.88rem;">${m.fileName || 'Documento PDF'}</strong><span style="font-size:0.75rem; color:#2563eb; font-weight:600;">📥 Clic para abrir / descargar PDF</span></div></a>${m.text ? `<div>${m.text}</div>` : ''}`;
+                }
+            } else {
+                if (isImage) {
+                    contentHtml = `<div style="display:flex; align-items:center; gap:8px; background:rgba(0,0,0,0.04); padding:10px 12px; border-radius:10px;"><span style="font-size:1.6rem;">🖼️</span> <div><strong>${m.text || 'Imagen de WhatsApp'}</strong></div></div>`;
+                } else if (isPdf) {
+                    contentHtml = `<div style="display:flex; align-items:center; gap:8px; background:rgba(0,0,0,0.04); padding:10px 12px; border-radius:10px;"><span style="font-size:1.6rem;">📄</span> <div><strong>${m.text || 'Documento PDF'}</strong></div></div>`;
                 }
             }
             return `

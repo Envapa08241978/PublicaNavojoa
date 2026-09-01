@@ -67,7 +67,7 @@ module.exports = async function handler(req, res) {
         type: 'outgoing',
         time: timeStr,
         timestamp: Date.now(),
-        fileUrl: fileUrl && fileUrl.startsWith('data:') ? '' : fileUrl,
+        fileUrl: fileUrl || '',
         fileType,
         fileName
     };

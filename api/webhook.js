@@ -56,6 +56,20 @@ async function saveToFirestore(cleanPhone, senderName, text, type, fileUrl = '',
     }
 }
 
+async function getMetaMediaUrl(mediaId) {
+    if (!mediaId) return '';
+    try {
+        const res = await fetch(`https://graph.facebook.com/v20.0/${mediaId}`, {
+            headers: { 'Authorization': `Bearer ${ACCESS_TOKEN}` }
+        });
+        if (res.ok) {
+            const data = await res.json();
+            return data.url || '';
+        }
+    } catch(e) {}
+    return '';
+}
+
 async function sendWhatsAppMessage(toPhone, text, cleanPhone = '', senderName = '') {
     const url = `https://graph.facebook.com/v20.0/${PHONE_ID}/messages`;
     try {
@@ -241,10 +255,12 @@ module.exports = async function handler(req, res) {
                     msgText = msg.image?.caption || '🖼️ Imagen recibida';
                     fileType = 'image/jpeg';
                     fileName = 'Foto WhatsApp';
+                    if (msg.image?.id) fileUrl = await getMetaMediaUrl(msg.image.id);
                 } else if (msg.type === 'document') {
                     fileName = msg.document?.filename || 'Documento PDF';
                     msgText = msg.document?.caption || `📄 PDF: ${fileName}`;
                     fileType = 'application/pdf';
+                    if (msg.document?.id) fileUrl = await getMetaMediaUrl(msg.document.id);
                 } else if (msg.type === 'button') {
                     msgText = msg.button?.text || '';
                 } else if (msg.type === 'interactive') {
