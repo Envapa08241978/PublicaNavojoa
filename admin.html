@@ -230,7 +230,9 @@
         .chat-app-container {
             display: grid;
             grid-template-columns: 320px 1fr 300px;
-            height: 680px;
+            height: calc(100vh - 210px);
+            min-height: 520px;
+            max-height: 750px;
             background: var(--card-bg);
             border: 1px solid var(--border-color);
             border-radius: 20px;
@@ -327,12 +329,15 @@
         .chat-main {
             display: flex;
             flex-direction: column;
+            height: 100%;
+            overflow: hidden;
             background: var(--wa-bg);
             background-image: radial-gradient(#cbd5e1 0.7px, transparent 0.7px);
             background-size: 16px 16px;
         }
 
         .chat-main-header {
+            flex-shrink: 0;
             padding: 14px 20px;
             background: #ffffff;
             border-bottom: 1px solid var(--border-color);
@@ -343,6 +348,7 @@
 
         .chat-messages-area {
             flex: 1;
+            min-height: 0;
             padding: 20px;
             overflow-y: auto;
             display: flex;
@@ -387,6 +393,7 @@
         }
 
         .chat-input-bar {
+            flex-shrink: 0;
             padding: 14px 20px;
             background: #ffffff;
             border-top: 1px solid var(--border-color);
@@ -395,7 +402,7 @@
             align-items: center;
         }
 
-        .chat-input-bar input {
+        .chat-input-bar input[type="text"] {
             flex: 1;
             padding: 12px 16px;
             background: #f8fafc;
@@ -507,8 +514,9 @@
                             <div style="font-size: 0.8rem; color: #64748b;" id="active-contact-phone">+52 642 152 0280</div>
                         </div>
                     </div>
-                    <div>
-                        <button class="btn btn-blue" style="padding: 6px 12px; font-size: 0.8rem;" onclick="sendTemplateWelcome()">🚀 Enviar Plantilla Bienvenida</button>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn btn-blue" style="padding: 6px 12px; font-size: 0.8rem;" onclick="sendTemplateWelcome()">🚀 Enviar Plantilla</button>
+                        <button class="btn" style="padding: 6px 12px; font-size: 0.8rem; background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5;" onclick="clearChatHistory()" title="Borrar todo el historial de este chat">🗑️ Borrar Chat</button>
                     </div>
                 </div>
 
@@ -519,6 +527,8 @@
                 </div>
 
                 <div class="chat-input-bar">
+                    <input type="file" id="chat-file-input" accept="image/png, image/jpeg, application/pdf" style="display:none;" onchange="handleFileUpload(event)">
+                    <button class="btn btn-blue" style="padding: 10px 14px; font-size: 1.1rem;" onclick="document.getElementById('chat-file-input').click()" title="Adjuntar PNG, JPG o PDF">📎</button>
                     <input type="text" id="chat-input" placeholder="Escribe un mensaje de WhatsApp..." onkeypress="if(event.key==='Enter') sendChatMessage()">
                     <button class="btn btn-green" onclick="sendChatMessage()">Enviar ➔</button>
                 </div>
@@ -801,14 +811,67 @@
         const msgs = getMessages(phone);
         const container = document.getElementById('chat-messages');
 
-        container.innerHTML = msgs.map(m => `
+        container.innerHTML = msgs.map(m => {
+            let contentHtml = m.text || '';
+            if (m.fileUrl) {
+                if (m.fileType && m.fileType.startsWith('image/')) {
+                    contentHtml = `<img src="${m.fileUrl}" style="max-width: 100%; max-height: 220px; border-radius: 10px; margin-bottom: 6px; display: block;">${m.text ? `<div>${m.text}</div>` : ''}`;
+                } else if (m.fileType === 'application/pdf') {
+                    contentHtml = `<div style="display:flex; align-items:center; gap:8px; background:rgba(0,0,0,0.05); padding:8px 12px; border-radius:8px; margin-bottom:6px;"><span style="font-size:1.5rem;">📄</span> <div><strong>${m.fileName || 'Documento PDF'}</strong></div></div>${m.text ? `<div>${m.text}</div>` : ''}`;
+                }
+            }
+            return `
             <div class="msg-bubble ${m.type}">
-                <div>${m.text}</div>
+                <div>${contentHtml}</div>
                 <div class="msg-meta">${m.time} ${m.type === 'outgoing' ? '✓✓' : ''}</div>
-            </div>
-        `).join('');
+            </div>`;
+        }).join('');
 
         container.scrollTop = container.scrollHeight;
+    }
+
+    function clearChatHistory() {
+        const leads = getLeads();
+        const contact = leads.find(l => String(l.id) === String(activeContactId));
+        if (!contact) return alert('Selecciona una conversación primero.');
+        if (!confirm(`¿Estás seguro de borrar el historial de conversación de +52 ${contact.whatsapp}?`)) return;
+
+        let clean = contact.whatsapp.replace(/\D/g, '');
+        if (clean.startsWith('52') && clean.length === 12) clean = clean.slice(2);
+
+        localStorage.removeItem('chat_msgs_' + clean);
+        renderMessages(contact.whatsapp);
+    }
+
+    function handleFileUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const leads = getLeads();
+        const contact = leads.find(l => String(l.id) === String(activeContactId));
+        if (!contact) return alert('Selecciona un contacto primero.');
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const fileUrl = e.target.result;
+            const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const fileName = file.name;
+            const fileType = file.type;
+
+            saveMessage(contact.whatsapp, {
+                text: fileType.startsWith('image/') ? `🖼️ Imagen: ${fileName}` : `📄 PDF: ${fileName}`,
+                fileUrl: fileUrl,
+                fileType: fileType,
+                fileName: fileName,
+                type: 'outgoing',
+                time: timeStr
+            });
+
+            renderMessages(contact.whatsapp);
+        };
+
+        reader.readAsDataURL(file);
+        event.target.value = '';
     }
 
     async function sendChatMessage() {
