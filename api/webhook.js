@@ -53,6 +53,25 @@ async function sendWhatsAppMessage(toPhone, text, cleanPhone = '', senderName = 
     }
 }
 
+async function getContactFromFirestore(cleanPhone) {
+    try {
+        const res = await fetch(`https://firestore.googleapis.com/v1/projects/loquese-app/databases/(default)/documents/contacts/${cleanPhone}`);
+        if (res.ok) {
+            const data = await res.json();
+            const fields = data?.fields || {};
+            const nombre = fields?.nombre?.stringValue || '';
+            const colonia = fields?.colonia?.stringValue || '';
+            const optIn = fields?.opt_in?.stringValue || '';
+            if (nombre && nombre !== '??' && nombre !== 'Cliente VIP' && nombre !== 'Cliente WhatsApp') {
+                return { isRegistered: true, nombre, colonia, optIn };
+            }
+        }
+    } catch (e) {
+        console.error('[GET CONTACT ERR]', e);
+    }
+    return { isRegistered: false, nombre: '', colonia: '', optIn: '' };
+}
+
 async function processBotRules(senderPhone, rawPhone, senderName, msgText) {
     const textLower = msgText.toLowerCase().trim();
     let metaTo = rawPhone;
@@ -60,42 +79,58 @@ async function processBotRules(senderPhone, rawPhone, senderName, msgText) {
         metaTo = '52' + rawPhone;
     }
 
-    // 1. Guardar mensaje entrante del usuario en Firestore
-    await saveToFirestore(rawPhone, senderName, msgText, 'incoming');
+    // 1. Consultar si el contacto ya está registrado en Firebase Firestore
+    const contactInfo = await getContactFromFirestore(rawPhone);
+    const isRegistered = contactInfo.isRegistered;
+    const finalName = isRegistered ? contactInfo.nombre : (senderName !== 'Cliente WhatsApp' ? senderName : '');
+    const firstName = finalName ? finalName.split(' ')[0] : '';
+    const nameSalute = firstName ? `¡Hola ${firstName}!` : '¡Hola!';
+    const coloniaText = contactInfo.colonia && contactInfo.colonia !== 'Navojoa' ? ` (Zona: *${contactInfo.colonia}*)` : '';
 
-    console.log(`[BOT RULES] Analyzing message from ${senderName}: '${textLower}'`);
+    // 2. Guardar/actualizar datos del contacto en Firestore
+    await saveToFirestore(rawPhone, finalName || senderName, msgText, 'incoming');
 
-    // Regla 1: Registro al Club VIP / Mensaje de Bienvenida con Enlace al Formulario de Colonia
+    console.log(`[BOT RULES] User: '${finalName || senderName}' (${rawPhone}) Registered: ${isRegistered} Msg: '${textLower}'`);
+
+    // Regla 1: Registro al Club VIP / Mensaje de Bienvenida / Saludo
     if (textLower.includes('club vip') || textLower.includes('unirme') || textLower.includes('hola') || textLower.includes('bienvenid')) {
-        const welcomeText = `👑 *¡Bienvenido al Club VIP de Publica Navojoa!* 🎉\n\nPara personalizar tus ofertas y enviarte los descuentos y remates más cercanos a tu zona, completa tu registro rápido (30 segundos):\n\n👉 https://publicanavojoa.com/registro?tel=${rawPhone}\n\n📍 *Selecciona tu colonia y autoriza recibir el Catálogo Semanal* de forma voluntaria.\n\n📌 Comandos rápidos:\n- Escribe *OFERTAS* para ver las promociones de la semana.\n- Escribe *ANUNCIAR* para paquetes publicitarios de negocios.`;
-        await sendWhatsAppMessage(metaTo, welcomeText, rawPhone, senderName);
-        return;
+        if (isRegistered) {
+            // Usuario ya registrado: Lo reconoce por su nombre y no le pide volver a registrarse
+            const welcomeText = `${nameSalute} 👋 Qué gusto saludarte de nuevo en *Publica Navojoa*.\n\n👑 Tu Membresía VIP al Catálogo de Ofertas sigue activa${coloniaText}.\n\n📌 Comandos rápidos:\n- Escribe *OFERTAS* para ver los descuentos y remates de esta semana.\n- Escribe *ANUNCIAR* si deseas promocionar tu negocio.`;
+            await sendWhatsAppMessage(metaTo, welcomeText, rawPhone, finalName);
+            return;
+        } else {
+            // Usuario nuevo no registrado: Lo invita a completar el formulario con su colonia
+            const welcomeText = `👑 *¡Bienvenido al Club VIP de Publica Navojoa!* 🎉\n\nPara personalizar tus ofertas y enviarte los descuentos y remates más cercanos a tu zona, completa tu registro rápido (30 segundos):\n\n👉 https://publicanavojoa.com/registro?tel=${rawPhone}\n\n📍 *Selecciona tu colonia y autoriza recibir el Catálogo Semanal* de forma voluntaria.\n\n📌 Comandos rápidos:\n- Escribe *OFERTAS* para ver las promociones de la semana.\n- Escribe *ANUNCIAR* para paquetes publicitarios de negocios.`;
+            await sendWhatsAppMessage(metaTo, welcomeText, rawPhone, senderName);
+            return;
+        }
     }
 
     // Regla 2: Catálogo de Ofertas
     if (textLower.includes('catálogo') || textLower.includes('catalogo') || textLower.includes('oferta') || textLower.includes('remate')) {
-        const respuesta = "🛍️ *Catálogo Semanal de Ofertas de Navojoa* 🛍️\n\nAquí tienes los remates de la semana:\n1. 🪑 Mueblería y Decoración — Muebles de Ocasión\n2. 👗 Ropa y Accesorios — Descuentos de Temporada\n3. 🍽️ Restaurantes Locales — Promociones 2x1\n\n📌 ¿Te interesa anunciar tu negocio o vender algún producto? Responde con *ANUNCIAR*.";
-        await sendWhatsAppMessage(metaTo, respuesta, rawPhone, senderName);
+        const respuesta = `🛍️ *Catálogo Semanal de Ofertas — Navojoa* 🛍️\n\n${nameSalute} Aquí tienes los remates de la semana:\n1. 🪑 Mueblería y Decoración — Muebles de Ocasión\n2. 👗 Ropa y Accesorios — Descuentos de Temporada\n3. 🍽️ Restaurantes Locales — Promociones 2x1\n\n📌 ¿Te interesa anunciar tu negocio o vender algún producto? Responde con *ANUNCIAR*.`;
+        await sendWhatsAppMessage(metaTo, respuesta, rawPhone, finalName);
         return;
     }
 
     // Regla 3: Paquetes Publicitarios para Negocios
     if (textLower.includes('anunciar') || textLower.includes('paquete') || textLower.includes('publicidad') || textLower.includes('precio')) {
-        const respuesta = "📢 *Paquetes Publicitarios — Publica Navojoa* 🚀\n\nLlega a más de 78,700 personas en la ciudad:\n\n🥉 *Bronce ($600 MXN)*: Publicación fijada en Grupo FB por 7 días + Envío a lista VIP.\n🥈 *Plata VIP ($1,200 MXN)*: Publicación fijada 15 días + Difusión WhatsApp + Campaña Meta Ads.\n🥇 *Oro Premium ($2,500 MXN)*: Cobertura total 30 días + Campaña pagada prioritaria + Bot personalizado.\n\n📲 Responde *QUIERO ANUNCIAR* para coordinar con un asesor humano.";
-        await sendWhatsAppMessage(metaTo, respuesta, rawPhone, senderName);
+        const respuesta = `📢 *Paquetes Publicitarios — Publica Navojoa* 🚀\n\n${nameSalute} Llega a más de 78,700 personas en la ciudad:\n\n🥉 *Bronce ($600 MXN)*: Publicación fijada en Grupo FB por 7 días + Envío a lista VIP.\n🥈 *Plata VIP ($1,200 MXN)*: Publicación fijada 15 días + Difusión WhatsApp + Campaña Meta Ads.\n🥇 *Oro Premium ($2,500 MXN)*: Cobertura total 30 días + Campaña pagada prioritaria + Bot personalizado.\n\n📲 Responde *QUIERO ANUNCIAR* para coordinar con un asesor humano.`;
+        await sendWhatsAppMessage(metaTo, respuesta, rawPhone, finalName);
         return;
     }
 
     // Regla 4: Cancelar suscripción
     if (textLower.includes('baja') || textLower.includes('cancelar')) {
-        const respuesta = "✅ Has sido dado de baja de la lista de difusión de Publica Navojoa. ¡Gracias por habernos acompañado!";
-        await sendWhatsAppMessage(metaTo, respuesta, rawPhone, senderName);
+        const respuesta = `✅ ${nameSalute} Has sido dado de baja de la lista de difusión de Publica Navojoa. ¡Gracias por habernos acompañado!`;
+        await sendWhatsAppMessage(metaTo, respuesta, rawPhone, finalName);
         return;
     }
 
     // Regla 5: Respuesta por defecto
-    const respuestaDefault = `¡Hola ${senderName}! 👋 Recibimos tu mensaje en *Publica Navojoa*.\n\nUn asesor humano te responderá a la brevedad.\n\n📌 Comandos rápidos:\n- Escribe *OFERTAS* para ver el catálogo semanal.\n- Escribe *ANUNCIAR* para ver nuestros paquetes publicitarios.`;
-    await sendWhatsAppMessage(metaTo, respuestaDefault, rawPhone, senderName);
+    const respuestaDefault = `${nameSalute} 👋 Recibimos tu mensaje en *Publica Navojoa*.\n\nUn asesor humano te responderá a la brevedad.\n\n📌 Comandos rápidos:\n- Escribe *OFERTAS* para ver el catálogo semanal.\n- Escribe *ANUNCIAR* para ver nuestros paquetes publicitarios.`;
+    await sendWhatsAppMessage(metaTo, respuestaDefault, rawPhone, finalName);
 }
 
 module.exports = async function handler(req, res) {
