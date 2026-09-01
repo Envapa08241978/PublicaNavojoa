@@ -946,6 +946,31 @@
         }
     }
 
+    function updateContactStatus(phone, newStatus) {
+        let clean = String(phone).replace(/\D/g, '');
+        if (clean.startsWith('52') && clean.length === 12) clean = clean.slice(2);
+
+        let leads = getLeads();
+        let contact = leads.find(l => {
+            let p = String(l.whatsapp).replace(/\D/g, '');
+            if (p.startsWith('52') && p.length === 12) p = p.slice(2);
+            return p === clean;
+        });
+
+        if (contact) {
+            contact.estado_comercial = newStatus;
+            localStorage.setItem('vip_navojoa_leads', JSON.stringify(leads));
+
+            // Sync with Firestore
+            try {
+                db.collection('contacts').doc(clean).set({ estado_comercial: newStatus }, { merge: true });
+            } catch (e) {
+                console.log('Error updating status in Firestore:', e);
+            }
+        }
+        renderCrmTable();
+    }
+
     function renderCrmTable() {
         const leads = getLeads();
         const search = document.getElementById('search-input').value.toLowerCase();
@@ -962,9 +987,9 @@
 
         // Filtro por perfil (Anunciante / Comprador)
         if (perfilFilter === 'anunciante') {
-            filtered = filtered.filter(l => l.interes_anunciar === 'Sí');
+            filtered = filtered.filter(l => l.interes_anunciar === 'Sí' || (l.estado_comercial && l.estado_comercial !== 'comprador'));
         } else if (perfilFilter === 'comprador') {
-            filtered = filtered.filter(l => !l.interes_anunciar || l.interes_anunciar === 'No');
+            filtered = filtered.filter(l => (!l.interes_anunciar || l.interes_anunciar === 'No') && (!l.estado_comercial || l.estado_comercial === 'comprador'));
         }
 
         if (filtered.length === 0) {
@@ -973,17 +998,23 @@
         }
 
         tbody.innerHTML = filtered.map(item => {
-            const isAnunciante = item.interes_anunciar === 'Sí';
-            const perfilBadge = isAnunciante 
-                ? '<span style="background: #fef3c7; color: #d97706; font-weight: 700; font-size: 0.78rem; padding: 3px 10px; border-radius: 9999px;">💼 Anunciante</span>'
-                : '<span style="background: #f0fdf4; color: #16a34a; font-weight: 700; font-size: 0.78rem; padding: 3px 10px; border-radius: 9999px;">🛍️ Comprador</span>';
+            const currentStatus = item.estado_comercial || (item.interes_anunciar === 'Sí' ? 'prospecto' : 'comprador');
+
             return `
             <tr>
                 <td style="color: var(--text-muted); font-size: 0.85rem;">${item.fecha}</td>
                 <td style="font-weight: 700; color: var(--text-main);">${item.nombre}</td>
                 <td style="font-family: monospace; font-weight: 700; color: var(--accent-green);">${item.whatsapp}</td>
                 <td style="color: #334155;">${item.colonia}</td>
-                <td>${perfilBadge}</td>
+                <td>
+                    <select onchange="updateContactStatus('${item.whatsapp}', this.value)" style="padding: 4px 8px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-weight: 700; font-size: 0.78rem; cursor: pointer; background: #ffffff;">
+                        <option value="prospecto" ${currentStatus === 'prospecto' ? 'selected' : ''}>💼 Prospecto Anunciante</option>
+                        <option value="contacto" ${currentStatus === 'contacto' ? 'selected' : ''}>📞 Contacto Realizado</option>
+                        <option value="activo" ${currentStatus === 'activo' ? 'selected' : ''}>🟢 Cliente Activo / Cerrado</option>
+                        <option value="denegado" ${currentStatus === 'denegado' ? 'selected' : ''}>🔴 No Interesado</option>
+                        <option value="comprador" ${currentStatus === 'comprador' ? 'selected' : ''}>🛍️ Comprador VIP</option>
+                    </select>
+                </td>
                 <td><span class="badge-optin">✓ Autorizado</span></td>
                 <td style="color: var(--text-muted);">${item.origen || 'Landing Web'}</td>
                 <td>

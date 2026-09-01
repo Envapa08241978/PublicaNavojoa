@@ -140,9 +140,9 @@ async function processBotRules(senderPhone, rawPhone, senderName, msgText) {
         return;
     }
 
-    // Regla 3: Paquetes Publicitarios para Negocios
+    // Regla 3: Atención Comercial para Negocios y Anunciantes
     if (textLower.includes('anunciar') || textLower.includes('paquete') || textLower.includes('publicidad') || textLower.includes('precio')) {
-        const respuesta = `📢 *Paquetes Publicitarios — Publica Navojoa* 🚀\n\n${nameSalute} Llega a más de 78,700 personas en la ciudad:\n\n🥉 *Bronce ($600 MXN)*: Publicación fijada en Grupo FB por 7 días + Envío a lista VIP.\n🥈 *Plata VIP ($1,200 MXN)*: Publicación fijada 15 días + Difusión WhatsApp + Campaña Meta Ads.\n🥇 *Oro Premium ($2,500 MXN)*: Cobertura total 30 días + Campaña pagada prioritaria + Bot personalizado.\n\n📲 Responde *QUIERO ANUNCIAR* para coordinar con un asesor humano.`;
+        const respuesta = `📢 *Atención Comercial — Publica Navojoa* 🚀\n\n${nameSalute} Qué gusto que desees dar a conocer tus productos o negocio ante nuestros más de *78,700 miembros locales* en Navojoa.\n\n👤 *Un asesor comercial de nuestro equipo te contactará directamente en este chat a la brevedad* para conocer tu negocio y brindarte la atención personalizada.\n\n🌟 *Nuestra red incluye publicaciones fijadas en el grupo de Facebook más grande de la ciudad y difusión directa al celular de nuestra comunidad de WhatsApp.*`;
         await sendWhatsAppMessage(metaTo, respuesta, rawPhone, finalName);
         return;
     }
