@@ -2,16 +2,42 @@ const VERIFY_TOKEN = process.env.META_VERIFY_TOKEN || 'publica_navojoa_token_202
 const PHONE_ID = process.env.META_PHONE_ID || '1280742211792981';
 const ACCESS_TOKEN = process.env.META_ACCESS_TOKEN || 'EAAUPiVpET1YBST456Cx6ZAuNEXN8iEghj5W3msjAvZC4q8unGAcJrpeOdMBNNokantyZBcAYJS64NEx7XAV9tneN0MY6s3K2KphrgvJLzeVvpWZAvXXhDxxdMsUyQZBBaYzzDfNrcdZCFWNyaCvZBvQpyZB7wdp0m33Ytwy0uwZAN0W57js1ag6ZBAtZCNL4p2A4nRLTAZDZD';
 
-async function saveToFirestore(cleanPhone, senderName, text, type) {
+async function saveToFirestore(cleanPhone, senderName, text, type, fileUrl = '', fileType = '', fileName = '') {
     const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     try {
-        // Petición PATCH con updateMask para actualizar solo los campos de mensaje sin borrar colonia u opt_in existentes
-        const fieldsToUpdate = ['last_msg', 'last_time', 'whatsapp'];
+        const docUrl = `https://firestore.googleapis.com/v1/projects/loquese-app/databases/(default)/documents/contacts/${cleanPhone}`;
+        let existingMsgs = [];
+
+        // Attempt to fetch existing messages from contact doc
+        try {
+            const getRes = await fetch(docUrl);
+            if (getRes.ok) {
+                const getDoc = await getRes.json();
+                const jsonStr = getDoc?.fields?.messages_json?.stringValue;
+                if (jsonStr) existingMsgs = JSON.parse(jsonStr);
+            }
+        } catch(e) {}
+
+        const newMsg = {
+            text: text || '',
+            type: type || 'incoming',
+            time: timeStr,
+            timestamp: Date.now()
+        };
+        if (fileUrl) newMsg.fileUrl = fileUrl;
+        if (fileType) newMsg.fileType = fileType;
+        if (fileName) newMsg.fileName = fileName;
+
+        existingMsgs.push(newMsg);
+        if (existingMsgs.length > 50) existingMsgs = existingMsgs.slice(-50);
+
+        const fieldsToUpdate = ['last_msg', 'last_time', 'whatsapp', 'messages_json'];
         const bodyFields = {
             whatsapp: { stringValue: cleanPhone },
             origen: { stringValue: 'WhatsApp Cloud Bot' },
-            last_msg: { stringValue: text },
-            last_time: { stringValue: timeStr }
+            last_msg: { stringValue: text || (fileType?.startsWith('image/') ? '🖼️ Imagen' : '📄 PDF') },
+            last_time: { stringValue: timeStr },
+            messages_json: { stringValue: JSON.stringify(existingMsgs) }
         };
 
         if (senderName && senderName !== 'Cliente WhatsApp' && senderName !== 'Cliente VIP') {
@@ -21,57 +47,13 @@ async function saveToFirestore(cleanPhone, senderName, text, type) {
 
         const maskParams = fieldsToUpdate.map(f => `updateMask.fieldPaths=${f}`).join('&');
 
-        await fetch(`https://firestore.googleapis.com/v1/projects/loquese-app/databases/(default)/documents/contacts/${cleanPhone}?${maskParams}`, {
+        await fetch(`${docUrl}?${maskParams}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ fields: bodyFields })
         });
     } catch (e) {
         console.error('[FIRESTORE ERR]', e);
-    }
-}
-
-async function saveOutgoingMessageToFirestore(cleanPhone, text) {
-    try {
-        const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        const docId = `msg_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
-        await fetch(`https://firestore.googleapis.com/v1/projects/loquese-app/databases/(default)/documents/contacts/${cleanPhone}/messages/${docId}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                fields: {
-                    text: { stringValue: text },
-                    type: { stringValue: 'outgoing' },
-                    time: { stringValue: timeStr },
-                    timestamp: { integerValue: Date.now().toString() }
-                }
-            })
-        });
-    } catch (e) {}
-}
-
-async function saveIncomingMessageToFirestore(cleanPhone, msgText, fileUrl = '', fileType = '', fileName = '') {
-    try {
-        const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        const docId = `msg_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
-        const fields = {
-            text: { stringValue: msgText || '' },
-            type: { stringValue: 'incoming' },
-            time: { stringValue: timeStr },
-            timestamp: { integerValue: Date.now().toString() }
-        };
-
-        if (fileUrl) fields.fileUrl = { stringValue: fileUrl };
-        if (fileType) fields.fileType = { stringValue: fileType };
-        if (fileName) fields.fileName = { stringValue: fileName };
-
-        await fetch(`https://firestore.googleapis.com/v1/projects/loquese-app/databases/(default)/documents/contacts/${cleanPhone}/messages/${docId}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ fields })
-        });
-    } catch (e) {
-        console.error('[FIRESTORE INCOMING MSG ERR]', e);
     }
 }
 

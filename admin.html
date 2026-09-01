@@ -655,18 +655,25 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    // Sincronización en tiempo real de Contactos con Firebase Firestore (Sin Duplicados ni Fantasmas)
+    // Sincronización en tiempo real de Contactos y Mensajes con Firebase Firestore
     function listenFirebaseContacts() {
         try {
             db.collection('contacts').onSnapshot(snapshot => {
                 let firebaseLeads = [];
                 snapshot.forEach(doc => {
                     let d = doc.data();
-                    let phone = (d.whatsapp || '').replace(/\D/g, '');
+                    let phone = (d.whatsapp || doc.id || '').replace(/\D/g, '');
                     if (phone.startsWith('52') && phone.length === 12) phone = phone.slice(2);
                     if (phone.startsWith('521') && phone.length === 13) phone = phone.slice(3);
 
                     if (phone) {
+                        // Sincronizar historial de mensajes
+                        if (d.messages_json) {
+                            try {
+                                localStorage.setItem('chat_msgs_' + phone, d.messages_json);
+                            } catch(e) {}
+                        }
+
                         firebaseLeads.push({
                             id: doc.id,
                             fecha: d.fecha || new Date().toLocaleString(),
@@ -675,7 +682,8 @@
                             colonia: d.colonia || 'Navojoa',
                             origen: d.origen || 'WhatsApp Bot Cloud',
                             opt_in: d.opt_in || 'Autorizado',
-                            interes_anunciar: d.interes_anunciar || 'No'
+                            interes_anunciar: d.interes_anunciar || 'No',
+                            estado_comercial: d.estado_comercial || (d.interes_anunciar === 'Sí' ? 'prospecto' : 'comprador')
                         });
                     }
                 });
@@ -692,6 +700,14 @@
                 localStorage.setItem('vip_navojoa_leads', JSON.stringify(uniqueLeads));
                 renderCrmTable();
                 renderChatList();
+
+                // Re-renderizar chat activo si existe
+                if (activeContactId) {
+                    const activeContact = uniqueLeads.find(l => String(l.id) === String(activeContactId));
+                    if (activeContact) {
+                        renderMessages(activeContact.whatsapp);
+                    }
+                }
             });
         } catch (e) {
             console.log('Firebase sync error:', e);
@@ -875,6 +891,9 @@
         if (clean.startsWith('52') && clean.length === 12) clean = clean.slice(2);
 
         localStorage.removeItem('chat_msgs_' + clean);
+        try {
+            db.collection('contacts').doc(clean).update({ messages_json: '[]' });
+        } catch(e) {}
         renderMessages(contact.whatsapp);
     }
 

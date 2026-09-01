@@ -3,24 +3,35 @@ const ACCESS_TOKEN = process.env.META_ACCESS_TOKEN || 'EAAUPiVpET1YBST456Cx6ZAuN
 
 async function saveMessageToFirestore(cleanPhone, msgData) {
     try {
-        const docId = `msg_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
-        const fields = {
-            text: { stringValue: msgData.text || '' },
-            type: { stringValue: msgData.type || 'outgoing' },
-            time: { stringValue: msgData.time || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) },
-            timestamp: { integerValue: Date.now().toString() }
+        const docUrl = `https://firestore.googleapis.com/v1/projects/loquese-app/databases/(default)/documents/contacts/${cleanPhone}`;
+        let existingMsgs = [];
+
+        try {
+            const getRes = await fetch(docUrl);
+            if (getRes.ok) {
+                const getDoc = await getRes.json();
+                const jsonStr = getDoc?.fields?.messages_json?.stringValue;
+                if (jsonStr) existingMsgs = JSON.parse(jsonStr);
+            }
+        } catch(e) {}
+
+        existingMsgs.push(msgData);
+        if (existingMsgs.length > 50) existingMsgs = existingMsgs.slice(-50);
+
+        const fieldsToUpdate = ['last_msg', 'last_time', 'whatsapp', 'messages_json'];
+        const bodyFields = {
+            whatsapp: { stringValue: cleanPhone },
+            last_msg: { stringValue: msgData.text || (msgData.fileType?.startsWith('image/') ? '🖼️ Imagen' : '📄 PDF') },
+            last_time: { stringValue: msgData.time },
+            messages_json: { stringValue: JSON.stringify(existingMsgs) }
         };
 
-        if (msgData.fileUrl && !msgData.fileUrl.startsWith('data:')) {
-            fields.fileUrl = { stringValue: msgData.fileUrl };
-        }
-        if (msgData.fileType) fields.fileType = { stringValue: msgData.fileType };
-        if (msgData.fileName) fields.fileName = { stringValue: msgData.fileName };
+        const maskParams = fieldsToUpdate.map(f => `updateMask.fieldPaths=${f}`).join('&');
 
-        await fetch(`https://firestore.googleapis.com/v1/projects/loquese-app/databases/(default)/documents/contacts/${cleanPhone}/messages/${docId}`, {
+        await fetch(`${docUrl}?${maskParams}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ fields })
+            body: JSON.stringify({ fields: bodyFields })
         });
     } catch (e) {
         console.error('[FIRESTORE MSG SAVE ERR]', e);
@@ -55,12 +66,13 @@ module.exports = async function handler(req, res) {
         text: displayText,
         type: 'outgoing',
         time: timeStr,
+        timestamp: Date.now(),
         fileUrl: fileUrl && fileUrl.startsWith('data:') ? '' : fileUrl,
         fileType,
         fileName
     };
 
-    // Save to Firestore
+    // Save to Firestore contact doc
     await saveMessageToFirestore(cleanPhone, msgPayload);
 
     // Call Meta API
@@ -72,7 +84,6 @@ module.exports = async function handler(req, res) {
             text: { body: displayText }
         };
 
-        // Standard public URLs for media
         if (fileUrl && fileUrl.startsWith('http')) {
             if (fileType?.startsWith('image/')) {
                 metaBody = {
