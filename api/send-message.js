@@ -11,7 +11,9 @@ async function saveMessageToFirestore(cleanPhone, msgData) {
             timestamp: { integerValue: Date.now().toString() }
         };
 
-        if (msgData.fileUrl) fields.fileUrl = { stringValue: msgData.fileUrl };
+        if (msgData.fileUrl && !msgData.fileUrl.startsWith('data:')) {
+            fields.fileUrl = { stringValue: msgData.fileUrl };
+        }
         if (msgData.fileType) fields.fileType = { stringValue: msgData.fileType };
         if (msgData.fileName) fields.fileName = { stringValue: msgData.fileName };
 
@@ -42,11 +44,18 @@ module.exports = async function handler(req, res) {
     let metaTo = cleanPhone.length === 10 ? '52' + cleanPhone : cleanPhone;
     const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
+    let displayText = text || '';
+    if (!displayText) {
+        if (fileType?.startsWith('image/')) displayText = `🖼️ Imagen: ${fileName || 'Foto'}`;
+        else if (fileType === 'application/pdf') displayText = `📄 Documento PDF: ${fileName || 'Archivo.pdf'}`;
+        else displayText = 'Mensaje de Publica Navojoa';
+    }
+
     const msgPayload = {
-        text: text || (fileType?.startsWith('image/') ? `🖼️ Imagen: ${fileName}` : fileType === 'application/pdf' ? `📄 PDF: ${fileName}` : ''),
+        text: displayText,
         type: 'outgoing',
         time: timeStr,
-        fileUrl,
+        fileUrl: fileUrl && fileUrl.startsWith('data:') ? '' : fileUrl,
         fileType,
         fileName
     };
@@ -60,23 +69,26 @@ module.exports = async function handler(req, res) {
             messaging_product: 'whatsapp',
             to: metaTo,
             type: 'text',
-            text: { body: msgPayload.text }
+            text: { body: displayText }
         };
 
-        if (fileUrl && fileType?.startsWith('image/')) {
-            metaBody = {
-                messaging_product: 'whatsapp',
-                to: metaTo,
-                type: 'image',
-                image: { link: fileUrl, caption: text || '' }
-            };
-        } else if (fileUrl && fileType === 'application/pdf') {
-            metaBody = {
-                messaging_product: 'whatsapp',
-                to: metaTo,
-                type: 'document',
-                document: { link: fileUrl, caption: text || '', filename: fileName || 'documento.pdf' }
-            };
+        // Standard public URLs for media
+        if (fileUrl && fileUrl.startsWith('http')) {
+            if (fileType?.startsWith('image/')) {
+                metaBody = {
+                    messaging_product: 'whatsapp',
+                    to: metaTo,
+                    type: 'image',
+                    image: { link: fileUrl, caption: text || '' }
+                };
+            } else if (fileType === 'application/pdf') {
+                metaBody = {
+                    messaging_product: 'whatsapp',
+                    to: metaTo,
+                    type: 'document',
+                    document: { link: fileUrl, caption: text || '', filename: fileName || 'documento.pdf' }
+                };
+            }
         }
 
         const response = await fetch(`https://graph.facebook.com/v20.0/${PHONE_ID}/messages`, {
@@ -91,11 +103,7 @@ module.exports = async function handler(req, res) {
         const data = await response.json();
         console.log('[META API SEND RESULT]', data);
 
-        if (data.error) {
-            return res.status(200).json({ success: false, error: data.error });
-        }
-
-        return res.status(200).json({ success: true, data });
+        return res.status(200).json({ success: !data.error, data });
     } catch (err) {
         console.error('[META API SEND ERR]', err);
         return res.status(500).json({ error: err.message });

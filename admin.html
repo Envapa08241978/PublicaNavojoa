@@ -810,10 +810,9 @@
         // Desconectar listener de chat anterior
         if (activeMessagesUnsubscribe) activeMessagesUnsubscribe();
 
-        // Escuchar subcolección de mensajes en Firebase en tiempo real
+        // Escuchar subcolección de mensajes en Firebase en tiempo real (Sin requerimiento de índices)
         try {
             activeMessagesUnsubscribe = db.collection('contacts').doc(clean).collection('messages')
-                .orderBy('timestamp', 'asc')
                 .onSnapshot(snapshot => {
                     let fsMsgs = [];
                     snapshot.forEach(doc => {
@@ -824,12 +823,17 @@
                             time: d.time || '',
                             fileUrl: d.fileUrl || '',
                             fileType: d.fileType || '',
-                            fileName: d.fileName || ''
+                            fileName: d.fileName || '',
+                            ts: Number(d.timestamp) || 0
                         });
                     });
+                    fsMsgs.sort((a, b) => a.ts - b.ts);
                     if (fsMsgs.length > 0) {
                         localStorage.setItem('chat_msgs_' + clean, JSON.stringify(fsMsgs));
                     }
+                    renderMessages(clean);
+                }, err => {
+                    console.log('Snapshot messages listener err:', err);
                     renderMessages(clean);
                 });
         } catch (e) {
