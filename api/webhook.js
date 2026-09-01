@@ -31,7 +31,6 @@ async function saveToFirestore(cleanPhone, senderName, text, type, fileUrl = '',
         existingMsgs.push(newMsg);
         if (existingMsgs.length > 50) existingMsgs = existingMsgs.slice(-50);
 
-        const fieldsToUpdate = ['last_msg', 'last_time', 'whatsapp', 'messages_json'];
         const bodyFields = {
             whatsapp: { stringValue: cleanPhone },
             origen: { stringValue: 'WhatsApp Cloud Bot' },
@@ -42,9 +41,9 @@ async function saveToFirestore(cleanPhone, senderName, text, type, fileUrl = '',
 
         if (senderName && senderName !== 'Cliente WhatsApp' && senderName !== 'Cliente VIP') {
             bodyFields.nombre = { stringValue: senderName };
-            fieldsToUpdate.push('nombre');
         }
 
+        const fieldsToUpdate = Object.keys(bodyFields);
         const maskParams = fieldsToUpdate.map(f => `updateMask.fieldPaths=${f}`).join('&');
 
         await fetch(`${docUrl}?${maskParams}`, {
@@ -258,7 +257,7 @@ module.exports = async function handler(req, res) {
                 }
 
                 if (cleanPhone) {
-                    await saveIncomingMessageToFirestore(cleanPhone, msgText, fileUrl, fileType, fileName);
+                    await saveToFirestore(cleanPhone, senderName, msgText, 'incoming', fileUrl, fileType, fileName);
                     if (msgText) {
                         console.log(`[MENSAJE EN NUBE] De ${senderName} (${cleanPhone}): ${msgText}`);
                         await processBotRules(senderPhone, cleanPhone, senderName, msgText);
