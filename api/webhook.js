@@ -1,6 +1,6 @@
-const VERIFY_TOKEN = 'publica_navojoa_token_2026';
-const PHONE_ID = '1280742211792981';
-const ACCESS_TOKEN = 'EAAUPiVpET1YBSQ8qkBXZAVUmr6HkAPrWM9hnF2fd6wSFqZA5AYsKa6rE8pDpBb1jE1qHWrKmzrv3xZBvJNOXNJPsWl3JEW6G7vWmJUbWzVq8w8wdrX6IQZCpmMznEwW4RSIX5vQ62vPLxRXvZBQZCF1u6HzDIiCmubU1IkrdRKAYAQ27CTr8oNeiJtrC6ZB5dS2wQZDZD';
+const VERIFY_TOKEN = process.env.META_VERIFY_TOKEN || 'publica_navojoa_token_2026';
+const PHONE_ID = process.env.META_PHONE_ID || '1280742211792981';
+const ACCESS_TOKEN = process.env.META_ACCESS_TOKEN || 'EAAUPiVpET1YBSQ8qkBXZAVUmr6HkAPrWM9hnF2fd6wSFqZA5AYsKa6rE8pDpBb1jE1qHWrKmzrv3xZBvJNOXNJPsWl3JEW6G7vWmJUbWzVq8w8wdrX6IQZCpmMznEwW4RSIX5vQ62vPLxRXvZBQZCF1u6HzDIiCmubU1IkrdRKAYAQ27CTr8oNeiJtrC6ZB5dS2wQZDZD';
 
 async function sendWhatsAppMessage(toPhone, text) {
     const url = `https://graph.facebook.com/v20.0/${PHONE_ID}/messages`;
