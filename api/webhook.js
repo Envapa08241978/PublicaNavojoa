@@ -5,19 +5,26 @@ const ACCESS_TOKEN = process.env.META_ACCESS_TOKEN || 'EAAUPiVpET1YBST456Cx6ZAuN
 async function saveToFirestore(cleanPhone, senderName, text, type) {
     const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     try {
-        // Actualizar/Crear Contacto Único usando el teléfono como ID (Evita Duplicados)
-        await fetch(`https://firestore.googleapis.com/v1/projects/loquese-app/databases/(default)/documents/contacts/${cleanPhone}`, {
+        // Petición PATCH con updateMask para actualizar solo los campos de mensaje sin borrar colonia u opt_in existentes
+        const fieldsToUpdate = ['last_msg', 'last_time', 'whatsapp'];
+        const bodyFields = {
+            whatsapp: { stringValue: cleanPhone },
+            origen: { stringValue: 'WhatsApp Cloud Bot' },
+            last_msg: { stringValue: text },
+            last_time: { stringValue: timeStr }
+        };
+
+        if (senderName && senderName !== 'Cliente WhatsApp' && senderName !== 'Cliente VIP') {
+            bodyFields.nombre = { stringValue: senderName };
+            fieldsToUpdate.push('nombre');
+        }
+
+        const maskParams = fieldsToUpdate.map(f => `updateMask.fieldPaths=${f}`).join('&');
+
+        await fetch(`https://firestore.googleapis.com/v1/projects/loquese-app/databases/(default)/documents/contacts/${cleanPhone}?${maskParams}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                fields: {
-                    nombre: { stringValue: senderName },
-                    whatsapp: { stringValue: cleanPhone },
-                    origen: { stringValue: 'WhatsApp Cloud Bot' },
-                    last_msg: { stringValue: text },
-                    last_time: { stringValue: timeStr }
-                }
-            })
+            body: JSON.stringify({ fields: bodyFields })
         });
     } catch (e) {
         console.error('[FIRESTORE ERR]', e);
@@ -128,7 +135,7 @@ async function processBotRules(senderPhone, rawPhone, senderName, msgText) {
 
     // Regla 2: Catálogo de Ofertas (Solo para registrados)
     if (textLower.includes('catálogo') || textLower.includes('catalogo') || textLower.includes('oferta') || textLower.includes('remate')) {
-        const respuesta = `🛍️ *Catálogo Semanal de Ofertas — Navojoa* 🛍️\n\n${nameSalute} Aquí tienes los remates de la semana:\n1. 🪑 Mueblería y Decoración — Muebles de Ocasión\n2. 👗 Ropa y Accesorios — Descuentos de Temporada\n3. 🍽️ Restaurantes Locales — Promociones 2x1\n\n📌 ¿Te interesa anunciar tu negocio o vender algún producto? Responde con *ANUNCIAR*.`;
+        const respuesta = `🛍️ *Catálogo Semanal de Ofertas — Navojoa* 🛍️\n\n${nameSalute} Aquí tienes los remates y promociones destacadas de esta semana en Navojoa:\n\n1. 🪑 *Mueblería & Decoración:* Comedores y piezas decorativas de ocasión.\n2. 👗 *Moda & Boutique:* Descuentos de temporada en comercios locales.\n3. 🍽️ *Gastronomía Local:* Promociones y cupones 2x1.\n\n💬 *Si te interesa alguna de estas promociones, responde con el número de la oferta para enviarte los detalles directos.*`;
         await sendWhatsAppMessage(metaTo, respuesta, rawPhone, finalName);
         return;
     }
