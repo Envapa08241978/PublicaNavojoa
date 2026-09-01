@@ -430,20 +430,10 @@
         };
 
         try {
-            // 1. Guardar en Firebase Firestore
+            // 1. Guardar Únicamente en contacts con ID único por Teléfono (Sin Duplicados)
             await db.collection('contacts').doc(cleanPhone).set(leadData, { merge: true });
 
-            // 2. Guardar mensaje de bienvenida en Firestore messages
-            await db.collection('messages').add({
-                phone: cleanPhone,
-                name: nombre,
-                text: `✅ Registro VIP Completado — Colonia: ${colonia}`,
-                type: 'incoming',
-                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                timestamp: Date.now()
-            });
-
-            // 3. Guardar en localStorage para respaldo local
+            // 2. Guardar en localStorage para respaldo local sin duplicar
             let leads = JSON.parse(localStorage.getItem('vip_navojoa_leads') || '[]');
             let existingIdx = leads.findIndex(l => l.whatsapp === cleanPhone);
             if (existingIdx >= 0) {

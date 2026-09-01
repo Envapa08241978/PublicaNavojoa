@@ -4,25 +4,8 @@ const ACCESS_TOKEN = process.env.META_ACCESS_TOKEN || 'EAAUPiVpET1YBST456Cx6ZAuN
 
 async function saveToFirestore(cleanPhone, senderName, text, type) {
     const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const now = Date.now();
     try {
-        // Guardar mensaje
-        await fetch('https://firestore.googleapis.com/v1/projects/loquese-app/databases/(default)/documents/messages', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                fields: {
-                    phone: { stringValue: cleanPhone },
-                    name: { stringValue: senderName },
-                    text: { stringValue: text },
-                    type: { stringValue: type },
-                    time: { stringValue: timeStr },
-                    timestamp: { integerValue: String(now) }
-                }
-            })
-        });
-
-        // Actualizar/Crear Contacto
+        // Actualizar/Crear Contacto Único usando el teléfono como ID (Evita Duplicados)
         await fetch(`https://firestore.googleapis.com/v1/projects/loquese-app/databases/(default)/documents/contacts/${cleanPhone}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },

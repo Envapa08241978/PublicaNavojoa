@@ -629,79 +629,68 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    // Sincronización en tiempo real con Firebase Firestore
+    // Sincronización en tiempo real de Contactos con Firebase Firestore (Sin Duplicados)
     function listenFirebaseContacts() {
         try {
             db.collection('contacts').onSnapshot(snapshot => {
-                let firebaseLeads = [];
+                let localLeads = getLeads();
+                
                 snapshot.forEach(doc => {
                     let d = doc.data();
-                    firebaseLeads.push({
-                        id: doc.id,
-                        fecha: d.fecha || new Date().toLocaleString(),
-                        nombre: d.nombre || 'Cliente VIP',
-                        whatsapp: d.whatsapp || '',
-                        colonia: d.colonia || 'Navojoa',
-                        origen: d.origen || 'WhatsApp Bot Cloud'
-                    });
+                    let phone = (d.whatsapp || doc.id || '').replace(/\D/g, '');
+                    if (phone.startsWith('52') && phone.length === 12) phone = phone.slice(2);
+                    if (phone.startsWith('521') && phone.length === 13) phone = phone.slice(3);
+
+                    if (phone) {
+                        let idx = localLeads.findIndex(l => {
+                            let lPhone = String(l.whatsapp).replace(/\D/g, '');
+                            if (lPhone.startsWith('52') && lPhone.length === 12) lPhone = lPhone.slice(2);
+                            return lPhone === phone;
+                        });
+
+                        const contactData = {
+                            id: doc.id,
+                            fecha: d.fecha || new Date().toLocaleString(),
+                            nombre: d.nombre || 'Cliente VIP',
+                            whatsapp: phone,
+                            colonia: d.colonia || 'Navojoa',
+                            origen: d.origen || 'WhatsApp Bot Cloud',
+                            opt_in: d.opt_in || 'Autorizado'
+                        };
+
+                        if (idx >= 0) {
+                            // Actualizar sin duplicar
+                            localLeads[idx] = { ...localLeads[idx], ...contactData };
+                        } else {
+                            // Agregar nuevo
+                            localLeads.push(contactData);
+                        }
+                    }
                 });
 
-                if (firebaseLeads.length > 0) {
-                    let localLeads = getLeads();
-                    firebaseLeads.forEach(f => {
-                        let exists = localLeads.some(l => l.whatsapp === f.whatsapp);
-                        if (!exists) localLeads.push(f);
-                    });
-                    localStorage.setItem('vip_navojoa_leads', JSON.stringify(localLeads));
-                    renderCrmTable();
-                    renderChatList();
-                }
+                // Deduplicar estrictamente por número
+                let uniqueMap = new Map();
+                localLeads.forEach(l => {
+                    let clean = String(l.whatsapp).replace(/\D/g, '');
+                    if (clean.startsWith('52') && clean.length === 12) clean = clean.slice(2);
+                    if (!uniqueMap.has(clean)) {
+                        uniqueMap.set(clean, l);
+                    }
+                });
+                let uniqueLeads = Array.from(uniqueMap.values());
+
+                localStorage.setItem('vip_navojoa_leads', JSON.stringify(uniqueLeads));
+                renderCrmTable();
+                renderChatList();
             });
         } catch (e) {
             console.log('Firebase sync error:', e);
         }
     }
 
-    function listenFirebaseMessages() {
-        try {
-            db.collection('messages').onSnapshot(snapshot => {
-                let hasChanges = false;
-                snapshot.docChanges().forEach(change => {
-                    if (change.type === 'added') {
-                        let m = change.doc.data();
-                        if (m.phone) {
-                            let cleanPhone = m.phone.replace(/\D/g, '');
-                            if (cleanPhone.startsWith('52') && cleanPhone.length === 12) cleanPhone = cleanPhone.slice(2);
-                            let msgs = getMessages(cleanPhone);
-                            let exists = msgs.some(existing => existing.text === m.text && existing.time === m.time);
-                            if (!exists) {
-                                msgs.push({
-                                    text: m.text,
-                                    type: m.type || 'incoming',
-                                    time: m.time || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                                });
-                                localStorage.setItem('chat_msgs_' + cleanPhone, JSON.stringify(msgs));
-                                hasChanges = true;
-
-                                const leads = getLeads();
-                                const activeContact = leads.find(l => String(l.id) === String(activeContactId));
-                                if (activeContact && activeContact.whatsapp === cleanPhone) {
-                                    renderMessages(cleanPhone);
-                                }
-                            }
-                        }
-                    }
-                });
-            });
-        } catch (e) {
-            console.log('Firebase messages sync error:', e);
-        }
-    }
-
     // Configuración Meta API
     const META_PHONE_ID = '1280742211792981';
     const META_TOKEN = 'EAAUPiVpET1YBST456Cx6ZAuNEXN8iEghj5W3msjAvZC4q8unGAcJrpeOdMBNNokantyZBcAYJS64NEx7XAV9tneN0MY6s3K2KphrgvJLzeVvpWZAvXXhDxxdMsUyQZBBaYzzDfNrcdZCFWNyaCvZBvQpyZB7wdp0m33Ytwy0uwZAN0W57js1ag6ZBAtZCNL4p2A4nRLTAZDZD';
-
 
     const initialDemo = [
         { id: 1, fecha: '27/08/2026 11:09', nombre: 'Enrique Valenzuela', whatsapp: '6421600559', colonia: 'Centro', origen: 'Landing Web Opt-in' },
@@ -725,35 +714,39 @@
             localStorage.setItem('vip_navojoa_leads', JSON.stringify(initialDemo));
             return initialDemo;
         }
-        return JSON.parse(leads);
+        let parsed = JSON.parse(leads);
+        // Garantizar no duplicados
+        let seen = new Set();
+        return parsed.filter(p => {
+            let num = String(p.whatsapp).replace(/\D/g, '');
+            if (num.startsWith('52') && num.length === 12) num = num.slice(2);
+            if (seen.has(num)) return false;
+            seen.add(num);
+            return true;
+        });
     }
 
     function getMessages(phone) {
-        let msgs = localStorage.getItem('chat_msgs_' + phone);
+        let clean = phone.replace(/\D/g, '');
+        if (clean.startsWith('52') && clean.length === 12) clean = clean.slice(2);
+        let msgs = localStorage.getItem('chat_msgs_' + clean);
         if (!msgs) {
             const defaultMsgs = [
                 { text: '¡Hola! Quiero unirme al Club VIP de Publica Navojoa y recibir las ofertas semanales.', type: 'incoming', time: '10:37 AM' },
                 { text: '¡Hola! 👋 ¡Bienvenido al Club VIP de Publica Navojoa! 🎉 Ya estás en nuestra lista oficial.', type: 'outgoing', time: '10:37 AM' }
             ];
-            localStorage.setItem('chat_msgs_' + phone, JSON.stringify(defaultMsgs));
+            localStorage.setItem('chat_msgs_' + clean, JSON.stringify(defaultMsgs));
             return defaultMsgs;
         }
         return JSON.parse(msgs);
     }
 
     function saveMessage(phone, msgObj) {
-        let msgs = getMessages(phone);
+        let clean = phone.replace(/\D/g, '');
+        if (clean.startsWith('52') && clean.length === 12) clean = clean.slice(2);
+        let msgs = getMessages(clean);
         msgs.push(msgObj);
-        localStorage.setItem('chat_msgs_' + phone, JSON.stringify(msgs));
-
-        // Guardar respaldo en Firebase
-        try {
-            db.collection('messages').add({
-                phone,
-                ...msgObj,
-                createdAt: firebase.firestore.FieldValue.serverTimestamp()
-            });
-        } catch (e) {}
+        localStorage.setItem('chat_msgs_' + clean, JSON.stringify(msgs));
     }
 
     function switchTab(tabName) {
