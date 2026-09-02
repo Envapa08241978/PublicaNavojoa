@@ -151,3 +151,16 @@ Todos los contactos se indexan de forma única en la colección `/contacts/{clea
   - `portada_grupo_facebook_oficial_2026.svg`: Archivo vectorial nativo con mesa de trabajo (*artboard*) de **1640 x 856 px**, capas organizadas y editable en **Adobe Illustrator**.
   - `portada_grupo_facebook_oficial_2026.pdf`: Documento PDF con dimensiones exactas de **1640 x 856 pt** para apertura vectorial directa en **Adobe Illustrator**.
 
+---
+
+## 10. SEGURIDAD Y CONTROL DE ACCESO AL PANEL CRM (`/admin`)
+
+* **Autenticación con Firebase Authentication:**
+  - El acceso a `https://publicanavojoa.com/admin` se encuentra completamente protegido tras una pantalla de autenticación con correo electrónico y contraseña.
+  - El panel CRM y el chat en vivo solo se renderizan en el DOM cuando un usuario con sesión activa y verificada por Firebase está presente (`auth.onAuthStateChanged`).
+* **Recuperación de Contraseña:**
+  - Enlace interactivo *"¿Olvidaste tu contraseña?"* que activa el flujo de recuperación oficial de Firebase (`sendPasswordResetEmail`), enviando un correo con enlace seguro para restablecer credenciales.
+* **Gestión de Sesión:**
+  - Píldora de usuario en el encabezado con el correo del administrador autenticado y botón **"Salir 🚪"** (`handleLogout`) para invalidar la sesión y bloquear el acceso inmediato.
+
+
