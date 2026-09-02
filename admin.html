@@ -748,6 +748,7 @@
     <div class="tab-nav">
         <button class="tab-btn active" onclick="switchTab('chat')">💬 Chat WhatsApp Cloud API (En vivo)</button>
         <button class="tab-btn" onclick="switchTab('crm')">📊 Base de Datos & Contactos CRM</button>
+        <button class="tab-btn" onclick="switchTab('offers')">🏷️ Catálogo de Ofertas (Bot WhatsApp)</button>
     </div>
 
     <!-- TAB 1: LIVE CHAT WHATSAPP API -->
@@ -874,6 +875,64 @@
                     <!-- CRM rows -->
                 </tbody>
             </table>
+        </div>
+    </div>
+
+    <!-- TAB 3: CATÁLOGO DE OFERTAS BOT WHATSAPP -->
+    <div id="tab-offers" class="tab-content">
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 20px; flex-wrap: wrap;">
+            <div>
+                <h2 style="font-size: 1.3rem; font-weight: 800; color: var(--text-main);">Catálogo Dinámico de Ofertas & Remates</h2>
+                <p style="color: var(--text-muted); font-size: 0.88rem; margin-top: 4px;">
+                    Estas son las ofertas que el Bot de WhatsApp entrega automáticamente a los clientes VIP al escribir <code>OFERTAS</code> o <code>CATÁLOGO</code>.
+                </p>
+            </div>
+            <button class="btn btn-green" onclick="openOfferModal()">+ Agregar Nueva Oferta</button>
+        </div>
+
+        <div id="offers-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; margin-bottom: 30px;">
+            <!-- Renderizado dinámico de ofertas desde Firebase -->
+        </div>
+    </div>
+</div>
+
+<!-- Modal Ofertas -->
+<div class="modal" id="offer-modal">
+    <div class="modal-content" style="max-width: 540px;">
+        <h3 id="offer-modal-title" style="margin-bottom: 16px; font-size: 1.2rem; font-weight: 800;">Agregar Oferta al Catálogo</h3>
+        <input type="hidden" id="offer-id">
+
+        <label style="font-size: 0.85rem; font-weight: 700;">Título de la Oferta / Promoción:</label>
+        <input type="text" id="off-titulo" placeholder="Ej. ¡Dale vida y estilo a tu hogar!">
+
+        <label style="font-size: 0.85rem; font-weight: 700;">Categoría:</label>
+        <input type="text" id="off-categoria" placeholder="Ej. Mueblería & Decoración, Moda, Autos, etc.">
+
+        <label style="font-size: 0.85rem; font-weight: 700;">Descripción Breve (para WhatsApp):</label>
+        <textarea id="off-desc" rows="3" style="width: 100%; padding: 10px 14px; border-radius: 10px; border: 1.5px solid #e2e8f0; font-family: inherit; font-size: 0.9rem; margin-bottom: 12px;" placeholder="Detalles de los artículos, descuento u ocasión..."></textarea>
+
+        <label style="font-size: 0.85rem; font-weight: 700;">Enlace de la Publicación en Facebook:</label>
+        <input type="url" id="off-enlace" placeholder="https://www.facebook.com/share/p/...">
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div>
+                <label style="font-size: 0.85rem; font-weight: 700;">Nombre del Contacto:</label>
+                <input type="text" id="off-nombre" placeholder="Ej. Mónica Obregón">
+            </div>
+            <div>
+                <label style="font-size: 0.85rem; font-weight: 700;">WhatsApp Vendedor (10 dígitos):</label>
+                <input type="tel" id="off-tel" placeholder="Ej. 6474820862">
+            </div>
+        </div>
+
+        <div style="margin-top: 10px; margin-bottom: 16px; display: flex; align-items: center; gap: 10px;">
+            <input type="checkbox" id="off-activo" checked style="width: 18px; height: 18px; cursor: pointer;">
+            <label for="off-activo" style="font-size: 0.9rem; font-weight: 700; cursor: pointer;">Oferta Activa en el Bot de WhatsApp</label>
+        </div>
+
+        <div style="display: flex; gap: 10px;">
+            <button class="btn btn-green" style="flex:1;" onclick="saveOffer()">Guardar Oferta</button>
+            <button class="btn btn-blue" onclick="closeOfferModal()">Cancelar</button>
         </div>
     </div>
 </div>
@@ -1054,10 +1113,14 @@
         if (tabName === 'chat') {
             document.querySelectorAll('.tab-btn')[0].classList.add('active');
             document.getElementById('tab-chat').classList.add('active');
-        } else {
+        } else if (tabName === 'crm') {
             document.querySelectorAll('.tab-btn')[1].classList.add('active');
             document.getElementById('tab-crm').classList.add('active');
             renderCrmTable();
+        } else if (tabName === 'offers') {
+            document.querySelectorAll('.tab-btn')[2].classList.add('active');
+            document.getElementById('tab-offers').classList.add('active');
+            listenFirebaseOffers();
         }
     }
 
@@ -1587,6 +1650,177 @@
         document.getElementById('m-nombre').value = '';
         document.getElementById('m-phone').value = '';
         document.getElementById('m-colonia').value = '';
+    }
+
+    // ═════════════════════════════════════════════════════════════════════
+    // MÓDULO DE GESTIÓN DEL CATÁLOGO DE OFERTAS (Firebase Firestore)
+    // ═════════════════════════════════════════════════════════════════════
+    let currentOffers = [];
+
+    function openOfferModal(id = '') {
+        document.getElementById('offer-modal').style.display = 'flex';
+        if (id) {
+            const offer = currentOffers.find(o => o.id === id);
+            if (offer) {
+                document.getElementById('offer-modal-title').innerText = 'Editar Oferta';
+                document.getElementById('offer-id').value = offer.id;
+                document.getElementById('off-titulo').value = offer.titulo || '';
+                document.getElementById('off-categoria').value = offer.categoria || '';
+                document.getElementById('off-desc').value = offer.descripcion || '';
+                document.getElementById('off-enlace').value = offer.enlace_facebook || '';
+                document.getElementById('off-nombre').value = offer.contacto_nombre || '';
+                document.getElementById('off-tel').value = offer.contacto_telefono || '';
+                document.getElementById('off-activo').checked = offer.activo !== false;
+                return;
+            }
+        }
+        document.getElementById('offer-modal-title').innerText = 'Agregar Oferta al Catálogo';
+        document.getElementById('offer-id').value = '';
+        document.getElementById('off-titulo').value = '';
+        document.getElementById('off-categoria').value = '';
+        document.getElementById('off-desc').value = '';
+        document.getElementById('off-enlace').value = '';
+        document.getElementById('off-nombre').value = '';
+        document.getElementById('off-tel').value = '';
+        document.getElementById('off-activo').checked = true;
+    }
+
+    function closeOfferModal() {
+        document.getElementById('offer-modal').style.display = 'none';
+    }
+
+    async function saveOffer() {
+        const id = document.getElementById('offer-id').value.trim();
+        const titulo = document.getElementById('off-titulo').value.trim();
+        const categoria = document.getElementById('off-categoria').value.trim();
+        const descripcion = document.getElementById('off-desc').value.trim();
+        const enlace = document.getElementById('off-enlace').value.trim();
+        const nombre = document.getElementById('off-nombre').value.trim();
+        const tel = document.getElementById('off-tel').value.trim();
+        const activo = document.getElementById('off-activo').checked;
+
+        if (!titulo || !descripcion) {
+            return alert('Por favor ingresa al menos el título y la descripción de la oferta.');
+        }
+
+        const docId = id || ('oferta_' + Date.now());
+        const offerData = {
+            titulo: titulo,
+            categoria: categoria || 'General',
+            descripcion: descripcion,
+            enlace_facebook: enlace,
+            contacto_nombre: nombre,
+            contacto_telefono: tel.replace(/\D/g, ''),
+            activo: activo,
+            orden: 1,
+            fecha: new Date().toLocaleDateString()
+        };
+
+        try {
+            await db.collection('offers').doc(docId).set(offerData, { merge: true });
+            closeOfferModal();
+        } catch (e) {
+            console.error('Error al guardar oferta en Firebase:', e);
+            alert('Error al guardar la oferta: ' + e.message);
+        }
+    }
+
+    async function toggleOfferStatus(id, currentStatus) {
+        try {
+            await db.collection('offers').doc(id).update({ activo: !currentStatus });
+        } catch(e) {
+            console.error('Error al cambiar estatus:', e);
+        }
+    }
+
+    async function deleteOffer(id, titulo) {
+        if (!confirm(`¿Estás seguro de eliminar la oferta "${titulo}" del catálogo?`)) return;
+        try {
+            await db.collection('offers').doc(id).delete();
+        } catch(e) {
+            console.error('Error al eliminar oferta:', e);
+        }
+    }
+
+    function listenFirebaseOffers() {
+        try {
+            db.collection('offers').onSnapshot(snapshot => {
+                currentOffers = [];
+                snapshot.forEach(doc => {
+                    currentOffers.push({ id: doc.id, ...doc.data() });
+                });
+                renderOffersGrid();
+            }, err => {
+                console.log('Error listening offers:', err);
+            });
+        } catch(e) {
+            console.log('Firebase offers error:', e);
+        }
+    }
+
+    function renderOffersGrid() {
+        const container = document.getElementById('offers-container');
+        if (!container) return;
+
+        if (currentOffers.length === 0) {
+            container.innerHTML = `
+                <div style="grid-column: 1 / -1; text-align: center; padding: 60px 20px; background: #ffffff; border-radius: 16px; border: 1px dashed #cbd5e1;">
+                    <div style="font-size: 2.5rem; margin-bottom: 10px;">🏷️</div>
+                    <h3 style="font-size: 1.1rem; color: var(--text-main);">No hay ofertas registradas aún</h3>
+                    <p style="font-size: 0.88rem; color: var(--text-muted); margin: 6px 0 16px;">Haz clic en el botón verde arriba para agregar la primera promoción al Bot de WhatsApp.</p>
+                    <button class="btn btn-green" onclick="openOfferModal()">+ Agregar Primera Oferta</button>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = currentOffers.map((off, idx) => `
+            <div style="background: #ffffff; border: 1px solid ${off.activo ? '#bbf7d0' : '#e2e8f0'}; border-radius: 16px; padding: 20px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 2px 8px rgba(0,0,0,0.04); position: relative;">
+                <div>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 12px;">
+                        <span style="font-size: 0.75rem; font-weight: 800; background: ${off.activo ? '#dcfce7' : '#f1f5f9'}; color: ${off.activo ? '#15803d' : '#64748b'}; padding: 4px 10px; border-radius: 20px; text-transform: uppercase;">
+                            ${off.activo ? '🟢 Activa en WhatsApp' : '⚪ Pausada'}
+                        </span>
+                        <span style="font-size: 0.75rem; color: #94a3b8; font-weight: 700;">#${idx + 1}</span>
+                    </div>
+
+                    <h3 style="font-size: 1.05rem; font-weight: 800; color: #0f172a; margin-bottom: 6px; line-height: 1.3;">
+                        ${off.titulo}
+                    </h3>
+                    
+                    ${off.categoria ? `<div style="font-size: 0.8rem; font-weight: 700; color: #2563eb; margin-bottom: 10px;">🏷️ ${off.categoria}</div>` : ''}
+
+                    <p style="font-size: 0.88rem; color: #475569; line-height: 1.45; margin-bottom: 14px;">
+                        ${off.descripcion}
+                    </p>
+
+                    ${off.enlace_facebook ? `
+                        <div style="margin-bottom: 12px;">
+                            <a href="${off.enlace_facebook}" target="_blank" style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.82rem; font-weight: 700; color: #1877f2; text-decoration: none; background: #eff6ff; padding: 6px 12px; border-radius: 8px;">
+                                📸 Ver Fotos en Facebook ↗
+                            </a>
+                        </div>
+                    ` : ''}
+
+                    ${off.contacto_telefono ? `
+                        <div style="font-size: 0.82rem; color: #334155; margin-bottom: 14px;">
+                            <strong>Vendedor:</strong> ${off.contacto_nombre || 'Contacto'} 
+                            <a href="https://wa.me/52${off.contacto_telefono.replace(/\D/g, '')}" target="_blank" style="color: #16a34a; font-weight: 700; margin-left: 4px; text-decoration: none;">
+                                +52 ${off.contacto_telefono} 📲
+                            </a>
+                        </div>
+                    ` : ''}
+                </div>
+
+                <div style="display: flex; gap: 8px; border-top: 1px solid #f1f5f9; padding-top: 14px; margin-top: 10px;">
+                    <button class="btn btn-blue" style="flex: 1; padding: 8px 12px; font-size: 0.82rem; justify-content: center;" onclick="openOfferModal('${off.id}')">✏️ Editar</button>
+                    <button class="btn ${off.activo ? 'btn-blue' : 'btn-green'}" style="padding: 8px 12px; font-size: 0.82rem;" onclick="toggleOfferStatus('${off.id}', ${off.activo})">
+                        ${off.activo ? 'Pausar ⏸️' : 'Activar ▶️'}
+                    </button>
+                    <button style="background: none; border: 1px solid #fee2e2; color: #ef4444; border-radius: 8px; padding: 8px 10px; cursor: pointer;" onclick="deleteOffer('${off.id}', '${off.titulo.replace(/'/g, "\\'")}')" title="Eliminar">🗑️</button>
+                </div>
+            </div>
+        `).join('');
     }
 
     // Auto Polling del Servidor Webhook local

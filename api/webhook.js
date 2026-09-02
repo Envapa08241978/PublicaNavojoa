@@ -129,6 +129,38 @@ async function getContactFromFirestore(cleanPhone) {
     return { isRegistered: false, nombre: '', colonia: '', optIn: '', interesAnunciar: '' };
 }
 
+async function getOffersFromFirestore() {
+    try {
+        const res = await fetch(`https://firestore.googleapis.com/v1/projects/loquese-app/databases/(default)/documents/offers`);
+        if (res.ok) {
+            const data = await res.json();
+            const docs = data?.documents || [];
+            const offers = [];
+            docs.forEach(doc => {
+                const f = doc.fields || {};
+                const activo = f.activo?.booleanValue !== undefined ? f.activo.booleanValue : true;
+                if (activo) {
+                    offers.push({
+                        id: doc.name.split('/').pop(),
+                        titulo: f.titulo?.stringValue || 'Oferta Destacada',
+                        categoria: f.categoria?.stringValue || 'Comercio Local',
+                        descripcion: f.descripcion?.stringValue || '',
+                        enlace_facebook: f.enlace_facebook?.stringValue || '',
+                        contacto_nombre: f.contacto_nombre?.stringValue || '',
+                        contacto_telefono: f.contacto_telefono?.stringValue || '',
+                        orden: Number(f.orden?.integerValue || 1)
+                    });
+                }
+            });
+            offers.sort((a, b) => a.orden - b.orden);
+            return offers;
+        }
+    } catch(e) {
+        console.error('[GET OFFERS ERR]', e);
+    }
+    return [];
+}
+
 async function processBotRules(senderPhone, rawPhone, senderName, msgText) {
     const textLower = msgText.toLowerCase().trim();
     const metaTo = senderPhone || (rawPhone.length === 10 ? '52' + rawPhone : rawPhone);
@@ -177,11 +209,47 @@ async function processBotRules(senderPhone, rawPhone, senderName, msgText) {
         return;
     }
 
-    // Regla 2: Catálogo de Ofertas (Solo para registrados)
+    // Regla 2: Catálogo Dinámico de Ofertas (Consultado en tiempo real de Firestore)
     if (textLower.includes('catálogo') || textLower.includes('catalogo') || textLower.includes('oferta') || textLower.includes('remate')) {
-        const respuesta = `🛍️ *Catálogo Semanal de Ofertas — Navojoa* 🛍️\n\n${nameSalute} Aquí tienes los remates y promociones destacadas de esta semana en Navojoa:\n\n1. 🪑 *Mueblería & Decoración:* Comedores y piezas decorativas de ocasión.\n2. 👗 *Moda & Boutique:* Descuentos de temporada en comercios locales.\n3. 🍽️ *Gastronomía Local:* Promociones y cupones 2x1.\n\n💬 *Si te interesa alguna de estas promociones, responde con el número de la oferta para enviarte los detalles directos.*`;
+        const activeOffers = await getOffersFromFirestore();
+        let respuesta = '';
+
+        if (activeOffers.length > 0) {
+            let listado = '';
+            activeOffers.forEach((off, idx) => {
+                const num = idx + 1;
+                listado += `*${num}.* ✨ *${off.titulo}*\n`;
+                if (off.categoria) listado += `   🏷️ _Categoría: ${off.categoria}_\n`;
+                if (off.descripcion) listado += `   📝 ${off.descripcion}\n`;
+                if (off.enlace_facebook) listado += `   📸 Ver fotos en Facebook: ${off.enlace_facebook}\n`;
+                if (off.contacto_telefono) {
+                    const cleanT = off.contacto_telefono.replace(/\D/g, '');
+                    listado += `   📲 Contacto directo: wa.me/52${cleanT} (${off.contacto_nombre || 'Vendedor'})\n`;
+                }
+                listado += `\n`;
+            });
+
+            respuesta = `🛍️ *Catálogo Semanal de Ofertas — Publica Navojoa* 🛍️\n\n${nameSalute} Aquí tienes las ofertas y promociones activas de esta semana:\n\n${listado}💬 *Responde con el número de la oferta (ej. 1) si deseas los datos directos del vendedor.*`;
+        } else {
+            respuesta = `🛍️ *Catálogo Semanal de Ofertas — Navojoa* 🛍️\n\n${nameSalute} Estamos actualizando el catálogo con las mejores promociones de esta semana.\n\nMuy pronto recibirás aquí la notificación de los nuevos remates en tu zona. ¡Mantente atento! 🎉`;
+        }
+
         await sendWhatsAppMessage(metaTo, respuesta, rawPhone, finalName);
         return;
+    }
+
+    // Regla 2.1: El usuario responde con el número de una oferta (ej: '1', 'oferta 1', 'la 1')
+    const numberMatch = textLower.match(/(?:oferta\s*|la\s*|ver\s*)?([1-9])(?:\b|$)/);
+    if (numberMatch && !textLower.includes('anunciar') && !textLower.includes('precio')) {
+        const selectedIndex = parseInt(numberMatch[1], 10) - 1;
+        const activeOffers = await getOffersFromFirestore();
+        if (activeOffers[selectedIndex]) {
+            const off = activeOffers[selectedIndex];
+            const cleanT = off.contacto_telefono ? off.contacto_telefono.replace(/\D/g, '') : '';
+            const detailMsg = `👑 *Detalles de la Oferta #${selectedIndex + 1}* 👑\n\n✨ *${off.titulo}*\n🏷️ *Categoría:* ${off.categoria}\n\n📝 *Descripción:* ${off.descripcion}\n\n📸 *Ver publicación y fotos en Facebook:* \n👉 ${off.enlace_facebook}\n\n📲 *Contactar directamente al vendedor:* \n${off.contacto_nombre ? `👤 *${off.contacto_nombre}*\n` : ''}${cleanT ? `👉 https://wa.me/52${cleanT}` : ''}\n\n--- \n_Menciona que viste su oferta en Publica Navojoa para un trato preferencial._`;
+            await sendWhatsAppMessage(metaTo, detailMsg, rawPhone, finalName);
+            return;
+        }
     }
 
     // Regla 3: Atención Comercial para Negocios y Anunciantes
