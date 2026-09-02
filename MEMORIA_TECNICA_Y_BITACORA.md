@@ -190,9 +190,15 @@ Todos los contactos se indexan de forma única en la colección `/contacts/{clea
 * **Integración en Tiempo Real con Firebase Firestore:**
   - Colección dedicada `offers` en Firestore (`loquese-app`).
   - La oferta #1 se cargó con éxito: *Artículos de Decoración y Estilo para el Hogar* (Mónica Obregón / `https://www.facebook.com/share/p/1Biw9XvppQ/`).
+* **Subida y Gestión de Fotos de Ofertas (Firebase Storage):**
+  - Botón **"📷 Subir Foto"** en el formulario modal del panel `/admin` con vista previa inmediata.
+  - Al guardar, la imagen se almacena automáticamente en Firebase Storage (`offers/{docId}_{timestamp}`) y se vincula a la oferta en Firestore.
+  - Las tarjetas del catálogo en `/admin` muestran la miniatura de la imagen con indicador `📸 Foto Bot Activa`.
 * **Inteligencia en el Bot de WhatsApp (`api/webhook.js`):**
   - Al escribir **"OFERTAS"** o **"CATÁLOGO"**, el bot consulta en vivo Firestore y entrega el listado numerado con enlaces a Facebook y botones directos de contacto.
-  - Al responder con el número de la oferta (ej. *"1"* o *"oferta 1"*), el bot entrega la ficha detallada con llamada a la acción y enlace directo al WhatsApp del anunciante (`wa.me/52...`).
+  - Al responder con el número de la oferta (ej. *"1"* o *"oferta 1"*):
+    - Si la oferta tiene foto subida, el Bot de WhatsApp utiliza la API oficial de Meta para **enviar la foto en alta resolución directamente al chat con su descripción, llamada a la acción y enlaces como pie de foto (caption)**.
+    - Si la oferta no tiene foto subida, entrega la tarjeta de texto completa.
 
 
 
