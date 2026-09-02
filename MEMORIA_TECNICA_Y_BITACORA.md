@@ -163,4 +163,21 @@ Todos los contactos se indexan de forma única en la colección `/contacts/{clea
 * **Gestión de Sesión:**
   - Píldora de usuario en el encabezado con el correo del administrador autenticado y botón **"Salir 🚪"** (`handleLogout`) para invalidar la sesión y bloquear el acceso inmediato.
 
+---
+
+## 11. SISTEMA DE MENSAJES NO LEÍDOS Y VISTA PREVIA TIPO WHATSAPP
+
+* **Indicador Visual de No Leídos:**
+  - Badge verde numérico con micro-animación pulsante para los contactos con mensajes nuevos entrantes.
+  - El avatar del contacto se resalta en verde oscuro con borde verde brillante cuando tiene mensajes pendientes.
+  - El nombre del contacto y la vista previa se destacan en negrita verde.
+* **Vista Previa en Tiempo Real:**
+  - Muestra la hora exacta del último mensaje en la esquina superior derecha del ítem.
+  - Muestra el texto del último mensaje (con prefijo *"Tú: "* si fue enviado por nosotros, o el texto del cliente).
+* **Ordenamiento Dinámico:**
+  - La lista de contactos se auto-ordena colocando automáticamente arriba las conversaciones con mensajes no leídos y las de interacción más reciente.
+* **Marcado de Lectura Automático:**
+  - Al dar clic en un contacto, sus mensajes se marcan automáticamente como leídos (`markAsRead`), limpiando el badge al instante.
+
+
 
