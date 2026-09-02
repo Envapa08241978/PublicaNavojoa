@@ -314,6 +314,13 @@
             min-width: 0;
         }
 
+        .chat-user-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 6px;
+        }
+
         .chat-user-name {
             font-weight: 700;
             font-size: 0.92rem;
@@ -323,12 +330,60 @@
             text-overflow: ellipsis;
         }
 
+        .chat-user-time {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .chat-user-sub-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 6px;
+            margin-top: 2px;
+        }
+
         .chat-user-sub {
             font-size: 0.8rem;
             color: var(--text-muted);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            flex: 1;
+        }
+
+        .chat-user-item.has-unread .chat-user-name {
+            font-weight: 900;
+            color: #0f172a;
+        }
+
+        .chat-user-item.has-unread .chat-user-sub {
+            font-weight: 700;
+            color: #15803d;
+        }
+
+        .unread-badge {
+            background: #22c55e;
+            color: #ffffff;
+            font-size: 0.7rem;
+            font-weight: 800;
+            min-width: 18px;
+            height: 18px;
+            border-radius: 9px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 5px;
+            flex-shrink: 0;
+            box-shadow: 0 1px 3px rgba(34, 197, 94, 0.4);
+            animation: pulseBadge 2s infinite;
+        }
+
+        @keyframes pulseBadge {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.08); }
         }
 
         /* Chat Main Area */
@@ -1006,6 +1061,43 @@
         }
     }
 
+    // Helper: Obtener mensajes no leídos para un contacto
+    function getUnreadCount(phone) {
+        let clean = phone.replace(/\D/g, '');
+        if (clean.startsWith('52') && clean.length === 12) clean = clean.slice(2);
+        if (clean.startsWith('521') && clean.length === 13) clean = clean.slice(3);
+        
+        // Si el contacto está abierto actualmente, no tiene no leídos
+        const leads = getLeads();
+        const activeContact = leads.find(l => String(l.id) === String(activeContactId));
+        if (activeContact && activeContact.whatsapp === clean) return 0;
+
+        const msgs = getMessages(clean);
+        if (!msgs || msgs.length === 0) return 0;
+
+        const lastReadTimestamp = Number(localStorage.getItem('last_read_' + clean) || 0);
+        
+        // Contar mensajes entrantes que llegaron después de la última lectura
+        let unread = 0;
+        msgs.forEach(m => {
+            if (m.type === 'incoming') {
+                const msgTs = Number(m.timestamp || m.ts || 0);
+                if (msgTs > lastReadTimestamp || lastReadTimestamp === 0) {
+                    unread++;
+                }
+            }
+        });
+        return unread;
+    }
+
+    // Helper: Marcar conversación como leída
+    function markAsRead(phone) {
+        let clean = phone.replace(/\D/g, '');
+        if (clean.startsWith('52') && clean.length === 12) clean = clean.slice(2);
+        if (clean.startsWith('521') && clean.length === 13) clean = clean.slice(3);
+        localStorage.setItem('last_read_' + clean, String(Date.now()));
+    }
+
     function renderChatList() {
         const leads = getLeads();
         const search = document.getElementById('chat-search').value.toLowerCase();
@@ -1013,15 +1105,49 @@
 
         const filtered = leads.filter(l => l.nombre.toLowerCase().includes(search) || l.whatsapp.includes(search));
 
-        container.innerHTML = filtered.map(item => `
-            <div class="chat-user-item ${String(item.id) === String(activeContactId) ? 'active' : ''}" onclick="selectContact('${item.id}')">
-                <div class="chat-avatar">${item.nombre.charAt(0)}</div>
+        // Ordenar: contactos con mensajes no leídos o más recientes primero
+        filtered.sort((a, b) => {
+            const unreadA = getUnreadCount(a.whatsapp);
+            const unreadB = getUnreadCount(b.whatsapp);
+            if (unreadA !== unreadB) return unreadB - unreadA;
+            return 0;
+        });
+
+        container.innerHTML = filtered.map(item => {
+            const unread = getUnreadCount(item.whatsapp);
+            const msgs = getMessages(item.whatsapp);
+            const lastMsg = msgs.length > 0 ? msgs[msgs.length - 1] : null;
+            
+            let previewText = item.colonia ? `+52 ${item.whatsapp} • ${item.colonia}` : `+52 ${item.whatsapp}`;
+            let lastTime = '';
+            
+            if (lastMsg) {
+                lastTime = lastMsg.time || '';
+                const prefix = lastMsg.type === 'outgoing' ? 'Tú: ' : '';
+                previewText = prefix + (lastMsg.text || (lastMsg.fileType?.startsWith('image/') ? '🖼️ Imagen' : '📄 Archivo'));
+            }
+
+            const isSelected = String(item.id) === String(activeContactId);
+            const hasUnreadClass = unread > 0 && !isSelected ? 'has-unread' : '';
+
+            return `
+            <div class="chat-user-item ${isSelected ? 'active' : ''} ${hasUnreadClass}" onclick="selectContact('${item.id}')">
+                <div class="chat-avatar" style="${unread > 0 && !isSelected ? 'background: #15803d; box-shadow: 0 0 0 2px #22c55e;' : ''}">
+                    ${item.nombre.charAt(0)}
+                </div>
                 <div class="chat-user-info">
-                    <div class="chat-user-name">${item.nombre}</div>
-                    <div class="chat-user-sub">+52 ${item.whatsapp} • ${item.colonia}</div>
+                    <div class="chat-user-header">
+                        <div class="chat-user-name">${item.nombre}</div>
+                        ${lastTime ? `<div class="chat-user-time">${lastTime}</div>` : ''}
+                    </div>
+                    <div class="chat-user-sub-row">
+                        <div class="chat-user-sub">${previewText}</div>
+                        ${unread > 0 && !isSelected ? `<div class="unread-badge">${unread}</div>` : ''}
+                    </div>
                 </div>
             </div>
-        `).join('');
+            `;
+        }).join('');
     }
 
     let activeMessagesUnsubscribe = null;
@@ -1052,6 +1178,9 @@
             try { activeMessagesUnsubscribe(); } catch(e) {}
             activeMessagesUnsubscribe = null;
         }
+
+        // Marcar la conversación como leída al abrirla
+        markAsRead(clean);
 
         // Renderizar inmediatamente con lo que haya en localStorage
         renderMessages(clean);
@@ -1087,6 +1216,18 @@
     function renderMessages(phone) {
         const msgs = getMessages(phone);
         const container = document.getElementById('chat-messages');
+        if (!container) return;
+
+        if (msgs.length === 0) {
+            container.innerHTML = `
+                <div style="text-align: center; color: #64748b; margin-top: 80px; font-size: 0.9rem;">
+                    <div style="font-size: 2.2rem; margin-bottom: 8px;">💬</div>
+                    <div>No hay mensajes registrados con este contacto aún.</div>
+                    <div style="font-size: 0.8rem; color: #94a3b8; margin-top: 4px;">Escribe un mensaje abajo para iniciar la conversación por WhatsApp.</div>
+                </div>
+            `;
+            return;
+        }
 
         container.innerHTML = msgs.map(m => {
             let contentHtml = m.text || '';
