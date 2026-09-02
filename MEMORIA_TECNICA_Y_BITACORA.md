@@ -66,6 +66,7 @@
 | `https://publicanavojoa.com/api/webhook` | `api/webhook.js` | Endpoint Serverless que procesa la lógica del Bot de WhatsApp 24/7. |
 | `https://publicanavojoa.com/api/send-message` | `api/send-message.js` | API de envío de mensajes y archivos desde el panel admin a WhatsApp. |
 | `https://publicanavojoa.com/api/download-media` | `api/download-media.js` | Proxy de descarga con autenticación Bearer para archivos adjuntos de WhatsApp. |
+| `https://publicanavojoa.com/api/img` | `api/img.js` | Servidor de imágenes serverless que entrega fotos de ofertas a Meta WhatsApp. |
 
 ---
 
@@ -83,6 +84,18 @@ Todos los contactos se indexan de forma única en la colección `/contacts/{clea
 * `opt_in` *(String)*: `Autorizado`.
 * `origen` *(String)*: `Formulario Web VIP` o `WhatsApp Bot Cloud`.
 * `last_msg` / `last_time` *(String)*: Último mensaje recibido/enviado y hora.
+
+### Colección de Catálogo de Ofertas (`/offers/{docId}`):
+* `titulo` *(String)*: Nombre de la oferta, promoción o evento.
+* `categoria` *(String)*: Categoría comercial (ej. *Mueblería & Decoración*, *Eventos*, *Gastronomía*).
+* `descripcion` *(String)*: Ficha descriptiva para WhatsApp.
+* `imagen_url` *(String)*: Imagen optimizada en Base64 (o URL pública) entregada vía `/api/img?offerId=...`.
+* `enlace_facebook` *(String)*: Enlace opcional a la publicación original en Facebook.
+* `enlace_maps` *(String)*: Enlace opcional de Google Maps para cómo llegar al evento o negocio.
+* `contacto_nombre` *(String)*: Nombre del vendedor o encargado.
+* `contacto_telefono` *(String)*: WhatsApp a 10 dígitos para enlace directo `wa.me/52...`.
+* `activo` *(Boolean)*: `true` (visible en bot y catálogo) / `false` (pausado).
+* `orden` *(Number)*: Orden secuencial de entrega en WhatsApp.
 
 ---
 
