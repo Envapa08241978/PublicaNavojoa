@@ -451,7 +451,7 @@
             box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
         }
 
-        input[type="text"], input[type="tel"] {
+        input[type="text"], input[type="tel"], input[type="email"], input[type="password"] {
             width: 100%;
             padding: 12px;
             margin-top: 6px;
@@ -462,23 +462,230 @@
             border-radius: 10px;
             font-size: 0.92rem;
             outline: none;
+            transition: all 0.2s ease;
+        }
+
+        input[type="email"]:focus, input[type="password"]:focus {
+            border-color: var(--accent-green);
+            background: #ffffff;
+            box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.12);
+        }
+
+        /* Auth Screen Overlay */
+        #auth-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 10% 10%, rgba(22, 163, 74, 0.08) 0%, #f8fafc 60%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 99999;
+            padding: 20px;
+        }
+
+        .auth-card {
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 26px;
+            padding: 40px 32px;
+            width: 100%;
+            max-width: 440px;
+            box-shadow: 0 25px 60px -15px rgba(15, 23, 42, 0.15);
+            text-align: center;
+            animation: fadeInAuth 0.3s ease-out;
+        }
+
+        @keyframes fadeInAuth {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .auth-logo {
+            max-width: 110px;
+            height: auto;
+            margin: 0 auto 18px auto;
+            display: block;
+        }
+
+        .auth-error {
+            background: #fef2f2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 0.84rem;
+            margin-bottom: 16px;
+            display: none;
+            text-align: left;
+            font-weight: 500;
+        }
+
+        .auth-success {
+            background: #f0fdf4;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 0.84rem;
+            margin-bottom: 16px;
+            display: none;
+            text-align: left;
+            font-weight: 500;
+        }
+
+        .auth-links {
+            margin-top: 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.84rem;
+        }
+
+        .auth-link-btn {
+            background: none;
+            border: none;
+            color: var(--accent-green);
+            font-weight: 700;
+            cursor: pointer;
+            text-decoration: underline;
+            padding: 0;
+            font-size: 0.84rem;
+        }
+
+        .auth-link-btn:hover {
+            color: var(--accent-green-hover);
+        }
+
+        .user-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #f1f5f9;
+            border: 1px solid var(--border-color);
+            padding: 6px 12px;
+            border-radius: 10px;
+            font-size: 0.82rem;
+            color: var(--text-main);
+            font-weight: 600;
+        }
+
+        .btn-logout {
+            background: #fee2e2;
+            color: #b91c1c;
+            border: 1px solid #fecaca;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-logout:hover {
+            background: #fecaca;
         }
     </style>
 </head>
 <body>
 
-<div class="container">
+<!-- Pantalla de Inicio de Sesión / Autenticación Firebase -->
+<div id="auth-overlay">
+    <!-- Card 1: Iniciar Sesión -->
+    <div class="auth-card" id="card-login">
+        <img src="logo%20letras.png" alt="Publica Navojoa" class="auth-logo">
+        <h2 style="font-size: 1.45rem; font-weight: 800; margin-bottom: 6px; color: var(--text-main);">Acceso al Panel CRM</h2>
+        <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 22px;">Ingresa tus credenciales autorizadas de Publica Navojoa.</p>
+
+        <div id="auth-error-msg" class="auth-error"></div>
+        <div id="auth-success-msg" class="auth-success"></div>
+
+        <form id="form-login" onsubmit="handleLogin(event)" style="text-align: left;">
+            <label style="font-size: 0.82rem; font-weight: 700; color: var(--text-main);">Correo Electrónico:</label>
+            <input type="email" id="auth-email" placeholder="ejemplo@publicanavojoa.com" required autocomplete="email">
+
+            <label style="font-size: 0.82rem; font-weight: 700; color: var(--text-main);">Contraseña:</label>
+            <input type="password" id="auth-password" placeholder="••••••••" required autocomplete="current-password">
+
+            <button type="submit" class="btn btn-green" id="btn-submit-login" style="width: 100%; padding: 13px; font-size: 0.95rem; font-weight: 800; justify-content: center; box-shadow: 0 4px 14px rgba(22, 163, 74, 0.3);">
+                Iniciar Sesión ➔
+            </button>
+        </form>
+
+        <div class="auth-links">
+            <button type="button" class="auth-link-btn" onclick="showResetPassword()">¿Olvidaste tu contraseña?</button>
+            <button type="button" class="auth-link-btn" onclick="showRegisterAccount()">Crear cuenta</button>
+        </div>
+    </div>
+
+    <!-- Card 2: Recuperar Contraseña -->
+    <div class="auth-card" id="card-reset" style="display: none;">
+        <img src="logo%20letras.png" alt="Publica Navojoa" class="auth-logo">
+        <h2 style="font-size: 1.4rem; font-weight: 800; margin-bottom: 6px; color: var(--text-main);">Recuperar Contraseña</h2>
+        <p style="font-size: 0.86rem; color: var(--text-muted); margin-bottom: 20px;">Escribe tu correo electrónico y te enviaremos un enlace oficial de Firebase para restablecer tu contraseña.</p>
+
+        <div id="reset-error-msg" class="auth-error"></div>
+        <div id="reset-success-msg" class="auth-success"></div>
+
+        <form id="form-reset" onsubmit="handleResetPassword(event)" style="text-align: left;">
+            <label style="font-size: 0.82rem; font-weight: 700; color: var(--text-main);">Correo Registrado:</label>
+            <input type="email" id="reset-email" placeholder="ejemplo@publicanavojoa.com" required autocomplete="email">
+
+            <button type="submit" class="btn btn-green" id="btn-submit-reset" style="width: 100%; padding: 13px; font-size: 0.95rem; font-weight: 800; justify-content: center;">
+                Enviar Enlace de Recuperación ✉️
+            </button>
+        </form>
+
+        <div style="margin-top: 20px; text-align: center;">
+            <button type="button" class="auth-link-btn" onclick="showLoginAccount()">← Volver al inicio de sesión</button>
+        </div>
+    </div>
+
+    <!-- Card 3: Crear Cuenta Inicial de Administrador -->
+    <div class="auth-card" id="card-register" style="display: none;">
+        <img src="logo%20letras.png" alt="Publica Navojoa" class="auth-logo">
+        <h2 style="font-size: 1.4rem; font-weight: 800; margin-bottom: 6px; color: var(--text-main);">Registro de Administrador</h2>
+        <p style="font-size: 0.86rem; color: var(--text-muted); margin-bottom: 20px;">Crea el usuario y contraseña para acceder a la administración.</p>
+
+        <div id="reg-error-msg" class="auth-error"></div>
+
+        <form id="form-reg" onsubmit="handleRegister(event)" style="text-align: left;">
+            <label style="font-size: 0.82rem; font-weight: 700; color: var(--text-main);">Correo Electrónico:</label>
+            <input type="email" id="reg-email" placeholder="ejemplo@publicanavojoa.com" required autocomplete="email">
+
+            <label style="font-size: 0.82rem; font-weight: 700; color: var(--text-main);">Contraseña (mínimo 6 caracteres):</label>
+            <input type="password" id="reg-password" placeholder="••••••••" required minlength="6" autocomplete="new-password">
+
+            <button type="submit" class="btn btn-green" id="btn-submit-reg" style="width: 100%; padding: 13px; font-size: 0.95rem; font-weight: 800; justify-content: center;">
+                Crear Administrador ➔
+            </button>
+        </form>
+
+        <div style="margin-top: 20px; text-align: center;">
+            <button type="button" class="auth-link-btn" onclick="showLoginAccount()">← Ya tengo cuenta, iniciar sesión</button>
+        </div>
+    </div>
+</div>
+
+<div class="container" id="admin-main-container" style="display: none;">
     <header>
         <div class="brand-header">
-            <img src="Publica navojoa logotipo oficial.png" alt="Publica Navojoa" class="header-logo">
+            <img src="logo%20letras.png" alt="Publica Navojoa" class="header-logo" style="width: 44px; height: 44px; object-fit: contain;">
             <div>
                 <h1>Panel CRM & Chat WhatsApp API</h1>
                 <p style="color: var(--text-muted); font-size: 0.88rem;"><strong>Publica Navojoa</strong> — Linea Oficial Cloud API: <code>+52 642 152 0280</code></p>
             </div>
         </div>
-        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+            <div class="user-pill" id="current-user-pill">
+                <span>👤</span>
+                <span id="current-user-email">admin@publicanavojoa.com</span>
+            </div>
             <button class="btn btn-green" onclick="exportCSV()">📥 Exportar Base a Meta Ads</button>
             <button class="btn btn-blue" onclick="openModal()">+ Agregar Contacto FB</button>
+            <button class="btn-logout" onclick="handleLogout()" title="Cerrar sesión">Salir 🚪</button>
         </div>
     </header>
 
@@ -644,6 +851,7 @@
 
 <!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
 <script>
@@ -1286,11 +1494,186 @@
         } catch (e) {}
     }
 
-    // Initialize
-    renderChatList();
-    selectContact(1);
-    listenFirebaseContacts();
-    listenFirebaseMessages();
+    // ═════════════════════════════════════════════════════════════════════
+    // MÓDULO DE AUTENTICACIÓN FIREBASE (Login, Logout, Reset Password)
+    // ═════════════════════════════════════════════════════════════════════
+    const auth = firebase.auth();
+    let isInitialized = false;
+
+    // Cambiar vistas de autenticación
+    function showResetPassword() {
+        document.getElementById('card-login').style.display = 'none';
+        document.getElementById('card-register').style.display = 'none';
+        document.getElementById('card-reset').style.display = 'block';
+        clearAuthAlerts();
+    }
+
+    function showLoginAccount() {
+        document.getElementById('card-reset').style.display = 'none';
+        document.getElementById('card-register').style.display = 'none';
+        document.getElementById('card-login').style.display = 'block';
+        clearAuthAlerts();
+    }
+
+    function showRegisterAccount() {
+        document.getElementById('card-login').style.display = 'none';
+        document.getElementById('card-reset').style.display = 'none';
+        document.getElementById('card-register').style.display = 'block';
+        clearAuthAlerts();
+    }
+
+    function clearAuthAlerts() {
+        ['auth-error-msg', 'auth-success-msg', 'reset-error-msg', 'reset-success-msg', 'reg-error-msg'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.style.display = 'none';
+                el.innerText = '';
+            }
+        });
+    }
+
+    function showAuthError(elementId, message) {
+        const el = document.getElementById(elementId);
+        if (el) {
+            el.innerText = message;
+            el.style.display = 'block';
+        }
+    }
+
+    function showAuthSuccess(elementId, message) {
+        const el = document.getElementById(elementId);
+        if (el) {
+            el.innerText = message;
+            el.style.display = 'block';
+        }
+    }
+
+    function getFriendlyAuthError(code) {
+        switch (code) {
+            case 'auth/invalid-credential':
+            case 'auth/wrong-password':
+                return 'Contraseña incorrecta o credenciales no válidas.';
+            case 'auth/user-not-found':
+                return 'No existe ninguna cuenta registrada con este correo.';
+            case 'auth/invalid-email':
+                return 'El formato de correo electrónico no es válido.';
+            case 'auth/email-already-in-use':
+                return 'Este correo ya está registrado. Inicia sesión o recupera tu contraseña.';
+            case 'auth/weak-password':
+                return 'La contraseña debe tener al menos 6 caracteres.';
+            case 'auth/too-many-requests':
+                return 'Demasiados intentos fallidos. Intenta nuevamente en unos minutos.';
+            default:
+                return 'Ocurrió un error al procesar tu solicitud. Intenta de nuevo.';
+        }
+    }
+
+    // Iniciar Sesión con Firebase Auth
+    async function handleLogin(e) {
+        e.preventDefault();
+        clearAuthAlerts();
+        const email = document.getElementById('auth-email').value.trim();
+        const pass = document.getElementById('auth-password').value;
+        const btn = document.getElementById('btn-submit-login');
+
+        if (!email || !pass) return;
+
+        try {
+            btn.disabled = true;
+            btn.innerText = 'Verificando... ⏳';
+            await auth.signInWithEmailAndPassword(email, pass);
+        } catch (err) {
+            console.error('Error al iniciar sesión:', err);
+            showAuthError('auth-error-msg', getFriendlyAuthError(err.code));
+        } finally {
+            btn.disabled = false;
+            btn.innerText = 'Iniciar Sesión ➔';
+        }
+    }
+
+    // Recuperar Contraseña con Firebase Auth (Envío de correo oficial)
+    async function handleResetPassword(e) {
+        e.preventDefault();
+        clearAuthAlerts();
+        const email = document.getElementById('reset-email').value.trim();
+        const btn = document.getElementById('btn-submit-reset');
+
+        if (!email) return;
+
+        try {
+            btn.disabled = true;
+            btn.innerText = 'Enviando enlace... ⏳';
+            await auth.sendPasswordResetEmail(email);
+            showAuthSuccess('reset-success-msg', '✅ Se ha enviado un enlace a tu correo. Revisa tu bandeja de entrada o spam para restablecer tu contraseña.');
+            document.getElementById('reset-email').value = '';
+        } catch (err) {
+            console.error('Error al recuperar contraseña:', err);
+            showAuthError('reset-error-msg', getFriendlyAuthError(err.code));
+        } finally {
+            btn.disabled = false;
+            btn.innerText = 'Enviar Enlace de Recuperación ✉️';
+        }
+    }
+
+    // Crear cuenta de administrador
+    async function handleRegister(e) {
+        e.preventDefault();
+        clearAuthAlerts();
+        const email = document.getElementById('reg-email').value.trim();
+        const pass = document.getElementById('reg-password').value;
+        const btn = document.getElementById('btn-submit-reg');
+
+        if (!email || !pass) return;
+
+        try {
+            btn.disabled = true;
+            btn.innerText = 'Creando cuenta... ⏳';
+            await auth.createUserWithEmailAndPassword(email, pass);
+        } catch (err) {
+            console.error('Error al registrar cuenta:', err);
+            showAuthError('reg-error-msg', getFriendlyAuthError(err.code));
+        } finally {
+            btn.disabled = false;
+            btn.innerText = 'Crear Administrador ➔';
+        }
+    }
+
+    // Cerrar Sesión
+    async function handleLogout() {
+        try {
+            await auth.signOut();
+        } catch (err) {
+            console.error('Error al cerrar sesión:', err);
+        }
+    }
+
+    // Observador de Estado de Autenticación de Firebase
+    auth.onAuthStateChanged(user => {
+        const overlay = document.getElementById('auth-overlay');
+        const mainContainer = document.getElementById('admin-main-container');
+        const userEmailEl = document.getElementById('current-user-email');
+
+        if (user) {
+            // Usuario Autenticado: Ocultar login y mostrar panel
+            overlay.style.display = 'none';
+            mainContainer.style.display = 'block';
+            if (userEmailEl) userEmailEl.innerText = user.email || 'Admin';
+
+            // Iniciar observadores de Firestore si es primera vez
+            if (!isInitialized) {
+                isInitialized = true;
+                renderChatList();
+                selectContact(1);
+                listenFirebaseContacts();
+                listenFirebaseMessages();
+            }
+        } else {
+            // Usuario No Autenticado: Ocultar panel y mostrar login
+            mainContainer.style.display = 'none';
+            overlay.style.display = 'flex';
+            showLoginAccount();
+        }
+    });
 </script>
 </body>
 </html>
