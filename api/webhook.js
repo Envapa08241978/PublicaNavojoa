@@ -104,10 +104,10 @@ async function getContactFromFirestore(cleanPhone) {
             const data = await res.json();
             const fields = data?.fields || {};
             const nombre = fields?.nombre?.stringValue || '';
-            const colonia = fields?.colonia?.stringValue || '';
+            const colonia = fields?.colonia?.stringValue || 'Navojoa';
             const optIn = fields?.opt_in?.stringValue || '';
             const interesAnunciar = fields?.interes_anunciar?.stringValue || '';
-            if (nombre && nombre !== '??' && nombre !== 'Cliente VIP' && nombre !== 'Cliente WhatsApp' && colonia && colonia !== 'Navojoa') {
+            if (nombre && nombre !== '??' && nombre !== 'Cliente VIP' && nombre !== 'Cliente WhatsApp') {
                 return { isRegistered: true, nombre, colonia, optIn, interesAnunciar };
             }
         }
@@ -119,10 +119,7 @@ async function getContactFromFirestore(cleanPhone) {
 
 async function processBotRules(senderPhone, rawPhone, senderName, msgText) {
     const textLower = msgText.toLowerCase().trim();
-    let metaTo = rawPhone;
-    if (rawPhone.length === 10) {
-        metaTo = '52' + rawPhone;
-    }
+    const metaTo = senderPhone || (rawPhone.length === 10 ? '52' + rawPhone : rawPhone);
 
     // 1. Consultar si el contacto ya está registrado en Firebase Firestore
     const contactInfo = await getContactFromFirestore(rawPhone);
