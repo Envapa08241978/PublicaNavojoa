@@ -169,12 +169,21 @@ async function getOffersFromFirestore() {
                 const f = doc.fields || {};
                 const activo = f.activo?.booleanValue !== undefined ? f.activo.booleanValue : true;
                 if (activo) {
+                    let pList = [];
+                    if (f.imagenes_json?.stringValue) {
+                        try { pList = JSON.parse(f.imagenes_json.stringValue); } catch(e) {}
+                    }
+                    if (pList.length === 0 && f.imagen_url?.stringValue) {
+                        pList = [f.imagen_url.stringValue];
+                    }
+
                     offers.push({
                         id: doc.name.split('/').pop(),
                         titulo: f.titulo?.stringValue || 'Oferta Destacada',
                         categoria: f.categoria?.stringValue || 'Comercio Local',
                         descripcion: f.descripcion?.stringValue || '',
                         imagen_url: f.imagen_url?.stringValue || '',
+                        imagenes: pList,
                         enlace_facebook: f.enlace_facebook?.stringValue || '',
                         contacto_nombre: f.contacto_nombre?.stringValue || '',
                         contacto_telefono: f.contacto_telefono?.stringValue || '',
@@ -276,11 +285,21 @@ async function processBotRules(senderPhone, rawPhone, senderName, msgText) {
         if (activeOffers[selectedIndex]) {
             const off = activeOffers[selectedIndex];
             const cleanT = off.contacto_telefono ? off.contacto_telefono.replace(/\D/g, '') : '';
-            const captionMsg = `👑 *Oferta #${selectedIndex + 1}: ${off.titulo}*\n\n📝 ${off.descripcion}\n\n📲 *Vendedor:* ${off.contacto_nombre || 'Contacto'}${cleanT ? ` (wa.me/52${cleanT})` : ''}\n\n📸 *Ver más fotos en Facebook:* ${off.enlace_facebook}`;
+            const captionMsg = `👑 *Oferta #${selectedIndex + 1}: ${off.titulo}*\n\n📝 ${off.descripcion}\n\n📲 *Vendedor:* ${off.contacto_nombre || 'Contacto'}${cleanT ? ` (wa.me/52${cleanT})` : ''}${off.enlace_facebook ? `\n\n📸 *Ver más fotos en Facebook:* ${off.enlace_facebook}` : ''}`;
 
-            // Si la oferta tiene imagen subida, se envía como foto con caption en WhatsApp
-            if (off.imagen_url && off.imagen_url.startsWith('http')) {
-                await sendWhatsAppImage(metaTo, off.imagen_url, captionMsg, rawPhone, finalName);
+            const photos = off.imagenes && off.imagenes.length > 0 ? off.imagenes : (off.imagen_url ? [off.imagen_url] : []);
+
+            if (photos.length > 0) {
+                // Enviar foto principal con el caption descriptivo
+                const firstImgUrl = photos[0].startsWith('http') ? photos[0] : `https://publicanavojoa.com/api/img?offerId=${off.id}&index=0`;
+                await sendWhatsAppImage(metaTo, firstImgUrl, captionMsg, rawPhone, finalName);
+
+                // Si hay más fotos (hasta 3), enviarlas consecutivamente
+                for (let i = 1; i < photos.length; i++) {
+                    await new Promise(r => setTimeout(r, 600)); // pausa para orden de llegada
+                    const nextImgUrl = photos[i].startsWith('http') ? photos[i] : `https://publicanavojoa.com/api/img?offerId=${off.id}&index=${i}`;
+                    await sendWhatsAppImage(metaTo, nextImgUrl, `📸 Foto ${i + 1} de ${photos.length} — ${off.titulo}`, rawPhone, finalName);
+                }
             } else {
                 const detailMsg = `👑 *Detalles de la Oferta #${selectedIndex + 1}* 👑\n\n✨ *${off.titulo}*\n🏷️ *Categoría:* ${off.categoria}\n\n📝 *Descripción:* ${off.descripcion}\n\n📸 *Ver publicación y fotos en Facebook:* \n👉 ${off.enlace_facebook}\n\n📲 *Contactar directamente al vendedor:* \n${off.contacto_nombre ? `👤 *${off.contacto_nombre}*\n` : ''}${cleanT ? `👉 https://wa.me/52${cleanT}` : ''}\n\n--- \n_Menciona que viste su oferta en Publica Navojoa para un trato preferencial._`;
                 await sendWhatsAppMessage(metaTo, detailMsg, rawPhone, finalName);

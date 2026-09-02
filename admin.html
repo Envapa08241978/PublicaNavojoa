@@ -911,17 +911,51 @@
         <label style="font-size: 0.85rem; font-weight: 700;">Descripción Breve (para WhatsApp):</label>
         <textarea id="off-desc" rows="3" style="width: 100%; padding: 10px 14px; border-radius: 10px; border: 1.5px solid #e2e8f0; font-family: inherit; font-size: 0.9rem; margin-bottom: 12px;" placeholder="Detalles de los artículos, descuento u ocasión..."></textarea>
 
-        <label style="font-size: 0.85rem; font-weight: 700;">Foto Principal del Producto / Oferta:</label>
-        <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 12px;">
-            <input type="file" id="off-file" accept="image/*" onchange="handleOfferImageSelect(event)" style="display: none;">
-            <button type="button" class="btn btn-blue" onclick="document.getElementById('off-file').click()" style="padding: 8px 14px; font-size: 0.85rem;">
-                📷 Subir Foto
-            </button>
-            <span id="off-file-name" style="font-size: 0.8rem; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 240px;">Ninguna foto seleccionada</span>
-        </div>
-        <div id="off-img-preview-box" style="display: none; margin-bottom: 14px;">
-            <img id="off-img-preview" src="" alt="Vista previa" style="max-height: 140px; border-radius: 10px; border: 1px solid #cbd5e1; object-fit: cover;">
-            <input type="hidden" id="off-img-url">
+        <label style="font-size: 0.85rem; font-weight: 700;">Fotos del Producto / Oferta (Hasta 3 fotos):</label>
+        <p style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 8px;">Se optimizan y comprimen automáticamente al instante para envío ultra rápido por WhatsApp.</p>
+        
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px;">
+            <!-- Foto 1 -->
+            <div style="border: 1.5px dashed #cbd5e1; border-radius: 12px; padding: 10px; text-align: center; background: #f8fafc; position: relative;">
+                <div style="font-size: 0.75rem; font-weight: 700; color: #475569; margin-bottom: 6px;">Foto 1 (Principal)</div>
+                <input type="file" id="off-file-1" accept="image/*" onchange="handleSingleOfferImage(event, 1)" style="display: none;">
+                <button type="button" class="btn btn-blue" onclick="document.getElementById('off-file-1').click()" style="padding: 6px 10px; font-size: 0.78rem; width: 100%;">
+                    📷 Subir
+                </button>
+                <div id="preview-box-1" style="display: none; margin-top: 8px; position: relative;">
+                    <img id="img-preview-1" src="" style="width: 100%; height: 80px; object-fit: cover; border-radius: 8px;">
+                    <button type="button" onclick="removeOfferImage(1)" style="position: absolute; top: -6px; right: -6px; background: #ef4444; color: #fff; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 11px; cursor: pointer; line-height: 1;">✕</button>
+                </div>
+                <input type="hidden" id="off-img-1">
+            </div>
+
+            <!-- Foto 2 -->
+            <div style="border: 1.5px dashed #cbd5e1; border-radius: 12px; padding: 10px; text-align: center; background: #f8fafc; position: relative;">
+                <div style="font-size: 0.75rem; font-weight: 700; color: #475569; margin-bottom: 6px;">Foto 2</div>
+                <input type="file" id="off-file-2" accept="image/*" onchange="handleSingleOfferImage(event, 2)" style="display: none;">
+                <button type="button" class="btn btn-blue" onclick="document.getElementById('off-file-2').click()" style="padding: 6px 10px; font-size: 0.78rem; width: 100%;">
+                    📷 Subir
+                </button>
+                <div id="preview-box-2" style="display: none; margin-top: 8px; position: relative;">
+                    <img id="img-preview-2" src="" style="width: 100%; height: 80px; object-fit: cover; border-radius: 8px;">
+                    <button type="button" onclick="removeOfferImage(2)" style="position: absolute; top: -6px; right: -6px; background: #ef4444; color: #fff; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 11px; cursor: pointer; line-height: 1;">✕</button>
+                </div>
+                <input type="hidden" id="off-img-2">
+            </div>
+
+            <!-- Foto 3 -->
+            <div style="border: 1.5px dashed #cbd5e1; border-radius: 12px; padding: 10px; text-align: center; background: #f8fafc; position: relative;">
+                <div style="font-size: 0.75rem; font-weight: 700; color: #475569; margin-bottom: 6px;">Foto 3</div>
+                <input type="file" id="off-file-3" accept="image/*" onchange="handleSingleOfferImage(event, 3)" style="display: none;">
+                <button type="button" class="btn btn-blue" onclick="document.getElementById('off-file-3').click()" style="padding: 6px 10px; font-size: 0.78rem; width: 100%;">
+                    📷 Subir
+                </button>
+                <div id="preview-box-3" style="display: none; margin-top: 8px; position: relative;">
+                    <img id="img-preview-3" src="" style="width: 100%; height: 80px; object-fit: cover; border-radius: 8px;">
+                    <button type="button" onclick="removeOfferImage(3)" style="position: absolute; top: -6px; right: -6px; background: #ef4444; color: #fff; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 11px; cursor: pointer; line-height: 1;">✕</button>
+                </div>
+                <input type="hidden" id="off-img-3">
+            </div>
         </div>
 
         <label style="font-size: 0.85rem; font-weight: 700;">Enlace de la Publicación en Facebook (Opcional):</label>
@@ -1668,30 +1702,67 @@
     }
 
     // ═════════════════════════════════════════════════════════════════════
-    // MÓDULO DE GESTIÓN DEL CATÁLOGO DE OFERTAS (Firebase Firestore & Storage)
+    // MÓDULO DE GESTIÓN DEL CATÁLOGO DE OFERTAS (Hasta 3 Fotos en Firestore)
     // ═════════════════════════════════════════════════════════════════════
     let currentOffers = [];
-    let selectedOfferFile = null;
 
-    function handleOfferImageSelect(event) {
+    // Helper: Comprimir imagen en el navegador a Base64 (< 80KB) en 0.2 segundos
+    function compressImageFile(file, maxDimension = 800, quality = 0.72) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = (event) => {
+                const img = new Image();
+                img.src = event.target.result;
+                img.onload = () => {
+                    let width = img.width;
+                    let height = img.height;
+                    if (width > height && width > maxDimension) {
+                        height = Math.round((height * maxDimension) / width);
+                        width = maxDimension;
+                    } else if (height > maxDimension) {
+                        width = Math.round((width * maxDimension) / height);
+                        height = maxDimension;
+                    }
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    const compressedBase64 = canvas.toDataURL('image/jpeg', quality);
+                    resolve(compressedBase64);
+                };
+                img.onerror = (err) => reject(err);
+            };
+            reader.onerror = (err) => reject(err);
+        });
+    }
+
+    async function handleSingleOfferImage(event, slot) {
         const file = event.target.files[0];
         if (!file) return;
-        selectedOfferFile = file;
-        document.getElementById('off-file-name').innerText = file.name;
 
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            document.getElementById('off-img-preview').src = e.target.result;
-            document.getElementById('off-img-preview-box').style.display = 'block';
-        };
-        reader.readAsDataURL(file);
+        try {
+            const compressed = await compressImageFile(file);
+            document.getElementById(`img-preview-${slot}`).src = compressed;
+            document.getElementById(`preview-box-${slot}`).style.display = 'block';
+            document.getElementById(`off-img-${slot}`).value = compressed;
+        } catch(e) {
+            console.error('Error al procesar imagen:', e);
+            alert('No se pudo procesar la imagen seleccionada.');
+        }
+    }
+
+    function removeOfferImage(slot) {
+        document.getElementById(`off-file-${slot}`).value = '';
+        document.getElementById(`off-img-${slot}`).value = '';
+        document.getElementById(`img-preview-${slot}`).src = '';
+        document.getElementById(`preview-box-${slot}`).style.display = 'none';
     }
 
     function openOfferModal(id = '') {
         document.getElementById('offer-modal').style.display = 'flex';
-        selectedOfferFile = null;
-        document.getElementById('off-file').value = '';
-        document.getElementById('off-file-name').innerText = 'Ninguna foto seleccionada';
+        [1, 2, 3].forEach(slot => removeOfferImage(slot));
 
         if (id) {
             const offer = currentOffers.find(o => o.id === id);
@@ -1705,18 +1776,26 @@
                 document.getElementById('off-nombre').value = offer.contacto_nombre || '';
                 document.getElementById('off-tel').value = offer.contacto_telefono || '';
                 document.getElementById('off-activo').checked = offer.activo !== false;
-                document.getElementById('off-img-url').value = offer.imagen_url || '';
 
-                if (offer.imagen_url) {
-                    document.getElementById('off-img-preview').src = offer.imagen_url;
-                    document.getElementById('off-img-preview-box').style.display = 'block';
-                    document.getElementById('off-file-name').innerText = 'Foto actual cargada';
-                } else {
-                    document.getElementById('off-img-preview-box').style.display = 'none';
+                // Cargar fotos existentes (compatibilidad con imagenes_json o imagen_url)
+                let photos = [];
+                if (offer.imagenes_json) {
+                    try { photos = JSON.parse(offer.imagenes_json); } catch(e) {}
                 }
+                if (photos.length === 0 && offer.imagen_url) {
+                    photos = [offer.imagen_url];
+                }
+
+                photos.slice(0, 3).forEach((url, idx) => {
+                    const slot = idx + 1;
+                    document.getElementById(`img-preview-${slot}`).src = url;
+                    document.getElementById(`preview-box-${slot}`).style.display = 'block';
+                    document.getElementById(`off-img-${slot}`).value = url;
+                });
                 return;
             }
         }
+
         document.getElementById('offer-modal-title').innerText = 'Agregar Oferta al Catálogo';
         document.getElementById('offer-id').value = '';
         document.getElementById('off-titulo').value = '';
@@ -1726,13 +1805,11 @@
         document.getElementById('off-nombre').value = '';
         document.getElementById('off-tel').value = '';
         document.getElementById('off-activo').checked = true;
-        document.getElementById('off-img-url').value = '';
-        document.getElementById('off-img-preview-box').style.display = 'none';
     }
 
     function closeOfferModal() {
         document.getElementById('offer-modal').style.display = 'none';
-        selectedOfferFile = null;
+        [1, 2, 3].forEach(slot => removeOfferImage(slot));
     }
 
     async function saveOffer() {
@@ -1744,40 +1821,30 @@
         const nombre = document.getElementById('off-nombre').value.trim();
         const tel = document.getElementById('off-tel').value.trim();
         const activo = document.getElementById('off-activo').checked;
-        let imagenUrl = document.getElementById('off-img-url').value.trim();
 
         if (!titulo || !descripcion) {
             return alert('Por favor ingresa al menos el título y la descripción de la oferta.');
         }
 
+        // Obtener fotos de los 3 slots
+        const photos = [];
+        [1, 2, 3].forEach(slot => {
+            const val = document.getElementById(`off-img-${slot}`).value.trim();
+            if (val) photos.push(val);
+        });
+
+        const saveBtn = document.querySelector('#offer-modal .btn-green');
+        const origText = saveBtn.innerText;
+        saveBtn.innerText = 'Guardando oferta... ⏳';
+        saveBtn.disabled = true;
+
         const docId = id || ('oferta_' + Date.now());
-
-        // Si se seleccionó un archivo nuevo, subirlo a Firebase Storage
-        if (selectedOfferFile) {
-            try {
-                const saveBtn = document.querySelector('#offer-modal .btn-green');
-                const origText = saveBtn.innerText;
-                saveBtn.innerText = 'Subiendo foto... ⏳';
-                saveBtn.disabled = true;
-
-                const fileExt = selectedOfferFile.name.split('.').pop() || 'jpg';
-                const storageRef = storage.ref(`offers/${docId}_${Date.now()}.${fileExt}`);
-                const snapshot = await storageRef.put(selectedOfferFile);
-                imagenUrl = await snapshot.ref.getDownloadURL();
-
-                saveBtn.innerText = origText;
-                saveBtn.disabled = false;
-            } catch(e) {
-                console.error('Error al subir imagen a Storage:', e);
-                alert('No se pudo subir la foto a Storage: ' + e.message + '\nSe guardará la oferta sin foto.');
-            }
-        }
-
         const offerData = {
             titulo: titulo,
             categoria: categoria || 'General',
             descripcion: descripcion,
-            imagen_url: imagenUrl,
+            imagen_url: photos[0] || '',
+            imagenes_json: JSON.stringify(photos),
             enlace_facebook: enlace,
             contacto_nombre: nombre,
             contacto_telefono: tel.replace(/\D/g, ''),
@@ -1788,8 +1855,12 @@
 
         try {
             await db.collection('offers').doc(docId).set(offerData, { merge: true });
+            saveBtn.innerText = origText;
+            saveBtn.disabled = false;
             closeOfferModal();
         } catch (e) {
+            saveBtn.innerText = origText;
+            saveBtn.disabled = false;
             console.error('Error al guardar oferta en Firebase:', e);
             alert('Error al guardar la oferta: ' + e.message);
         }
@@ -1846,14 +1917,24 @@
 
         container.innerHTML = currentOffers.map((off, idx) => `
             <div style="background: #ffffff; border: 1px solid ${off.activo ? '#bbf7d0' : '#e2e8f0'}; border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 2px 8px rgba(0,0,0,0.04); position: relative;">
-                ${off.imagen_url ? `
-                    <div style="width: 100%; height: 180px; overflow: hidden; background: #f8fafc; position: relative;">
-                        <img src="${off.imagen_url}" alt="${off.titulo}" style="width: 100%; height: 100%; object-fit: cover;">
-                        <span style="position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.6); color: #ffffff; font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 6px; backdrop-filter: blur(4px);">
-                            📸 Foto Bot Activa
-                        </span>
-                    </div>
-                ` : ''}
+                ${(() => {
+                    let pList = [];
+                    if (off.imagenes_json) {
+                        try { pList = JSON.parse(off.imagenes_json); } catch(e) {}
+                    }
+                    if (pList.length === 0 && off.imagen_url) pList = [off.imagen_url];
+                    if (pList.length === 0) return '';
+                    return `
+                        <div style="width: 100%; height: 180px; overflow: hidden; background: #f8fafc; position: relative; display: flex;">
+                            ${pList.map((p, pIdx) => `
+                                <img src="${p}" alt="${off.titulo}" style="width: ${100 / pList.length}%; height: 100%; object-fit: cover; border-right: ${pIdx < pList.length - 1 ? '2px solid #ffffff' : 'none'};">
+                            `).join('')}
+                            <span style="position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.65); color: #ffffff; font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 6px; backdrop-filter: blur(4px);">
+                                📸 ${pList.length} ${pList.length === 1 ? 'Foto' : 'Fotos'}
+                            </span>
+                        </div>
+                    `;
+                })()}
 
                 <div style="padding: 18px;">
                     <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 10px;">
