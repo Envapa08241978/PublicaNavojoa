@@ -1024,16 +1024,20 @@
         `).join('');
     }
 
+    let activeMessagesUnsubscribe = null;
+
     function selectContact(id) {
         activeContactId = id;
         const leads = getLeads();
         const contact = leads.find(l => String(l.id) === String(id));
         if (!contact) return;
 
+        // Actualizar UI del header del chat
         document.getElementById('active-avatar').innerText = contact.nombre.charAt(0);
         document.getElementById('active-contact-name').innerText = contact.nombre;
         document.getElementById('active-contact-phone').innerText = '+52 ' + contact.whatsapp;
 
+        // Actualizar panel de detalles del contacto
         document.getElementById('info-avatar').innerText = contact.nombre.charAt(0);
         document.getElementById('info-name').innerText = contact.nombre;
         document.getElementById('info-phone').innerText = '+52 ' + contact.whatsapp;
@@ -1041,40 +1045,43 @@
 
         let clean = contact.whatsapp.replace(/\D/g, '');
         if (clean.startsWith('52') && clean.length === 12) clean = clean.slice(2);
+        if (clean.startsWith('521') && clean.length === 13) clean = clean.slice(3);
 
         // Desconectar listener de chat anterior
-        if (activeMessagesUnsubscribe) activeMessagesUnsubscribe();
+        if (activeMessagesUnsubscribe) {
+            try { activeMessagesUnsubscribe(); } catch(e) {}
+            activeMessagesUnsubscribe = null;
+        }
 
-        // Escuchar subcolección de mensajes en Firebase en tiempo real (Sin requerimiento de índices)
+        // Renderizar inmediatamente con lo que haya en localStorage
+        renderMessages(clean);
+
+        // Escuchar el DOCUMENTO del contacto en Firebase para obtener messages_json en tiempo real
+        // (El webhook guarda los mensajes en el campo messages_json del documento, NO en una subcolección)
         try {
-            activeMessagesUnsubscribe = db.collection('contacts').doc(clean).collection('messages')
-                .onSnapshot(snapshot => {
-                    let fsMsgs = [];
-                    snapshot.forEach(doc => {
-                        let d = doc.data();
-                        fsMsgs.push({
-                            text: d.text || '',
-                            type: d.type || 'incoming',
-                            time: d.time || '',
-                            fileUrl: d.fileUrl || '',
-                            fileType: d.fileType || '',
-                            fileName: d.fileName || '',
-                            ts: Number(d.timestamp) || 0
-                        });
-                    });
-                    fsMsgs.sort((a, b) => a.ts - b.ts);
-                    if (fsMsgs.length > 0) {
-                        localStorage.setItem('chat_msgs_' + clean, JSON.stringify(fsMsgs));
+            activeMessagesUnsubscribe = db.collection('contacts').doc(clean)
+                .onSnapshot(docSnap => {
+                    if (docSnap.exists) {
+                        const data = docSnap.data();
+                        if (data.messages_json) {
+                            try {
+                                localStorage.setItem('chat_msgs_' + clean, data.messages_json);
+                            } catch(e) {}
+                        }
                     }
-                    renderMessages(clean);
+                    // Solo re-renderizar si este contacto sigue siendo el activo
+                    if (String(activeContactId) === String(id)) {
+                        renderMessages(clean);
+                    }
                 }, err => {
-                    console.log('Snapshot messages listener err:', err);
-                    renderMessages(clean);
+                    console.log('Doc listener error:', err);
                 });
         } catch (e) {
-            console.log('Firebase messages sync error:', e);
-            renderMessages(clean);
+            console.log('Firebase doc listener error:', e);
         }
+
+        // Actualizar lista para resaltar el contacto activo
+        renderChatList();
     }
 
     function renderMessages(phone) {
