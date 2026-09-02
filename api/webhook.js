@@ -7,16 +7,26 @@ async function saveToFirestore(cleanPhone, senderName, text, type, fileUrl = '',
     try {
         const docUrl = `https://firestore.googleapis.com/v1/projects/loquese-app/databases/(default)/documents/contacts/${cleanPhone}`;
         let existingMsgs = [];
+        let currentNombre = '';
 
-        // Attempt to fetch existing messages from contact doc
+        // Attempt to fetch existing messages and name from contact doc
         try {
             const getRes = await fetch(docUrl);
             if (getRes.ok) {
                 const getDoc = await getRes.json();
                 const jsonStr = getDoc?.fields?.messages_json?.stringValue;
                 if (jsonStr) existingMsgs = JSON.parse(jsonStr);
+                currentNombre = getDoc?.fields?.nombre?.stringValue || '';
             }
         } catch(e) {}
+
+        // Prevenir duplicados (si el ultimo mensaje es identico en < 2 segundos)
+        if (existingMsgs.length > 0) {
+            const lastM = existingMsgs[existingMsgs.length - 1];
+            if (lastM.text === text && lastM.type === type && (Date.now() - (lastM.timestamp || 0) < 2000)) {
+                return;
+            }
+        }
 
         const newMsg = {
             text: text || '',
@@ -39,8 +49,11 @@ async function saveToFirestore(cleanPhone, senderName, text, type, fileUrl = '',
             messages_json: { stringValue: JSON.stringify(existingMsgs) }
         };
 
-        if (senderName && senderName !== 'Cliente WhatsApp' && senderName !== 'Cliente VIP') {
-            bodyFields.nombre = { stringValue: senderName };
+        // Preservar el nombre real registrado si ya existe en Firestore (para no sobreescribir con emojis de WhatsApp)
+        if (!currentNombre || currentNombre === 'Cliente WhatsApp' || currentNombre === 'Cliente VIP' || currentNombre === '??') {
+            if (senderName && senderName !== 'Cliente WhatsApp' && senderName !== 'Cliente VIP') {
+                bodyFields.nombre = { stringValue: senderName };
+            }
         }
 
         const fieldsToUpdate = Object.keys(bodyFields);
@@ -127,9 +140,6 @@ async function processBotRules(senderPhone, rawPhone, senderName, msgText) {
     const firstName = finalName ? finalName.split(' ')[0] : '';
     const nameSalute = firstName ? `¡Hola ${firstName}!` : '¡Hola!';
     const coloniaText = contactInfo.colonia && contactInfo.colonia !== 'Navojoa' ? ` (Zona: *${contactInfo.colonia}*)` : '';
-
-    // 2. Guardar/actualizar datos del contacto en Firestore
-    await saveToFirestore(rawPhone, finalName || senderName, msgText, 'incoming');
 
     console.log(`[BOT RULES] User: '${finalName || senderName}' (${rawPhone}) Registered: ${isRegistered} Msg: '${textLower}'`);
 
