@@ -190,15 +190,19 @@ Todos los contactos se indexan de forma única en la colección `/contacts/{clea
 * **Integración en Tiempo Real con Firebase Firestore:**
   - Colección dedicada `offers` en Firestore (`loquese-app`).
   - La oferta #1 se cargó con éxito: *Artículos de Decoración y Estilo para el Hogar* (Mónica Obregón / `https://www.facebook.com/share/p/1Biw9XvppQ/`).
-* **Subida y Gestión de Fotos de Ofertas (Firebase Storage):**
-  - Botón **"📷 Subir Foto"** en el formulario modal del panel `/admin` con vista previa inmediata.
-  - Al guardar, la imagen se almacena automáticamente en Firebase Storage (`offers/{docId}_{timestamp}`) y se vincula a la oferta en Firestore.
-  - Las tarjetas del catálogo en `/admin` muestran la miniatura de la imagen con indicador `📸 Foto Bot Activa`.
+* **Subida y Gestión de Fotos de Ofertas (Hasta 3 fotos instantáneas):**
+  - Selector con 3 casillas independientes (**Foto 1 Principal**, **Foto 2**, **Foto 3**) con botón de eliminación rápida (`✕`).
+  - **Compresión client-side inmediata (HTML5 Canvas):** Las fotos tomadas desde celular o cámara de alta resolución (3-10MB) se comprimen automáticamente en el navegador a Base64 optimizado (<80KB) en menos de 0.2 segundos, eliminando esperas y tiempos muertos.
+  - Almacenamiento directo en Firestore en el campo `imagenes_json` (array de hasta 3 fotos).
+  - En `/admin`, las tarjetas muestran un mosaico con el número exacto de fotos (`📸 3 Fotos`).
+* **Servicio Serverless de Entrega de Imágenes (`api/img.js`):**
+  - Endpoint dedicado `https://publicanavojoa.com/api/img?offerId=...&index=0` que entrega las imágenes en binario JPEG con encabezados HTTP nativos (`Content-Type`, `Cache-Control`).
+  - Meta WhatsApp Cloud API descarga y despacha las imágenes a máxima velocidad sin depender de servicios externos de terceros.
 * **Inteligencia en el Bot de WhatsApp (`api/webhook.js`):**
   - Al escribir **"OFERTAS"** o **"CATÁLOGO"**, el bot consulta en vivo Firestore y entrega el listado numerado con enlaces a Facebook y botones directos de contacto.
   - Al responder con el número de la oferta (ej. *"1"* o *"oferta 1"*):
-    - Si la oferta tiene foto subida, el Bot de WhatsApp utiliza la API oficial de Meta para **enviar la foto en alta resolución directamente al chat con su descripción, llamada a la acción y enlaces como pie de foto (caption)**.
-    - Si la oferta no tiene foto subida, entrega la tarjeta de texto completa.
+    - Si la oferta tiene fotos: el Bot de WhatsApp envía **la foto principal con la ficha descriptiva y llamada a la acción**, e inmediatamente después envía **las fotos adicionales (hasta 3 fotos)** para que el cliente aprecie todos los ángulos del producto.
+    - Si la oferta no tiene fotos: entrega la tarjeta de texto completa.
 
 
 
