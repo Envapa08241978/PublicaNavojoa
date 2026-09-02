@@ -911,7 +911,20 @@
         <label style="font-size: 0.85rem; font-weight: 700;">Descripción Breve (para WhatsApp):</label>
         <textarea id="off-desc" rows="3" style="width: 100%; padding: 10px 14px; border-radius: 10px; border: 1.5px solid #e2e8f0; font-family: inherit; font-size: 0.9rem; margin-bottom: 12px;" placeholder="Detalles de los artículos, descuento u ocasión..."></textarea>
 
-        <label style="font-size: 0.85rem; font-weight: 700;">Enlace de la Publicación en Facebook:</label>
+        <label style="font-size: 0.85rem; font-weight: 700;">Foto Principal del Producto / Oferta:</label>
+        <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 12px;">
+            <input type="file" id="off-file" accept="image/*" onchange="handleOfferImageSelect(event)" style="display: none;">
+            <button type="button" class="btn btn-blue" onclick="document.getElementById('off-file').click()" style="padding: 8px 14px; font-size: 0.85rem;">
+                📷 Subir Foto
+            </button>
+            <span id="off-file-name" style="font-size: 0.8rem; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 240px;">Ninguna foto seleccionada</span>
+        </div>
+        <div id="off-img-preview-box" style="display: none; margin-bottom: 14px;">
+            <img id="off-img-preview" src="" alt="Vista previa" style="max-height: 140px; border-radius: 10px; border: 1px solid #cbd5e1; object-fit: cover;">
+            <input type="hidden" id="off-img-url">
+        </div>
+
+        <label style="font-size: 0.85rem; font-weight: 700;">Enlace de la Publicación en Facebook (Opcional):</label>
         <input type="url" id="off-enlace" placeholder="https://www.facebook.com/share/p/...">
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
@@ -967,6 +980,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
 
 <script>
     // Configuración Firebase Oficial
@@ -982,6 +996,7 @@
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
+    const storage = firebase.storage();
 
     // Sincronización en tiempo real de Contactos y Mensajes con Firebase Firestore
     function listenFirebaseContacts() {
@@ -1653,12 +1668,31 @@
     }
 
     // ═════════════════════════════════════════════════════════════════════
-    // MÓDULO DE GESTIÓN DEL CATÁLOGO DE OFERTAS (Firebase Firestore)
+    // MÓDULO DE GESTIÓN DEL CATÁLOGO DE OFERTAS (Firebase Firestore & Storage)
     // ═════════════════════════════════════════════════════════════════════
     let currentOffers = [];
+    let selectedOfferFile = null;
+
+    function handleOfferImageSelect(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        selectedOfferFile = file;
+        document.getElementById('off-file-name').innerText = file.name;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            document.getElementById('off-img-preview').src = e.target.result;
+            document.getElementById('off-img-preview-box').style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    }
 
     function openOfferModal(id = '') {
         document.getElementById('offer-modal').style.display = 'flex';
+        selectedOfferFile = null;
+        document.getElementById('off-file').value = '';
+        document.getElementById('off-file-name').innerText = 'Ninguna foto seleccionada';
+
         if (id) {
             const offer = currentOffers.find(o => o.id === id);
             if (offer) {
@@ -1671,6 +1705,15 @@
                 document.getElementById('off-nombre').value = offer.contacto_nombre || '';
                 document.getElementById('off-tel').value = offer.contacto_telefono || '';
                 document.getElementById('off-activo').checked = offer.activo !== false;
+                document.getElementById('off-img-url').value = offer.imagen_url || '';
+
+                if (offer.imagen_url) {
+                    document.getElementById('off-img-preview').src = offer.imagen_url;
+                    document.getElementById('off-img-preview-box').style.display = 'block';
+                    document.getElementById('off-file-name').innerText = 'Foto actual cargada';
+                } else {
+                    document.getElementById('off-img-preview-box').style.display = 'none';
+                }
                 return;
             }
         }
@@ -1683,10 +1726,13 @@
         document.getElementById('off-nombre').value = '';
         document.getElementById('off-tel').value = '';
         document.getElementById('off-activo').checked = true;
+        document.getElementById('off-img-url').value = '';
+        document.getElementById('off-img-preview-box').style.display = 'none';
     }
 
     function closeOfferModal() {
         document.getElementById('offer-modal').style.display = 'none';
+        selectedOfferFile = null;
     }
 
     async function saveOffer() {
@@ -1698,16 +1744,40 @@
         const nombre = document.getElementById('off-nombre').value.trim();
         const tel = document.getElementById('off-tel').value.trim();
         const activo = document.getElementById('off-activo').checked;
+        let imagenUrl = document.getElementById('off-img-url').value.trim();
 
         if (!titulo || !descripcion) {
             return alert('Por favor ingresa al menos el título y la descripción de la oferta.');
         }
 
         const docId = id || ('oferta_' + Date.now());
+
+        // Si se seleccionó un archivo nuevo, subirlo a Firebase Storage
+        if (selectedOfferFile) {
+            try {
+                const saveBtn = document.querySelector('#offer-modal .btn-green');
+                const origText = saveBtn.innerText;
+                saveBtn.innerText = 'Subiendo foto... ⏳';
+                saveBtn.disabled = true;
+
+                const fileExt = selectedOfferFile.name.split('.').pop() || 'jpg';
+                const storageRef = storage.ref(`offers/${docId}_${Date.now()}.${fileExt}`);
+                const snapshot = await storageRef.put(selectedOfferFile);
+                imagenUrl = await snapshot.ref.getDownloadURL();
+
+                saveBtn.innerText = origText;
+                saveBtn.disabled = false;
+            } catch(e) {
+                console.error('Error al subir imagen a Storage:', e);
+                alert('No se pudo subir la foto a Storage: ' + e.message + '\nSe guardará la oferta sin foto.');
+            }
+        }
+
         const offerData = {
             titulo: titulo,
             categoria: categoria || 'General',
             descripcion: descripcion,
+            imagen_url: imagenUrl,
             enlace_facebook: enlace,
             contacto_nombre: nombre,
             contacto_telefono: tel.replace(/\D/g, ''),
@@ -1767,7 +1837,7 @@
                 <div style="grid-column: 1 / -1; text-align: center; padding: 60px 20px; background: #ffffff; border-radius: 16px; border: 1px dashed #cbd5e1;">
                     <div style="font-size: 2.5rem; margin-bottom: 10px;">🏷️</div>
                     <h3 style="font-size: 1.1rem; color: var(--text-main);">No hay ofertas registradas aún</h3>
-                    <p style="font-size: 0.88rem; color: var(--text-muted); margin: 6px 0 16px;">Haz clic en el botón verde arriba para agregar la primera promoción al Bot de WhatsApp.</p>
+                    <p style="font-size: 0.88rem; color: var(--text-muted); margin: 6px 0 16px;">Haz clic en el botón verde arriba para agregar la primera promoción con foto al Bot de WhatsApp.</p>
                     <button class="btn btn-green" onclick="openOfferModal()">+ Agregar Primera Oferta</button>
                 </div>
             `;
@@ -1775,10 +1845,19 @@
         }
 
         container.innerHTML = currentOffers.map((off, idx) => `
-            <div style="background: #ffffff; border: 1px solid ${off.activo ? '#bbf7d0' : '#e2e8f0'}; border-radius: 16px; padding: 20px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 2px 8px rgba(0,0,0,0.04); position: relative;">
-                <div>
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 12px;">
-                        <span style="font-size: 0.75rem; font-weight: 800; background: ${off.activo ? '#dcfce7' : '#f1f5f9'}; color: ${off.activo ? '#15803d' : '#64748b'}; padding: 4px 10px; border-radius: 20px; text-transform: uppercase;">
+            <div style="background: #ffffff; border: 1px solid ${off.activo ? '#bbf7d0' : '#e2e8f0'}; border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 2px 8px rgba(0,0,0,0.04); position: relative;">
+                ${off.imagen_url ? `
+                    <div style="width: 100%; height: 180px; overflow: hidden; background: #f8fafc; position: relative;">
+                        <img src="${off.imagen_url}" alt="${off.titulo}" style="width: 100%; height: 100%; object-fit: cover;">
+                        <span style="position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.6); color: #ffffff; font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 6px; backdrop-filter: blur(4px);">
+                            📸 Foto Bot Activa
+                        </span>
+                    </div>
+                ` : ''}
+
+                <div style="padding: 18px;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 10px;">
+                        <span style="font-size: 0.72rem; font-weight: 800; background: ${off.activo ? '#dcfce7' : '#f1f5f9'}; color: ${off.activo ? '#15803d' : '#64748b'}; padding: 4px 10px; border-radius: 20px; text-transform: uppercase;">
                             ${off.activo ? '🟢 Activa en WhatsApp' : '⚪ Pausada'}
                         </span>
                         <span style="font-size: 0.75rem; color: #94a3b8; font-weight: 700;">#${idx + 1}</span>
@@ -1797,7 +1876,7 @@
                     ${off.enlace_facebook ? `
                         <div style="margin-bottom: 12px;">
                             <a href="${off.enlace_facebook}" target="_blank" style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.82rem; font-weight: 700; color: #1877f2; text-decoration: none; background: #eff6ff; padding: 6px 12px; border-radius: 8px;">
-                                📸 Ver Fotos en Facebook ↗
+                                📸 Ver Publicación en Facebook ↗
                             </a>
                         </div>
                     ` : ''}
@@ -1812,7 +1891,7 @@
                     ` : ''}
                 </div>
 
-                <div style="display: flex; gap: 8px; border-top: 1px solid #f1f5f9; padding-top: 14px; margin-top: 10px;">
+                <div style="display: flex; gap: 8px; border-top: 1px solid #f1f5f9; padding: 12px 18px; background: #fafafa;">
                     <button class="btn btn-blue" style="flex: 1; padding: 8px 12px; font-size: 0.82rem; justify-content: center;" onclick="openOfferModal('${off.id}')">✏️ Editar</button>
                     <button class="btn ${off.activo ? 'btn-blue' : 'btn-green'}" style="padding: 8px 12px; font-size: 0.82rem;" onclick="toggleOfferStatus('${off.id}', ${off.activo})">
                         ${off.activo ? 'Pausar ⏸️' : 'Activar ▶️'}

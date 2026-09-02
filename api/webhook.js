@@ -109,6 +109,35 @@ async function sendWhatsAppMessage(toPhone, text, cleanPhone = '', senderName = 
     }
 }
 
+async function sendWhatsAppImage(toPhone, imageUrl, caption = '', cleanPhone = '', senderName = '') {
+    const url = `https://graph.facebook.com/v20.0/${PHONE_ID}/messages`;
+    try {
+        if (cleanPhone) {
+            await saveToFirestore(cleanPhone, senderName || 'Publica Navojoa', caption || '🖼️ Foto de la oferta', 'outgoing', imageUrl, 'image/jpeg');
+        }
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${ACCESS_TOKEN}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                messaging_product: 'whatsapp',
+                to: toPhone,
+                type: 'image',
+                image: {
+                    link: imageUrl,
+                    caption: caption
+                }
+            })
+        });
+        const data = await response.json();
+        console.log('[SEND WA IMG RES]', data);
+    } catch (e) {
+        console.error('[SEND WA IMG ERR]', e);
+    }
+}
+
 async function getContactFromFirestore(cleanPhone) {
     try {
         const res = await fetch(`https://firestore.googleapis.com/v1/projects/loquese-app/databases/(default)/documents/contacts/${cleanPhone}`);
@@ -145,6 +174,7 @@ async function getOffersFromFirestore() {
                         titulo: f.titulo?.stringValue || 'Oferta Destacada',
                         categoria: f.categoria?.stringValue || 'Comercio Local',
                         descripcion: f.descripcion?.stringValue || '',
+                        imagen_url: f.imagen_url?.stringValue || '',
                         enlace_facebook: f.enlace_facebook?.stringValue || '',
                         contacto_nombre: f.contacto_nombre?.stringValue || '',
                         contacto_telefono: f.contacto_telefono?.stringValue || '',
@@ -229,7 +259,7 @@ async function processBotRules(senderPhone, rawPhone, senderName, msgText) {
                 listado += `\n`;
             });
 
-            respuesta = `🛍️ *Catálogo Semanal de Ofertas — Publica Navojoa* 🛍️\n\n${nameSalute} Aquí tienes las ofertas y promociones activas de esta semana:\n\n${listado}💬 *Responde con el número de la oferta (ej. 1) si deseas los datos directos del vendedor.*`;
+            respuesta = `🛍️ *Catálogo Semanal de Ofertas — Publica Navojoa* 🛍️\n\n${nameSalute} Aquí tienes las ofertas y promociones activas de esta semana:\n\n${listado}💬 *Responde con el número de la oferta (ej. 1) para enviarte la foto y detalles directos.*`;
         } else {
             respuesta = `🛍️ *Catálogo Semanal de Ofertas — Navojoa* 🛍️\n\n${nameSalute} Estamos actualizando el catálogo con las mejores promociones de esta semana.\n\nMuy pronto recibirás aquí la notificación de los nuevos remates en tu zona. ¡Mantente atento! 🎉`;
         }
@@ -246,8 +276,15 @@ async function processBotRules(senderPhone, rawPhone, senderName, msgText) {
         if (activeOffers[selectedIndex]) {
             const off = activeOffers[selectedIndex];
             const cleanT = off.contacto_telefono ? off.contacto_telefono.replace(/\D/g, '') : '';
-            const detailMsg = `👑 *Detalles de la Oferta #${selectedIndex + 1}* 👑\n\n✨ *${off.titulo}*\n🏷️ *Categoría:* ${off.categoria}\n\n📝 *Descripción:* ${off.descripcion}\n\n📸 *Ver publicación y fotos en Facebook:* \n👉 ${off.enlace_facebook}\n\n📲 *Contactar directamente al vendedor:* \n${off.contacto_nombre ? `👤 *${off.contacto_nombre}*\n` : ''}${cleanT ? `👉 https://wa.me/52${cleanT}` : ''}\n\n--- \n_Menciona que viste su oferta en Publica Navojoa para un trato preferencial._`;
-            await sendWhatsAppMessage(metaTo, detailMsg, rawPhone, finalName);
+            const captionMsg = `👑 *Oferta #${selectedIndex + 1}: ${off.titulo}*\n\n📝 ${off.descripcion}\n\n📲 *Vendedor:* ${off.contacto_nombre || 'Contacto'}${cleanT ? ` (wa.me/52${cleanT})` : ''}\n\n📸 *Ver más fotos en Facebook:* ${off.enlace_facebook}`;
+
+            // Si la oferta tiene imagen subida, se envía como foto con caption en WhatsApp
+            if (off.imagen_url && off.imagen_url.startsWith('http')) {
+                await sendWhatsAppImage(metaTo, off.imagen_url, captionMsg, rawPhone, finalName);
+            } else {
+                const detailMsg = `👑 *Detalles de la Oferta #${selectedIndex + 1}* 👑\n\n✨ *${off.titulo}*\n🏷️ *Categoría:* ${off.categoria}\n\n📝 *Descripción:* ${off.descripcion}\n\n📸 *Ver publicación y fotos en Facebook:* \n👉 ${off.enlace_facebook}\n\n📲 *Contactar directamente al vendedor:* \n${off.contacto_nombre ? `👤 *${off.contacto_nombre}*\n` : ''}${cleanT ? `👉 https://wa.me/52${cleanT}` : ''}\n\n--- \n_Menciona que viste su oferta en Publica Navojoa para un trato preferencial._`;
+                await sendWhatsAppMessage(metaTo, detailMsg, rawPhone, finalName);
+            }
             return;
         }
     }
