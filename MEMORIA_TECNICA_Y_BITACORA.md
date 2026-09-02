@@ -179,5 +179,21 @@ Todos los contactos se indexan de forma única en la colección `/contacts/{clea
 * **Marcado de Lectura Automático:**
   - Al dar clic en un contacto, sus mensajes se marcan automáticamente como leídos (`markAsRead`), limpiando el badge al instante.
 
+---
+
+## 12. CATÁLOGO DINÁMICO DE OFERTAS Y REMATES (FIREBASE + BOT WHATSAPP)
+
+* **Gestor de Catálogo en Panel `/admin` (Pestaña 3):**
+  - Nueva pestaña interactiva: **"🏷️ Catálogo de Ofertas (Bot WhatsApp)"**.
+  - Formulario modal (`openOfferModal`) para agregar o editar promociones en segundos: título, categoría, descripción para WhatsApp, enlace a la publicación de Facebook y WhatsApp del vendedor.
+  - Botón de alternancia instantánea: **Pausar ⏸️ / Activar ▶️** para encender o apagar ofertas que caduquen o se agoten.
+* **Integración en Tiempo Real con Firebase Firestore:**
+  - Colección dedicada `offers` en Firestore (`loquese-app`).
+  - La oferta #1 se cargó con éxito: *Artículos de Decoración y Estilo para el Hogar* (Mónica Obregón / `https://www.facebook.com/share/p/1Biw9XvppQ/`).
+* **Inteligencia en el Bot de WhatsApp (`api/webhook.js`):**
+  - Al escribir **"OFERTAS"** o **"CATÁLOGO"**, el bot consulta en vivo Firestore y entrega el listado numerado con enlaces a Facebook y botones directos de contacto.
+  - Al responder con el número de la oferta (ej. *"1"* o *"oferta 1"*), el bot entrega la ficha detallada con llamada a la acción y enlace directo al WhatsApp del anunciante (`wa.me/52...`).
+
+
 
 
