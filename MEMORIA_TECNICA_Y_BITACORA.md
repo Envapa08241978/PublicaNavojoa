@@ -190,19 +190,19 @@ Todos los contactos se indexan de forma única en la colección `/contacts/{clea
 * **Integración en Tiempo Real con Firebase Firestore:**
   - Colección dedicada `offers` en Firestore (`loquese-app`).
   - La oferta #1 se cargó con éxito: *Artículos de Decoración y Estilo para el Hogar* (Mónica Obregón / `https://www.facebook.com/share/p/1Biw9XvppQ/`).
-* **Subida y Gestión de Fotos de Ofertas (Hasta 3 fotos instantáneas):**
-  - Selector con 3 casillas independientes (**Foto 1 Principal**, **Foto 2**, **Foto 3**) con botón de eliminación rápida (`✕`).
-  - **Compresión client-side inmediata (HTML5 Canvas):** Las fotos tomadas desde celular o cámara de alta resolución (3-10MB) se comprimen automáticamente en el navegador a Base64 optimizado (<80KB) en menos de 0.2 segundos, eliminando esperas y tiempos muertos.
-  - Almacenamiento directo en Firestore en el campo `imagenes_json` (array de hasta 3 fotos).
-  - En `/admin`, las tarjetas muestran un mosaico con el número exacto de fotos (`📸 3 Fotos`).
+* **Subida y Gestión de Fotos de Ofertas y Eventos:**
+  - Formato limpio optimizado a **1 Fotografía Opcional**: carga instantánea en menos de 0.2 segundos mediante compresión en navegador (HTML5 Canvas).
+  - Campo de enlace dual: **Enlace a Facebook (Opcional)** y **Enlace a Google Maps / Ubicación (Opcional)** para eventos, locales comerciales y puntos de venta.
+  - En `/admin`, las tarjetas muestran la fotografía del producto/evento y botones directos a Facebook y Google Maps (`📍 Cómo Llegar`).
 * **Servicio Serverless de Entrega de Imágenes (`api/img.js`):**
   - Endpoint dedicado `https://publicanavojoa.com/api/img?offerId=...&index=0` que entrega las imágenes en binario JPEG con encabezados HTTP nativos (`Content-Type`, `Cache-Control`).
   - Meta WhatsApp Cloud API descarga y despacha las imágenes a máxima velocidad sin depender de servicios externos de terceros.
-* **Inteligencia en el Bot de WhatsApp (`api/webhook.js`):**
-  - Al escribir **"OFERTAS"** o **"CATÁLOGO"**, el bot consulta en vivo Firestore y entrega el listado numerado con enlaces a Facebook y botones directos de contacto.
-  - Al responder con el número de la oferta (ej. *"1"* o *"oferta 1"*):
-    - Si la oferta tiene fotos: el Bot de WhatsApp envía **la foto principal con la ficha descriptiva y llamada a la acción**, e inmediatamente después envía **las fotos adicionales (hasta 3 fotos)** para que el cliente aprecie todos los ángulos del producto.
-    - Si la oferta no tiene fotos: entrega la tarjeta de texto completa.
+* **Inteligencia en el Bot de WhatsApp (`api/webhook.js`) — Envío Secuencial Automático:**
+  - Al escribir **"OFERTAS"** o **"CATÁLOGO"**:
+    - El bot envía de inmediato un saludo introductorio con el total de promociones activas.
+    - **Envía automáticamente cada oferta de una por una con intervalo de 2 segundos** entre cada mensaje, en el orden exacto del catálogo.
+    - Cada oferta se entrega con su **fotografía en alta resolución, descripción completa, enlace a Google Maps (`📍 Cómo llegar`), enlace a Facebook y botón de WhatsApp del vendedor**.
+    - Experiencia 100% fluida, visual y atractiva para el usuario final sin requerir pasos adicionales.
 
 
 

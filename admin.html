@@ -911,55 +911,31 @@
         <label style="font-size: 0.85rem; font-weight: 700;">Descripción Breve (para WhatsApp):</label>
         <textarea id="off-desc" rows="3" style="width: 100%; padding: 10px 14px; border-radius: 10px; border: 1.5px solid #e2e8f0; font-family: inherit; font-size: 0.9rem; margin-bottom: 12px;" placeholder="Detalles de los artículos, descuento u ocasión..."></textarea>
 
-        <label style="font-size: 0.85rem; font-weight: 700;">Fotos del Producto / Oferta (Hasta 3 fotos):</label>
-        <p style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 8px;">Se optimizan y comprimen automáticamente al instante para envío ultra rápido por WhatsApp.</p>
+        <label style="font-size: 0.85rem; font-weight: 700;">Foto de la Oferta / Evento (Opcional):</label>
+        <p style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 8px;">Se optimiza y comprime al instante para envío ultra rápido por WhatsApp.</p>
         
-        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px;">
-            <!-- Foto 1 -->
-            <div style="border: 1.5px dashed #cbd5e1; border-radius: 12px; padding: 10px; text-align: center; background: #f8fafc; position: relative;">
-                <div style="font-size: 0.75rem; font-weight: 700; color: #475569; margin-bottom: 6px;">Foto 1 (Principal)</div>
-                <input type="file" id="off-file-1" accept="image/*" onchange="handleSingleOfferImage(event, 1)" style="display: none;">
-                <button type="button" class="btn btn-blue" onclick="document.getElementById('off-file-1').click()" style="padding: 6px 10px; font-size: 0.78rem; width: 100%;">
-                    📷 Subir
-                </button>
-                <div id="preview-box-1" style="display: none; margin-top: 8px; position: relative;">
-                    <img id="img-preview-1" src="" style="width: 100%; height: 80px; object-fit: cover; border-radius: 8px;">
-                    <button type="button" onclick="removeOfferImage(1)" style="position: absolute; top: -6px; right: -6px; background: #ef4444; color: #fff; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 11px; cursor: pointer; line-height: 1;">✕</button>
-                </div>
-                <input type="hidden" id="off-img-1">
+        <div style="border: 1.5px dashed #cbd5e1; border-radius: 12px; padding: 12px; text-align: center; background: #f8fafc; margin-bottom: 14px; position: relative;">
+            <input type="file" id="off-file-1" accept="image/*" onchange="handleSingleOfferImage(event)" style="display: none;">
+            <button type="button" class="btn btn-blue" onclick="document.getElementById('off-file-1').click()" style="padding: 8px 16px; font-size: 0.85rem;">
+                📷 Subir Fotografía (Opcional)
+            </button>
+            <div id="preview-box-1" style="display: none; margin-top: 10px; position: relative; max-width: 220px; margin-left: auto; margin-right: auto;">
+                <img id="img-preview-1" src="" style="width: 100%; height: 120px; object-fit: cover; border-radius: 10px; border: 1px solid #cbd5e1;">
+                <button type="button" onclick="removeOfferImage()" style="position: absolute; top: -6px; right: -6px; background: #ef4444; color: #fff; border: none; border-radius: 50%; width: 22px; height: 22px; font-size: 12px; cursor: pointer; line-height: 1; font-weight: 800;">✕</button>
             </div>
-
-            <!-- Foto 2 -->
-            <div style="border: 1.5px dashed #cbd5e1; border-radius: 12px; padding: 10px; text-align: center; background: #f8fafc; position: relative;">
-                <div style="font-size: 0.75rem; font-weight: 700; color: #475569; margin-bottom: 6px;">Foto 2</div>
-                <input type="file" id="off-file-2" accept="image/*" onchange="handleSingleOfferImage(event, 2)" style="display: none;">
-                <button type="button" class="btn btn-blue" onclick="document.getElementById('off-file-2').click()" style="padding: 6px 10px; font-size: 0.78rem; width: 100%;">
-                    📷 Subir
-                </button>
-                <div id="preview-box-2" style="display: none; margin-top: 8px; position: relative;">
-                    <img id="img-preview-2" src="" style="width: 100%; height: 80px; object-fit: cover; border-radius: 8px;">
-                    <button type="button" onclick="removeOfferImage(2)" style="position: absolute; top: -6px; right: -6px; background: #ef4444; color: #fff; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 11px; cursor: pointer; line-height: 1;">✕</button>
-                </div>
-                <input type="hidden" id="off-img-2">
-            </div>
-
-            <!-- Foto 3 -->
-            <div style="border: 1.5px dashed #cbd5e1; border-radius: 12px; padding: 10px; text-align: center; background: #f8fafc; position: relative;">
-                <div style="font-size: 0.75rem; font-weight: 700; color: #475569; margin-bottom: 6px;">Foto 3</div>
-                <input type="file" id="off-file-3" accept="image/*" onchange="handleSingleOfferImage(event, 3)" style="display: none;">
-                <button type="button" class="btn btn-blue" onclick="document.getElementById('off-file-3').click()" style="padding: 6px 10px; font-size: 0.78rem; width: 100%;">
-                    📷 Subir
-                </button>
-                <div id="preview-box-3" style="display: none; margin-top: 8px; position: relative;">
-                    <img id="img-preview-3" src="" style="width: 100%; height: 80px; object-fit: cover; border-radius: 8px;">
-                    <button type="button" onclick="removeOfferImage(3)" style="position: absolute; top: -6px; right: -6px; background: #ef4444; color: #fff; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 11px; cursor: pointer; line-height: 1;">✕</button>
-                </div>
-                <input type="hidden" id="off-img-3">
-            </div>
+            <input type="hidden" id="off-img-1">
         </div>
 
-        <label style="font-size: 0.85rem; font-weight: 700;">Enlace de la Publicación en Facebook (Opcional):</label>
-        <input type="url" id="off-enlace" placeholder="https://www.facebook.com/share/p/...">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div>
+                <label style="font-size: 0.85rem; font-weight: 700;">Enlace de Facebook (Opcional):</label>
+                <input type="url" id="off-enlace" placeholder="https://www.facebook.com/share/p/...">
+            </div>
+            <div>
+                <label style="font-size: 0.85rem; font-weight: 700;">Ubicación / Google Maps (Opcional):</label>
+                <input type="url" id="off-maps" placeholder="https://maps.app.goo.gl/... o maps.google.com">
+            </div>
+        </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
             <div>
@@ -1738,60 +1714,62 @@
         });
     }
 
-    async function handleSingleOfferImage(event, slot) {
+
+
+    async function handleSingleOfferImage(event) {
         const file = event.target.files[0];
         if (!file) return;
 
         try {
             const compressed = await compressImageFile(file);
-            document.getElementById(`img-preview-${slot}`).src = compressed;
-            document.getElementById(`preview-box-${slot}`).style.display = 'block';
-            document.getElementById(`off-img-${slot}`).value = compressed;
+            document.getElementById('img-preview-1').src = compressed;
+            document.getElementById('preview-box-1').style.display = 'block';
+            document.getElementById('off-img-1').value = compressed;
         } catch(e) {
             console.error('Error al procesar imagen:', e);
             alert('No se pudo procesar la imagen seleccionada.');
         }
     }
 
-    function removeOfferImage(slot) {
-        document.getElementById(`off-file-${slot}`).value = '';
-        document.getElementById(`off-img-${slot}`).value = '';
-        document.getElementById(`img-preview-${slot}`).src = '';
-        document.getElementById(`preview-box-${slot}`).style.display = 'none';
+    function removeOfferImage() {
+        document.getElementById('off-file-1').value = '';
+        document.getElementById('off-img-1').value = '';
+        document.getElementById('img-preview-1').src = '';
+        document.getElementById('preview-box-1').style.display = 'none';
     }
 
     function openOfferModal(id = '') {
         document.getElementById('offer-modal').style.display = 'flex';
-        [1, 2, 3].forEach(slot => removeOfferImage(slot));
+        removeOfferImage();
 
         if (id) {
             const offer = currentOffers.find(o => o.id === id);
             if (offer) {
-                document.getElementById('offer-modal-title').innerText = 'Editar Oferta';
+                document.getElementById('offer-modal-title').innerText = 'Editar Oferta / Publicidad';
                 document.getElementById('offer-id').value = offer.id;
                 document.getElementById('off-titulo').value = offer.titulo || '';
                 document.getElementById('off-categoria').value = offer.categoria || '';
                 document.getElementById('off-desc').value = offer.descripcion || '';
                 document.getElementById('off-enlace').value = offer.enlace_facebook || '';
+                document.getElementById('off-maps').value = offer.enlace_maps || '';
                 document.getElementById('off-nombre').value = offer.contacto_nombre || '';
                 document.getElementById('off-tel').value = offer.contacto_telefono || '';
                 document.getElementById('off-activo').checked = offer.activo !== false;
 
-                // Cargar fotos existentes (compatibilidad con imagenes_json o imagen_url)
-                let photos = [];
-                if (offer.imagenes_json) {
-                    try { photos = JSON.parse(offer.imagenes_json); } catch(e) {}
-                }
-                if (photos.length === 0 && offer.imagen_url) {
-                    photos = [offer.imagen_url];
+                // Cargar foto existente si tiene
+                let photo = offer.imagen_url || '';
+                if (!photo && offer.imagenes_json) {
+                    try {
+                        const parsed = JSON.parse(offer.imagenes_json);
+                        if (parsed && parsed.length > 0) photo = parsed[0];
+                    } catch(e) {}
                 }
 
-                photos.slice(0, 3).forEach((url, idx) => {
-                    const slot = idx + 1;
-                    document.getElementById(`img-preview-${slot}`).src = url;
-                    document.getElementById(`preview-box-${slot}`).style.display = 'block';
-                    document.getElementById(`off-img-${slot}`).value = url;
-                });
+                if (photo) {
+                    document.getElementById('img-preview-1').src = photo;
+                    document.getElementById('preview-box-1').style.display = 'block';
+                    document.getElementById('off-img-1').value = photo;
+                }
                 return;
             }
         }
@@ -1802,6 +1780,7 @@
         document.getElementById('off-categoria').value = '';
         document.getElementById('off-desc').value = '';
         document.getElementById('off-enlace').value = '';
+        document.getElementById('off-maps').value = '';
         document.getElementById('off-nombre').value = '';
         document.getElementById('off-tel').value = '';
         document.getElementById('off-activo').checked = true;
@@ -1809,7 +1788,7 @@
 
     function closeOfferModal() {
         document.getElementById('offer-modal').style.display = 'none';
-        [1, 2, 3].forEach(slot => removeOfferImage(slot));
+        removeOfferImage();
     }
 
     async function saveOffer() {
@@ -1818,6 +1797,7 @@
         const categoria = document.getElementById('off-categoria').value.trim();
         const descripcion = document.getElementById('off-desc').value.trim();
         const enlace = document.getElementById('off-enlace').value.trim();
+        const maps = document.getElementById('off-maps').value.trim();
         const nombre = document.getElementById('off-nombre').value.trim();
         const tel = document.getElementById('off-tel').value.trim();
         const activo = document.getElementById('off-activo').checked;
@@ -1826,12 +1806,7 @@
             return alert('Por favor ingresa al menos el título y la descripción de la oferta.');
         }
 
-        // Obtener fotos de los 3 slots
-        const photos = [];
-        [1, 2, 3].forEach(slot => {
-            const val = document.getElementById(`off-img-${slot}`).value.trim();
-            if (val) photos.push(val);
-        });
+        const photoVal = document.getElementById('off-img-1').value.trim();
 
         const saveBtn = document.querySelector('#offer-modal .btn-green');
         const origText = saveBtn.innerText;
@@ -1843,9 +1818,10 @@
             titulo: titulo,
             categoria: categoria || 'General',
             descripcion: descripcion,
-            imagen_url: photos[0] || '',
-            imagenes_json: JSON.stringify(photos),
+            imagen_url: photoVal || '',
+            imagenes_json: photoVal ? JSON.stringify([photoVal]) : '[]',
             enlace_facebook: enlace,
+            enlace_maps: maps,
             contacto_nombre: nombre,
             contacto_telefono: tel.replace(/\D/g, ''),
             activo: activo,
@@ -1917,24 +1893,14 @@
 
         container.innerHTML = currentOffers.map((off, idx) => `
             <div style="background: #ffffff; border: 1px solid ${off.activo ? '#bbf7d0' : '#e2e8f0'}; border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 2px 8px rgba(0,0,0,0.04); position: relative;">
-                ${(() => {
-                    let pList = [];
-                    if (off.imagenes_json) {
-                        try { pList = JSON.parse(off.imagenes_json); } catch(e) {}
-                    }
-                    if (pList.length === 0 && off.imagen_url) pList = [off.imagen_url];
-                    if (pList.length === 0) return '';
-                    return `
-                        <div style="width: 100%; height: 180px; overflow: hidden; background: #f8fafc; position: relative; display: flex;">
-                            ${pList.map((p, pIdx) => `
-                                <img src="${p}" alt="${off.titulo}" style="width: ${100 / pList.length}%; height: 100%; object-fit: cover; border-right: ${pIdx < pList.length - 1 ? '2px solid #ffffff' : 'none'};">
-                            `).join('')}
-                            <span style="position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.65); color: #ffffff; font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 6px; backdrop-filter: blur(4px);">
-                                📸 ${pList.length} ${pList.length === 1 ? 'Foto' : 'Fotos'}
-                            </span>
-                        </div>
-                    `;
-                })()}
+                ${off.imagen_url ? `
+                    <div style="width: 100%; height: 200px; overflow: hidden; background: #0f172a; position: relative;">
+                        <img src="${off.imagen_url}" alt="${off.titulo}" style="width: 100%; height: 100%; object-fit: cover;">
+                        <span style="position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.65); color: #ffffff; font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 6px; backdrop-filter: blur(4px);">
+                            📸 Foto Bot Activa
+                        </span>
+                    </div>
+                ` : ''}
 
                 <div style="padding: 18px;">
                     <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 10px;">
@@ -1950,17 +1916,22 @@
                     
                     ${off.categoria ? `<div style="font-size: 0.8rem; font-weight: 700; color: #2563eb; margin-bottom: 10px;">🏷️ ${off.categoria}</div>` : ''}
 
-                    <p style="font-size: 0.88rem; color: #475569; line-height: 1.45; margin-bottom: 14px;">
+                    <p style="font-size: 0.88rem; color: #475569; line-height: 1.45; margin-bottom: 14px; white-space: pre-line;">
                         ${off.descripcion}
                     </p>
 
-                    ${off.enlace_facebook ? `
-                        <div style="margin-bottom: 12px;">
-                            <a href="${off.enlace_facebook}" target="_blank" style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.82rem; font-weight: 700; color: #1877f2; text-decoration: none; background: #eff6ff; padding: 6px 12px; border-radius: 8px;">
-                                📸 Ver Publicación en Facebook ↗
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px;">
+                        ${off.enlace_facebook ? `
+                            <a href="${off.enlace_facebook}" target="_blank" style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.8rem; font-weight: 700; color: #1877f2; text-decoration: none; background: #eff6ff; padding: 6px 12px; border-radius: 8px;">
+                                📸 Ver en Facebook ↗
                             </a>
-                        </div>
-                    ` : ''}
+                        ` : ''}
+                        ${off.enlace_maps ? `
+                            <a href="${off.enlace_maps}" target="_blank" style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.8rem; font-weight: 700; color: #b91c1c; text-decoration: none; background: #fef2f2; padding: 6px 12px; border-radius: 8px;">
+                                📍 Cómo Llegar (Google Maps) ↗
+                            </a>
+                        ` : ''}
+                    </div>
 
                     ${off.contacto_telefono ? `
                         <div style="font-size: 0.82rem; color: #334155; margin-bottom: 14px;">
