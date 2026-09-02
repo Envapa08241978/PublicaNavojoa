@@ -74,7 +74,6 @@ async function sendWhatsAppMessage(toPhone, text, cleanPhone = '', senderName = 
     const url = `https://graph.facebook.com/v20.0/${PHONE_ID}/messages`;
     try {
         if (cleanPhone) {
-            await saveOutgoingMessageToFirestore(cleanPhone, text);
             await saveToFirestore(cleanPhone, senderName || 'Publica Navojoa', text, 'outgoing');
         }
         const response = await fetch(url, {
