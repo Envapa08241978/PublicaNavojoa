@@ -138,3 +138,16 @@ Todos los contactos se indexan de forma única en la colección `/contacts/{clea
 * **Formulario de Registro VIP:** [https://publicanavojoa.com/registro](https://publicanavojoa.com/registro)
 * **Panel CRM & Chat WhatsApp:** [https://publicanavojoa.com/admin](https://publicanavojoa.com/admin)
 * **Aviso de Privacidad:** [https://publicanavojoa.com/privacidad](https://publicanavojoa.com/privacidad)
+
+---
+
+## 9. IDENTIDAD VISUAL Y ACTIVOS DEL GRUPO DE FACEBOOK (+78.9K MIEMBROS)
+
+* **Portada Oficial Grupo Facebook (1640 x 856 px):**
+  - Concepto unisex e inclusivo diseñado para maximizar el comercio de hombres y mujeres en Navojoa (herramientas de taller, electrónica/videojuegos, tecnología, artículos para el hogar, calzado, chamarras y servicios).
+  - Incluye el logotipo oficial a color (`Publica navojoa logotipo oficial.png`) en una tarjeta blanca elegante con borde dorado en la esquina inferior derecha.
+* **Formatos y Archivos Disponibles en el Proyecto:**
+  - `portada_grupo_facebook_oficial_2026.png`: Imagen rasterizada a resolución exacta de **1640 x 856 px** lista para subir a Facebook.
+  - `portada_grupo_facebook_oficial_2026.svg`: Archivo vectorial nativo con mesa de trabajo (*artboard*) de **1640 x 856 px**, capas organizadas y editable en **Adobe Illustrator**.
+  - `portada_grupo_facebook_oficial_2026.pdf`: Documento PDF con dimensiones exactas de **1640 x 856 pt** para apertura vectorial directa en **Adobe Illustrator**.
+
