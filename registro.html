@@ -532,41 +532,38 @@
 
             // 3. Preparar enlace de WhatsApp con mensaje pre-cargado
             const waMsg = encodeURIComponent('¡Hola! Envío este mensaje para confirmar mi registro al Club VIP de Publica Navojoa.');
-            const waUrl = `https://wa.me/526421520280?text=${waMsg}`;
-            const waApiUrl = `https://api.whatsapp.com/send?phone=526421520280&text=${waMsg}`;
+            const waSchemeUrl = `whatsapp://send?phone=526421520280&text=${waMsg}`;
+            const waUniversalUrl = `https://wa.me/526421520280?text=${waMsg}`;
 
             // Configurar enlace del botón manual de inmediato
             const manualBtn = document.getElementById('wa-manual-link');
             if (manualBtn) {
-                manualBtn.href = waUrl;
+                manualBtn.href = waUniversalUrl;
             }
 
             // 4. Mostrar pantalla de éxito
             document.getElementById('form-section').style.display = 'none';
             document.getElementById('success-section').style.display = 'block';
 
-            // 5. Redirección robusta compatible con iOS Safari y Android
-            // iOS Safari bloquea window.location.href dentro de async/setTimeout si no se ejecuta inmediatamente
-            // Redirigir de inmediato usando window.location.assign y simular click en el link nativo
-            try {
-                window.location.assign(waUrl);
-            } catch(e) {
-                window.location.href = waUrl;
-            }
+            // 5. Apertura directa de la app de WhatsApp en iPhone / Android / In-App Browsers
+            // El esquema nativo 'whatsapp://send' abre directamente la app sin pasar por la página web de descarga
+            // Se usa un elemento <a> temporal con click() nativo para máxima compatibilidad
+            const directLink = document.createElement('a');
+            directLink.href = waSchemeUrl;
+            directLink.style.display = 'none';
+            document.body.appendChild(directLink);
+            directLink.click();
 
-            // Fallback por temporizador en caso de retraso en Safari
+            // Respaldo universal si la app tarda en responder
             setTimeout(() => {
-                if (document.getElementById('success-section').style.display === 'block') {
-                    window.location.href = waApiUrl;
-                }
-            }, 1200);
+                window.location.href = waUniversalUrl;
+            }, 500);
 
         } catch (err) {
             console.error('Error guardando en Firebase:', err);
-            // Aún en caso de error de Firestore, redirigir a WhatsApp para no perder al usuario
+            // Respaldo en caso de error
             const waMsg = encodeURIComponent('¡Hola! Envío este mensaje para confirmar mi registro al Club VIP de Publica Navojoa.');
-            const waUrl = `https://wa.me/526421520280?text=${waMsg}`;
-            window.location.href = waUrl;
+            window.location.href = `https://wa.me/526421520280?text=${waMsg}`;
         }
     }
 </script>
