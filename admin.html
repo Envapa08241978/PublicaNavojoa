@@ -41,12 +41,12 @@
         body {
             background-color: var(--bg-canvas);
             color: var(--text-main);
-            padding: 25px 20px;
+            padding: 12px 18px;
             min-height: 100vh;
         }
 
         .container {
-            max-width: 1280px;
+            max-width: 1360px;
             margin: 0 auto;
         }
 
@@ -54,11 +54,11 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 25px;
-            padding-bottom: 20px;
+            margin-bottom: 12px;
+            padding-bottom: 12px;
             border-bottom: 1px solid var(--border-color);
             flex-wrap: wrap;
-            gap: 20px;
+            gap: 12px;
         }
 
         .brand-header {
@@ -85,7 +85,7 @@
         .tab-nav {
             display: flex;
             gap: 10px;
-            margin-bottom: 25px;
+            margin-bottom: 14px;
             border-bottom: 2px solid var(--border-color);
             padding-bottom: 2px;
         }
@@ -236,9 +236,9 @@
         .chat-app-container {
             display: grid;
             grid-template-columns: 300px 1fr 280px;
-            height: calc(100vh - 220px);
-            min-height: 460px;
-            max-height: 600px;
+            height: calc(100vh - 140px);
+            min-height: 480px;
+            max-height: 82vh;
             background: var(--card-bg);
             border: 1px solid var(--border-color);
             border-radius: 20px;
@@ -753,15 +753,6 @@
 
     <!-- TAB 1: LIVE CHAT WHATSAPP API -->
     <div id="tab-chat" class="tab-content active">
-        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 12px 18px; border-radius: 12px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-            <div style="font-size: 0.88rem; color: #166534; font-weight: 600;">
-                🟢 <strong>Estado de la API:</strong> Conectada en tiempo real a Meta WhatsApp Cloud API (Línea Oficial: <code>+52 642 152 0280</code>)
-            </div>
-            <div style="font-size: 0.8rem; color: #15803d; font-weight: 700; background: #dcfce7; padding: 4px 10px; border-radius: 6px;">
-                ✓ Token Permanente Activo
-            </div>
-        </div>
-
         <div class="chat-app-container">
             <!-- Sidebar contacts -->
             <div class="chat-sidebar">
