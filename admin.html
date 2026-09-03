@@ -38,15 +38,40 @@
             font-family: 'Outfit', sans-serif;
         }
 
+        /* Custom Visible Scrollbars */
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: #cbd5e1 #f1f5f9;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #94a3b8;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+
         html, body {
-            min-height: 100%;
-            overflow-y: auto;
+            min-height: 100vh;
+            overflow-y: scroll; /* Force visible browser scrollbar on all tabs */
         }
 
         body {
             background-color: var(--bg-canvas);
             color: var(--text-main);
-            padding: 16px 20px 40px 20px;
+            padding: 10px 16px 30px 16px;
         }
 
         .container {
@@ -59,28 +84,28 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 16px;
-            padding-bottom: 14px;
+            margin-bottom: 8px;
+            padding-bottom: 8px;
             border-bottom: 1px solid var(--border-color);
             flex-wrap: wrap;
-            gap: 12px;
+            gap: 10px;
         }
 
         .brand-header {
             display: flex;
             align-items: center;
-            gap: 16px;
+            gap: 12px;
             flex-wrap: wrap;
         }
 
         .header-logo {
-            max-height: 48px;
+            max-height: 40px;
             width: auto;
             display: block;
         }
 
         h1 {
-            font-size: 1.6rem;
+            font-size: 1.45rem;
             font-weight: 800;
             color: var(--text-main);
             letter-spacing: -0.5px;
@@ -89,16 +114,16 @@
         /* Tabs Navigation */
         .tab-nav {
             display: flex;
-            gap: 10px;
-            margin-bottom: 8px;
+            gap: 8px;
+            margin-bottom: 10px;
             border-bottom: 2px solid var(--border-color);
             padding-bottom: 2px;
             flex-shrink: 0;
         }
 
         .tab-btn {
-            padding: 8px 18px;
-            font-size: 0.9rem;
+            padding: 8px 16px;
+            font-size: 0.88rem;
             font-weight: 700;
             border: none;
             background: transparent;
@@ -108,7 +133,7 @@
             transition: all 0.2s ease;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
         }
 
         .tab-btn.active {
@@ -241,19 +266,18 @@
         /* Live Chat Layout */
         .chat-app-container {
             display: grid;
-            grid-template-columns: 300px 1fr 280px;
-            height: 520px;
-            min-height: 420px;
-            max-height: 68vh;
+            grid-template-columns: 310px 1fr 280px;
+            height: calc(100vh - 120px);
+            min-height: 480px;
             background: var(--card-bg);
             border: 1px solid var(--border-color);
-            border-radius: 18px;
+            border-radius: 16px;
             overflow: hidden;
             box-shadow: var(--shadow-md);
-            margin-bottom: 25px;
+            margin-bottom: 20px;
         }
 
-        @media (max-width: 1024px) {
+        @media (max-width: 1100px) {
             .chat-app-container {
                 grid-template-columns: 280px 1fr;
             }
@@ -266,35 +290,39 @@
             display: flex;
             flex-direction: column;
             background: #ffffff;
+            height: 100%;
+            overflow: hidden;
         }
 
         .chat-search-box {
-            padding: 14px;
+            padding: 10px 12px;
             border-bottom: 1px solid var(--border-color);
+            flex-shrink: 0;
         }
 
         .chat-search-box input {
             width: 100%;
-            padding: 10px 14px;
+            padding: 8px 12px;
             background: #f1f5f9;
             border: 1px solid var(--border-color);
-            border-radius: 10px;
-            font-size: 0.88rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
             outline: none;
         }
 
         .chat-list {
             flex: 1;
-            overflow-y: auto;
+            min-height: 0;
+            overflow-y: scroll; /* Force visible scrollbar in contact list */
         }
 
         .chat-user-item {
-            padding: 14px 16px;
+            padding: 12px 14px;
             border-bottom: 1px solid #f1f5f9;
             cursor: pointer;
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
             transition: background 0.15s ease;
         }
 
@@ -303,8 +331,8 @@
         }
 
         .chat-avatar {
-            width: 42px;
-            height: 42px;
+            width: 38px;
+            height: 38px;
             border-radius: 50%;
             background: #16a34a;
             color: #ffffff;
@@ -312,7 +340,7 @@
             align-items: center;
             justify-content: center;
             font-weight: 800;
-            font-size: 1rem;
+            font-size: 0.92rem;
             flex-shrink: 0;
         }
 
@@ -330,7 +358,7 @@
 
         .chat-user-name {
             font-weight: 700;
-            font-size: 0.92rem;
+            font-size: 0.88rem;
             color: var(--text-main);
             white-space: nowrap;
             overflow: hidden;
@@ -338,7 +366,7 @@
         }
 
         .chat-user-time {
-            font-size: 0.72rem;
+            font-size: 0.7rem;
             color: var(--text-muted);
             white-space: nowrap;
             flex-shrink: 0;
@@ -353,7 +381,7 @@
         }
 
         .chat-user-sub {
-            font-size: 0.8rem;
+            font-size: 0.78rem;
             color: var(--text-muted);
             white-space: nowrap;
             overflow: hidden;
@@ -418,7 +446,7 @@
             flex: 1;
             min-height: 0;
             padding: 14px 18px;
-            overflow-y: auto;
+            overflow-y: scroll; /* Force visible scrollbar in message conversation */
             display: flex;
             flex-direction: column;
             gap: 10px;
