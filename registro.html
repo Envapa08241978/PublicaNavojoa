@@ -530,16 +530,36 @@
             }
             localStorage.setItem('vip_navojoa_leads', JSON.stringify(leads));
 
-            // 3. Mostrar pantalla de éxito brevemente y redirigir a WhatsApp en automático
+            // 3. Preparar enlace de WhatsApp con mensaje pre-cargado
+            const waMsg = encodeURIComponent('¡Hola! Envío este mensaje para confirmar mi registro al Club VIP de Publica Navojoa.');
+            const waUrl = `https://wa.me/526421520280?text=${waMsg}`;
+            const waApiUrl = `https://api.whatsapp.com/send?phone=526421520280&text=${waMsg}`;
+
+            // Configurar enlace del botón manual de inmediato
+            const manualBtn = document.getElementById('wa-manual-link');
+            if (manualBtn) {
+                manualBtn.href = waUrl;
+            }
+
+            // 4. Mostrar pantalla de éxito
             document.getElementById('form-section').style.display = 'none';
             document.getElementById('success-section').style.display = 'block';
 
-            // Redirigir a WhatsApp con mensaje pre-cargado después de 1.5 segundos
-            const waMsg = encodeURIComponent('¡Hola! Envío este mensaje para confirmar mi registro al Club VIP de Publica Navojoa.');
-            const waUrl = `https://wa.me/526421520280?text=${waMsg}`;
-            setTimeout(() => {
+            // 5. Redirección robusta compatible con iOS Safari y Android
+            // iOS Safari bloquea window.location.href dentro de async/setTimeout si no se ejecuta inmediatamente
+            // Redirigir de inmediato usando window.location.assign y simular click en el link nativo
+            try {
+                window.location.assign(waUrl);
+            } catch(e) {
                 window.location.href = waUrl;
-            }, 1500);
+            }
+
+            // Fallback por temporizador en caso de retraso en Safari
+            setTimeout(() => {
+                if (document.getElementById('success-section').style.display === 'block') {
+                    window.location.href = waApiUrl;
+                }
+            }, 1200);
 
         } catch (err) {
             console.error('Error guardando en Firebase:', err);
