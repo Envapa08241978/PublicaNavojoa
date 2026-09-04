@@ -215,8 +215,22 @@ Todos los contactos se indexan de forma única en la colección `/contacts/{clea
     - El bot envía de inmediato un saludo introductorio con el total de promociones activas.
     - **Envía automáticamente cada oferta de una por una con intervalo de 2 segundos** entre cada mensaje, en el orden exacto del catálogo.
     - Cada oferta se entrega con su **fotografía en alta resolución, descripción completa, enlace a Google Maps (`📍 Cómo llegar`), enlace a Facebook y botón de WhatsApp del vendedor**.
-    - Experiencia 100% fluida, visual y atractiva para el usuario final sin requerir pasos adicionales.
+    - Experiencia 100% fluida, visual y atractiva para el usuario final sin requerir pasos adicionales.---
 
+## 13. OPTIMIZACIONES DE INTERFAZ (UI/UX), SCROLLBARS Y DEEP LINKING EN IPHONE
 
+* **Solución a Scrollbars y Altura del Chat en `/admin`:**
+  - **Scrollbars visibles permanentes:** Se implementó estilización personalizada webkit (`::-webkit-scrollbar`) y estándar (`scrollbar-color`) con `overflow-y: scroll` en la raíz de la página, asegurando una barra de desplazamiento visible en todas las pestañas (Chat, CRM y Catálogo).
+  - **Barra de mensajes fija y visible:** Ajuste de altura dinámica con `calc(100vh - 120px)` y `min-height: 480px`, anclando permanentemente el campo de entrada de texto (`#chat-input`), el botón de adjuntar archivos (`📎`) y el botón de enviar (`Enviar ➔`) en cualquier resolución de pantalla de laptop o monitor de escritorio.
+  - **Scroll independiente en lista de contactos:** La columna lateral izquierda (`.chat-list`) cuenta con su propio desplazamiento vertical forzado para explorar libremente todas las conversaciones de clientes registrados.
 
+* **Solución de Redirección a WhatsApp en iOS Safari y Navegadores In-App (Facebook/Instagram):**
+  - **Problema diagnosticado:** En iPhone (iOS), cuando un usuario se registraba dentro del navegador interno de Facebook o en Safari, las URLs HTTP `wa.me` o `api.whatsapp.com` ejecutadas tras una promesa asíncrona de Firestore eran bloqueadas como ventanas emergentes o redirigidas erróneamente a la página web de *"Descargar WhatsApp"* (`whatsapp.com/download`).
+  - **Solución implementada en `registro.html`:** Uso del protocolo nativo **`whatsapp://send?phone=526421520280&text=...`** mediante un elemento ancla simulado con `click()`. Este deep link ordena directamente a iOS abrir la aplicación instalada de WhatsApp de forma instantánea sin pantallas intermedias ni redirecciones a la App Store.
 
+* **Estrategia de Difusión y Captación de Contactos:**
+  - Enlaces directos **`https://wa.me/5216421520280`** configurados para activar los 3 botones de respuesta rápida de Meta Cloud API:
+    1. 🛍️ *Ver Catálogo de Ofertas de la Semana*
+    2. 👑 *¿Cómo funciona el Club VIP de Navojoa?*
+    3. 📢 *Quiero Anunciar mi Negocio o Evento*
+  - Mensajes de difusión y reenvío optimizados para amigos, grupos y comercios locales de Navojoa.
