@@ -61,6 +61,7 @@
 | :--- | :--- | :--- |
 | `https://publicanavojoa.com/` | `index.html` | Media Kit Oficial & Tarifario Publicitario 2026 ($600, $1,200, $2,500 MXN). |
 | `https://publicanavojoa.com/registro` | `registro.html` | Formulario de Captación VIP con selector de +75 colonias y toggle comercial. |
+| `https://publicanavojoa.com/formulario` | `formulario.html` | Formulario de Contratación Publicitaria, Datos Bancarios y Programación de Fechas. |
 | `https://publicanavojoa.com/admin` | `admin.html` | Dashboard CRM, directorio de contactos, pipeline de ventas y chat multimedios. |
 | `https://publicanavojoa.com/privacidad` | `privacidad.html` | Aviso de Privacidad Integral conforme a LFPDPPP y políticas de Meta. |
 | `https://publicanavojoa.com/api/webhook` | `api/webhook.js` | Endpoint Serverless que procesa la lógica del Bot de WhatsApp 24/7. |
@@ -234,3 +235,28 @@ Todos los contactos se indexan de forma única en la colección `/contacts/{clea
     2. 👑 *¿Cómo funciona el Club VIP de Navojoa?*
     3. 📢 *Quiero Anunciar mi Negocio o Evento*
   - Mensajes de difusión y reenvío optimizados para amigos, grupos y comercios locales de Navojoa.
+
+---
+
+## 14. SISTEMA DE CONTRATACIÓN Y REGISTRO PUBLICITARIO (`/formulario`)
+
+* **Página de Contratación y Pago ([`formulario.html`](file:///c:/Users/ENRIQ/OneDrive/Documents/PROYECTO%20CON%20MONICA/formulario.html)):**
+  - Permite a clientes y anunciantes capturar todos los datos técnicos y comerciales de su promoción.
+  - **Selector de Paquetes:** Bronce ($600), Plata ($1,200) y Oro ($2,500) con soporte para pre-selección mediante parámetro URL (`/formulario?paquete=plata`).
+  - **Campos Capturados:**
+    - Nombre y WhatsApp del contratante.
+    - Título del anuncio, porcentaje de descuento / promoción, categoría comercial y descripción breve.
+    - Carga de fotografía con compresión automática en Canvas (JPG 82%).
+    - Enlaces opcionales a Sitio Web, Facebook, Instagram, TikTok y Google Maps.
+    - Nombre del vendedor y WhatsApp de atención a clientes.
+    - Programación de fecha y hora para **Facebook** (Recomendación: 6:00 PM a 8:00 PM) y **WhatsApp Masivo** (Recomendación: 12:00 PM a 2:00 PM).
+  - **Módulo de Pago & Cuentas Bancarias:**
+    - Opción de pago en efectivo con enlace directo a WhatsApp de **Mónica Obregón (`+52 647 482 0862`)**.
+    - Tarjeta bancaria con imagen oficial `datos bancarios.jpeg` y modal de zoom.
+  - **Garantía de Entrega en 24 Horas:**
+    - Compromiso de entrega del primer borrador publicitario en un plazo de 24 horas tras el envío del comprobante de pago.
+  - **Integración y Flujo de Envío:**
+    - Registro en Firestore en la colección `anuncios_pedidos` con ID de orden único (`ORD-XXXXXX`).
+    - Actualización automática del contratante en la colección `contacts`.
+    - Deep linking nativo a WhatsApp (`whatsapp://send` y fallback `https://wa.me/...`) dirigido a Mónica Obregón con el mensaje formateado de la solicitud listo para adjuntar comprobante.
+

@@ -1,0 +1,1243 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solicitud de Publicidad & Pago - Publica Navojoa</title>
+    
+    <!-- Favicon / Ícono de pestaña del navegador -->
+    <link rel="icon" type="image/png" href="logo%20letras.png">
+    <link rel="shortcut icon" href="favicon.ico">
+    <link rel="apple-touch-icon" href="logo%20letras.png">
+
+    <!-- Metadatos Open Graph -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Contratación de Publicidad - Publica Navojoa">
+    <meta property="og:description" content="Formulario oficial para programar tu campaña publicitaria en Facebook (+78,700 miembros) y WhatsApp VIP en Navojoa.">
+    <meta property="og:url" content="https://publicanavojoa.com/formulario">
+    <meta property="og:site_name" content="Publica Navojoa">
+    <meta property="og:image" content="https://publicanavojoa.com/logo-compartir.png">
+    <meta property="og:image:secure_url" content="https://publicanavojoa.com/logo-compartir.png">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="Publica Navojoa - Formulario Oficial">
+    
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Contratación de Publicidad - Publica Navojoa">
+    <meta name="twitter:description" content="Programa tu publicación en Facebook y difusión masiva por WhatsApp en Navojoa.">
+    <meta name="twitter:image" content="https://publicanavojoa.com/logo-compartir.png">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+    <style>
+        :root {
+            --bg-canvas: #f8fafc;
+            --card-bg: #ffffff;
+            --accent-green: #16a34a;
+            --accent-green-hover: #15803d;
+            --accent-green-light: #dcfce7;
+            --accent-gold: #d97706;
+            --accent-gold-dark: #b45309;
+            --accent-gold-light: #fef3c7;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+            --border-focus: #16a34a;
+            --shadow-card: 0 20px 45px -10px rgba(15, 23, 42, 0.08);
+            --shadow-subtle: 0 4px 12px rgba(0,0,0,0.04);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-canvas);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 16px 80px;
+            background-image: 
+                radial-gradient(circle at 10% 10%, rgba(22, 163, 74, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 90% 90%, rgba(217, 119, 6, 0.05) 0%, transparent 40%);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 760px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 28px;
+            padding: 40px 36px;
+            box-shadow: var(--shadow-card);
+            position: relative;
+        }
+
+        @media (max-width: 640px) {
+            body { padding: 20px 10px 60px; }
+            .container { padding: 28px 18px; border-radius: 22px; }
+        }
+
+        /* Header & Branding */
+        .brand-header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .logo-img {
+            max-width: 290px;
+            width: 100%;
+            height: auto;
+            display: block;
+            margin: 0 auto 16px;
+        }
+
+        .badge-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--accent-gold-light);
+            color: var(--accent-gold-dark);
+            font-weight: 800;
+            padding: 6px 16px;
+            border-radius: 999px;
+            font-size: 0.85rem;
+            margin-bottom: 12px;
+            border: 1px solid rgba(217, 119, 6, 0.25);
+            letter-spacing: 0.3px;
+        }
+
+        .page-title {
+            font-size: 1.85rem;
+            font-weight: 900;
+            color: var(--text-main);
+            letter-spacing: -0.5px;
+            margin-bottom: 8px;
+            line-height: 1.25;
+        }
+
+        .page-subtitle {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            line-height: 1.5;
+            max-width: 580px;
+            margin: 0 auto;
+        }
+
+        /* Form Sections */
+        .form-section-card {
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: var(--shadow-subtle);
+            transition: all 0.2s ease;
+        }
+
+        .form-section-card:focus-within {
+            border-color: rgba(22, 163, 74, 0.4);
+            box-shadow: 0 8px 25px rgba(22, 163, 74, 0.08);
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 18px;
+            padding-bottom: 12px;
+            border-bottom: 1px dashed var(--border-color);
+        }
+
+        .section-icon-badge {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: var(--accent-gold-light);
+            color: var(--accent-gold-dark);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+
+        .section-title {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: var(--text-main);
+            letter-spacing: -0.3px;
+        }
+
+        .section-desc {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        /* Form Controls */
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        @media (max-width: 600px) {
+            .grid-2 { grid-template-columns: 1fr; gap: 14px; }
+        }
+
+        label {
+            display: block;
+            font-size: 0.9rem;
+            font-weight: 700;
+            margin-bottom: 6px;
+            color: var(--text-main);
+        }
+
+        label span.req {
+            color: #dc2626;
+            margin-left: 2px;
+        }
+
+        label span.opt {
+            color: var(--text-muted);
+            font-weight: 400;
+            font-size: 0.8rem;
+            margin-left: 4px;
+        }
+
+        input[type="text"],
+        input[type="tel"],
+        input[type="url"],
+        input[type="date"],
+        input[type="time"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1.5px solid var(--border-color);
+            border-radius: 12px;
+            font-size: 0.95rem;
+            color: var(--text-main);
+            background-color: #fcfdfe;
+            transition: all 0.2s ease;
+            outline: none;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            border-color: var(--accent-green);
+            background-color: #ffffff;
+            box-shadow: 0 0 0 4px rgba(22, 163, 74, 0.12);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 85px;
+            line-height: 1.45;
+        }
+
+        .input-hint {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 5px;
+            line-height: 1.4;
+        }
+
+        /* Package Selector Cards */
+        .packages-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        @media (max-width: 640px) {
+            .packages-grid { grid-template-columns: 1fr; }
+        }
+
+        .package-card-option {
+            position: relative;
+        }
+
+        .package-card-option input[type="radio"] {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .package-label {
+            display: block;
+            border: 2px solid var(--border-color);
+            border-radius: 14px;
+            padding: 14px 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: #ffffff;
+            height: 100%;
+        }
+
+        .package-card-option input[type="radio"]:checked + .package-label {
+            border-color: var(--accent-green);
+            background: rgba(22, 163, 74, 0.04);
+            box-shadow: 0 4px 14px rgba(22, 163, 74, 0.12);
+        }
+
+        .package-name {
+            font-size: 0.95rem;
+            font-weight: 800;
+            color: var(--text-main);
+            margin-bottom: 4px;
+        }
+
+        .package-price {
+            font-size: 1.15rem;
+            font-weight: 900;
+            color: var(--accent-green);
+        }
+
+        .package-desc {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+            line-height: 1.3;
+        }
+
+        /* Recommendation Badges */
+        .tip-badge {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            background: #f1f5f9;
+            border-left: 3px solid var(--accent-gold);
+            padding: 9px 12px;
+            border-radius: 0 10px 10px 0;
+            font-size: 0.82rem;
+            color: #334155;
+            margin-top: 8px;
+            line-height: 1.4;
+        }
+
+        .tip-badge strong {
+            color: var(--accent-gold-dark);
+        }
+
+        /* Image Upload Box */
+        .upload-dropzone {
+            border: 2px dashed #cbd5e1;
+            border-radius: 14px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: #f8fafc;
+            position: relative;
+        }
+
+        .upload-dropzone:hover {
+            border-color: var(--accent-green);
+            background: rgba(22, 163, 74, 0.02);
+        }
+
+        .preview-container {
+            display: none;
+            margin-top: 12px;
+            position: relative;
+            text-align: center;
+        }
+
+        .preview-img {
+            max-height: 180px;
+            max-width: 100%;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-subtle);
+        }
+
+        .btn-remove-photo {
+            position: absolute;
+            top: 6px;
+            right: calc(50% - 90px);
+            background: rgba(220, 38, 38, 0.9);
+            color: white;
+            border: none;
+            border-radius: 999px;
+            padding: 4px 10px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            cursor: pointer;
+            backdrop-filter: blur(4px);
+        }
+
+        /* Bank & Payment Card */
+        .bank-card-container {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            border-radius: 18px;
+            padding: 24px;
+            color: #ffffff;
+            margin-top: 14px;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .bank-card-container::after {
+            content: '';
+            position: absolute;
+            bottom: -30px;
+            right: -30px;
+            width: 140px;
+            height: 140px;
+            background: radial-gradient(circle, rgba(217, 119, 6, 0.2) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        .bank-header-title {
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: #fbbf24;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+
+        .bank-image-wrap {
+            margin-top: 14px;
+            text-align: center;
+            background: #ffffff;
+            padding: 12px;
+            border-radius: 12px;
+        }
+
+        .bank-img {
+            max-width: 100%;
+            max-height: 280px;
+            height: auto;
+            border-radius: 8px;
+            display: block;
+            margin: 0 auto;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .bank-img:hover {
+            transform: scale(1.02);
+        }
+
+        .cash-option-box {
+            background: var(--accent-green-light);
+            border: 1px solid rgba(22, 163, 74, 0.3);
+            border-radius: 14px;
+            padding: 16px;
+            margin-top: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .cash-info-text {
+            font-size: 0.9rem;
+            color: #14532d;
+            font-weight: 600;
+        }
+
+        .btn-wa-monica {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--accent-green);
+            color: #ffffff;
+            text-decoration: none;
+            font-weight: 800;
+            padding: 8px 16px;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            transition: background 0.2s;
+            box-shadow: 0 4px 10px rgba(22, 163, 74, 0.2);
+        }
+
+        .btn-wa-monica:hover {
+            background: var(--accent-green-hover);
+        }
+
+        /* 24-Hour Delivery Guarantee Callout */
+        .guarantee-callout {
+            background: #fffbeb;
+            border: 1.5px solid #fde68a;
+            border-radius: 16px;
+            padding: 20px;
+            margin: 28px 0 24px;
+            display: flex;
+            gap: 14px;
+            align-items: flex-start;
+        }
+
+        .guarantee-icon {
+            font-size: 1.6rem;
+            line-height: 1;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .guarantee-text {
+            font-size: 0.92rem;
+            line-height: 1.55;
+            color: #78350f;
+        }
+
+        .guarantee-text strong {
+            color: #92400e;
+            font-weight: 800;
+        }
+
+        /* Submit Button */
+        .btn-submit {
+            width: 100%;
+            background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+            color: white;
+            border: none;
+            border-radius: 16px;
+            padding: 18px 24px;
+            font-size: 1.15rem;
+            font-weight: 800;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: 0 10px 25px rgba(22, 163, 74, 0.35);
+            transition: all 0.25s ease;
+        }
+
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 14px 30px rgba(22, 163, 74, 0.45);
+        }
+
+        .btn-submit:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .legal-note {
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 18px;
+            line-height: 1.4;
+        }
+
+        .legal-note a {
+            color: var(--text-main);
+            text-decoration: underline;
+        }
+
+        /* Success Screen */
+        .success-box {
+            display: none;
+            text-align: center;
+            padding: 30px 10px;
+        }
+
+        .success-icon-circle {
+            width: 76px;
+            height: 76px;
+            background: var(--accent-green-light);
+            color: var(--accent-green);
+            font-size: 2.2rem;
+            font-weight: 900;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            box-shadow: 0 8px 20px rgba(22, 163, 74, 0.15);
+        }
+
+        .order-summary-card {
+            background: #f8fafc;
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 20px;
+            text-align: left;
+            margin: 20px auto 26px;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px dashed #e2e8f0;
+        }
+
+        .summary-row:last-child { border-bottom: none; }
+        .summary-label { color: var(--text-muted); font-weight: 500; }
+        .summary-val { font-weight: 700; color: var(--text-main); text-align: right; }
+
+        /* Modal for Full Image Zoom */
+        .modal-zoom {
+            display: none;
+            position: fixed;
+            z-index: 9999;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(5px);
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-zoom img {
+            max-width: 90%;
+            max-height: 90vh;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        }
+
+        .modal-zoom-close {
+            position: absolute;
+            top: 20px;
+            right: 25px;
+            color: #ffffff;
+            font-size: 2rem;
+            font-weight: 800;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    
+    <!-- Branding Header -->
+    <header class="brand-header">
+        <a href="/" style="text-decoration: none;">
+            <img src="Publica%20navojoa%20logotipo%20oficial.png" alt="Publica Navojoa" class="logo-img">
+        </a>
+        <div class="badge-pill">
+            👑 Publicidad & Difusión Multicanal Directa
+        </div>
+        <h1 class="page-title">Solicitud y Registro de Publicidad</h1>
+        <p class="page-subtitle">
+            Completa la información de tu promoción para programar tu publicación en el <strong>Grupo de Facebook (+78,700 miembros)</strong> y el <strong>Envío Masivo por WhatsApp</strong>.
+        </p>
+    </header>
+
+    <!-- FORM SECTION -->
+    <form id="publicidad-form" onsubmit="handleFormSubmit(event)">
+
+        <!-- PASO 1: SELECCIÓN DE PAQUETE -->
+        <div class="form-section-card">
+            <div class="section-header">
+                <div class="section-icon-badge">1</div>
+                <div>
+                    <h2 class="section-title">Paquete Publicitario a Contratar</h2>
+                    <p class="section-desc">Selecciona el paquete que mejor se adapte a tu objetivo comercial</p>
+                </div>
+            </div>
+
+            <div class="packages-grid">
+                <div class="package-card-option">
+                    <input type="radio" id="pkg-bronce" name="paquete" value="Paquete Bronce ($600 MXN)" checked>
+                    <label for="pkg-bronce" class="package-label">
+                        <div class="package-name">🥉 Bronce</div>
+                        <div class="package-price">$600 <span style="font-size:0.75rem;">MXN</span></div>
+                        <div class="package-desc">Post fijado 3 días + 1 Envío WhatsApp</div>
+                    </label>
+                </div>
+
+                <div class="package-card-option">
+                    <input type="radio" id="pkg-plata" name="paquete" value="Paquete Plata ($1,200 MXN)">
+                    <label for="pkg-plata" class="package-label">
+                        <div class="package-name">🥈 Plata</div>
+                        <div class="package-price">$1,200 <span style="font-size:0.75rem;">MXN</span></div>
+                        <div class="package-desc">Post fijado 7 días + 2 Envíos WhatsApp + Catálogo</div>
+                    </label>
+                </div>
+
+                <div class="package-card-option">
+                    <input type="radio" id="pkg-oro" name="paquete" value="Paquete Oro ($2,500 MXN)">
+                    <label for="pkg-oro" class="package-label">
+                        <div class="package-name">🥇 Oro VIP</div>
+                        <div class="package-price">$2,500 <span style="font-size:0.75rem;">MXN</span></div>
+                        <div class="package-desc">Post fijado 15 días + 4 Envíos WhatsApp + Campaña Meta</div>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- PASO 2: INFORMACIÓN DEL CONTRATANTE -->
+        <div class="form-section-card">
+            <div class="section-header">
+                <div class="section-icon-badge">2</div>
+                <div>
+                    <h2 class="section-title">Información del Contratante</h2>
+                    <p class="section-desc">Datos de la persona o negocio responsable de la contratación</p>
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div class="form-group">
+                    <label for="contratante_nombre">Nombre del Contratante <span class="req">*</span></label>
+                    <input type="text" id="contratante_nombre" name="contratante_nombre" placeholder="Ej. Juan Pérez / Mueblería del Yaqui" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="contratante_whatsapp">Contacto WhatsApp del Contratante <span class="req">*</span></label>
+                    <input type="tel" id="contratante_whatsapp" name="contratante_whatsapp" placeholder="Ej. 6421234567 (10 dígitos)" maxlength="14" required>
+                    <div class="input-hint">Número personal donde coordinaremos el borrador</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PASO 3: INFORMACIÓN A PUBLICAR -->
+        <div class="form-section-card">
+            <div class="section-header">
+                <div class="section-icon-badge">3</div>
+                <div>
+                    <h2 class="section-title">Información a Publicar</h2>
+                    <p class="section-desc">Contenido para WhatsApp masivo, catálogo interactivo y publicación en Facebook</p>
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div class="form-group">
+                    <label for="titulo_oferta">Título de la Oferta / Promoción <span class="req">*</span></label>
+                    <input type="text" id="titulo_oferta" name="titulo_oferta" placeholder="Ej. Gran Venta de Remate en Muebles y Decoración" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="descuento_porcentaje">¿Hay algún descuento en "%" o precio especial?</label>
+                    <input type="text" id="descuento_porcentaje" name="descuento_porcentaje" placeholder="Ej. 20% OFF, 2x1, Precios desde $199 (o No Aplica)">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="categoria_publicidad">Categoría(s) de la Publicidad <span class="req">*</span></label>
+                <select id="categoria_publicidad" name="categoria_publicidad" required>
+                    <option value="">-- Selecciona la categoría principal --</option>
+                    <option value="Restaurantes & Gastronomía">🍔 Restaurantes, Comida & Gastronomía</option>
+                    <option value="Ropa, Calzado & Moda">👗 Ropa, Calzado & Accesorios de Moda</option>
+                    <option value="Muebles, Hogar & Decoración">🛋️ Muebles, Hogar & Decoración</option>
+                    <option value="Belleza, Barberías & Spa">✂️ Belleza, Barberías, Uñas & Spa</option>
+                    <option value="Salud & Consultorios Médicos">🩺 Salud, Clínicas & Médicos Especialistas</option>
+                    <option value="Autos, Talleres & Refacciones">🚗 Autos, Talleres Mecánicos & Refacciones</option>
+                    <option value="Bienes Raíces & Terrenos">🏡 Bienes Raíces, Renta y Venta de Casas/Terrenos</option>
+                    <option value="Eventos, Fiestas & Sonido">🎉 Eventos, Fiestas, Grupos & Banquetes</option>
+                    <option value="Electrónica, Celulares & Computación">📱 Celulares, Computación & Tecnología</option>
+                    <option value="Servicios Profesionales">💼 Servicios Profesionales, Contables o Técnicos</option>
+                    <option value="Comercio General / Otro">🛍️ Otro Comercio / Negocio General</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="descripcion_breve">Descripción Breve / Mensaje del Anuncio <span class="req">*</span></label>
+                <textarea id="descripcion_breve" name="descripcion_breve" placeholder="Describe los detalles clave de la promoción, horarios, productos destacados o qué incluye la oferta..." required></textarea>
+            </div>
+
+            <!-- FOTO DE LA OFERTA -->
+            <div class="form-group">
+                <label>1 Foto de la Oferta / Evento <span class="opt">(Opcional pero muy recomendada)</span></label>
+                <div class="upload-dropzone" onclick="document.getElementById('foto_oferta').click()">
+                    <input type="file" id="foto_oferta" accept="image/*" style="display:none" onchange="handlePhotoUpload(this)">
+                    <div id="upload-placeholder">
+                        <div style="font-size: 1.8rem; margin-bottom: 4px;">📸</div>
+                        <div style="font-weight: 700; color: var(--text-main); font-size: 0.9rem;">Haz clic aquí para subir una fotografía de tu oferta</div>
+                        <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">Formatos JPG, PNG o WEBP (Máx. 10MB)</div>
+                    </div>
+                </div>
+                <div class="preview-container" id="preview-box">
+                    <img id="preview-img-tag" src="" alt="Vista Previa" class="preview-img">
+                    <button type="button" class="btn-remove-photo" onclick="removeUploadedPhoto(event)">✕ Quitar foto</button>
+                </div>
+            </div>
+
+            <!-- ENLACES DIGITALES -->
+            <div class="grid-2">
+                <div class="form-group">
+                    <label for="sitio_web">Sitio Web <span class="opt">(Opcional)</span></label>
+                    <input type="url" id="sitio_web" name="sitio_web" placeholder="https://tunegocio.com">
+                </div>
+
+                <div class="form-group">
+                    <label for="enlace_facebook">Enlace de Facebook <span class="opt">(Opcional)</span></label>
+                    <input type="url" id="enlace_facebook" name="enlace_facebook" placeholder="https://facebook.com/tupagina">
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div class="form-group">
+                    <label for="enlace_instagram">Enlace de Instagram <span class="opt">(Opcional)</span></label>
+                    <input type="url" id="enlace_instagram" name="enlace_instagram" placeholder="https://instagram.com/tucuenta">
+                </div>
+
+                <div class="form-group">
+                    <label for="enlace_tiktok">Enlace de TikTok <span class="opt">(Opcional)</span></label>
+                    <input type="url" id="enlace_tiktok" name="enlace_tiktok" placeholder="https://tiktok.com/@tucuenta">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="ubicacion_maps">Ubicación / Google Maps <span class="opt">(Opcional)</span></label>
+                <input type="url" id="ubicacion_maps" name="ubicacion_maps" placeholder="https://maps.app.goo.gl/... o dirección física en Navojoa">
+                <div class="input-hint">Permite agregar el botón interactivo "📍 Cómo llegar" en WhatsApp</div>
+            </div>
+
+            <!-- DATOS DE ATENCIÓN A CLIENTES -->
+            <div class="grid-2">
+                <div class="form-group">
+                    <label for="contacto_nombre_ventas">Nombre del Contacto de WhatsApp <span class="req">*</span></label>
+                    <input type="text" id="contacto_nombre_ventas" name="contacto_nombre_ventas" placeholder="Ej. Ventas / María López" required>
+                    <div class="input-hint">Nombre que verá el cliente al pedir información</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="whatsapp_vendedor">WhatsApp Vendedor (10 dígitos) <span class="req">*</span></label>
+                    <input type="tel" id="whatsapp_vendedor" name="whatsapp_vendedor" placeholder="Ej. 6421520000" maxlength="14" required>
+                    <div class="input-hint">Donde recibirás los mensajes de compradores</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PASO 4: FECHAS Y HORARIOS DESEADOS -->
+        <div class="form-section-card">
+            <div class="section-header">
+                <div class="section-icon-badge">4</div>
+                <div>
+                    <h2 class="section-title">Fechas y Horarios de Publicación</h2>
+                    <p class="section-desc">¿Qué día y hora necesitas que realicemos tus publicaciones?</p>
+                </div>
+            </div>
+
+            <!-- PUBLICACIÓN EN FACEBOOK -->
+            <div style="background: #f8fafc; border: 1px solid var(--border-color); border-radius: 14px; padding: 16px; margin-bottom: 16px;">
+                <label style="color: #1e3a8a; display: flex; align-items: center; gap: 6px; font-size: 0.95rem; margin-bottom: 10px;">
+                    <span>📘</span> <strong>Publicación en Grupo de Facebook (+78,700 miembros):</strong>
+                </label>
+                
+                <div class="grid-2">
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label for="fb_fecha">Día Deseado <span class="req">*</span></label>
+                        <input type="date" id="fb_fecha" name="fb_fecha" required>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label for="fb_hora">Hora Deseada <span class="req">*</span></label>
+                        <input type="time" id="fb_hora" name="fb_hora" required>
+                    </div>
+                </div>
+
+                <div class="tip-badge">
+                    <span>💡</span>
+                    <div><strong>Recomendación Facebook:</strong> Los mejores horarios de mayor interacción son de <strong>6:00 PM a 8:00 PM</strong>.</div>
+                </div>
+            </div>
+
+            <!-- ENVÍO MASIVO WHATSAPP -->
+            <div style="background: #f8fafc; border: 1px solid var(--border-color); border-radius: 14px; padding: 16px;">
+                <label style="color: #14532d; display: flex; align-items: center; gap: 6px; font-size: 0.95rem; margin-bottom: 10px;">
+                    <span>💬</span> <strong>Envío Masivo por WhatsApp (Club VIP Navojoa):</strong>
+                </label>
+                
+                <div class="grid-2">
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label for="wa_fecha">Día Deseado <span class="req">*</span></label>
+                        <input type="date" id="wa_fecha" name="wa_fecha" required>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label for="wa_hora">Hora Deseada <span class="req">*</span></label>
+                        <input type="time" id="wa_hora" name="wa_hora" required>
+                    </div>
+                </div>
+
+                <div class="tip-badge">
+                    <span>💡</span>
+                    <div><strong>Recomendación WhatsApp:</strong> Los horarios óptimos de lectura en el celular son de <strong>12:00 PM a 2:00 PM (Mediodía)</strong>.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PASO 5: FORMAS DE PAGO & DATOS BANCARIOS -->
+        <div class="form-section-card">
+            <div class="section-header">
+                <div class="section-icon-badge">5</div>
+                <div>
+                    <h2 class="section-title">Formas de Pago Disponibles</h2>
+                    <p class="section-desc">Selecciona tu método preferido para liquidar tu paquete publicitario</p>
+                </div>
+            </div>
+
+            <!-- OPCION 1: EFECTIVO -->
+            <div class="cash-option-box">
+                <div class="cash-info-text">
+                    💵 <strong>Pago en Efectivo:</strong> Comunícate directamente con <strong>Mónica Obregón</strong> al <strong>647 482 0862</strong> para coordinar tu pago.
+                </div>
+                <a href="https://wa.me/526474820862?text=Hola%20M%C3%B3nica%2C%20quiero%20hacer%20el%20pago%20en%20efectivo%20de%20mi%20publicidad%20en%20Publica%20Navojoa" target="_blank" class="btn-wa-monica">
+                    <span>💬 Enviar WhatsApp a Mónica</span>
+                </a>
+            </div>
+
+            <!-- OPCION 2: DEPOSITO O TRANSFERENCIA -->
+            <div class="bank-card-container">
+                <div class="bank-header-title">
+                    <span>💳</span> Depósito o Transferencia Bancaria
+                </div>
+                <p style="font-size: 0.88rem; color: #cbd5e1; line-height: 1.45;">
+                    Realiza tu transferencia electrónica o depósito en ventanilla/OXXO utilizando los datos de nuestra cuenta oficial:
+                </p>
+
+                <!-- IMAGEN DATOS BANCARIOS -->
+                <div class="bank-image-wrap">
+                    <img src="datos%20bancarios.jpeg" alt="Datos Bancarios Oficiales" class="bank-img" onclick="openZoomModal(this.src)">
+                    <div style="font-size: 0.75rem; color: #64748b; margin-top: 6px; font-weight: 600;">
+                        🔍 Clic en la imagen para ampliar los datos de la cuenta
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AVISO DE GARANTÍA DE 24 HORAS -->
+        <div class="guarantee-callout">
+            <div class="guarantee-icon">⏱️</div>
+            <div class="guarantee-text">
+                <strong>Garantía de Tiempo de Entrega:</strong><br>
+                Una vez completado este formulario y enviado el comprobante de pago a <strong>Mónica al 647 482 0862</strong>, nosotros tenemos un compromiso de <strong>24 horas hábiles</strong> para hacer entrega de tu primer ejemplo/borrador publicitario. Este puede ser aprobado de inmediato o enviado a revisión con los cambios o ajustes que nos indiques.
+            </div>
+        </div>
+
+        <!-- BOTÓN DE ENVÍO -->
+        <button type="submit" id="submit-btn" class="btn-submit">
+            <span>Confirmar Solicitud y Notificar a Mónica por WhatsApp</span> ➔
+        </button>
+
+        <div class="legal-note">
+            Tus datos comerciales están protegidos bajo nuestro <a href="/privacidad" target="_blank">Aviso de Privacidad</a> oficial de Publica Navojoa.
+        </div>
+
+    </form>
+
+    <!-- SUCCESS SCREEN -->
+    <div id="success-screen" class="success-box">
+        <div class="success-icon-circle">✓</div>
+        <h2 style="font-size: 1.6rem; font-weight: 900; margin-bottom: 8px;">¡Solicitud Registrada con Éxito!</h2>
+        <p style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.5; max-width: 540px; margin: 0 auto 20px;">
+            Tu campaña ha sido registrada en el sistema de <strong>Publica Navojoa</strong>. Para comenzar el diseño de tu borrador en las próximas 24 horas, envía tu comprobante de pago a Mónica.
+        </p>
+
+        <div class="order-summary-card" id="summary-content">
+            <!-- Dynamic Injection -->
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 12px; max-width: 420px; margin: 0 auto;">
+            <a id="wa-monica-link" href="#" class="btn-submit" style="text-decoration: none;">
+                <span>💬 Abrir WhatsApp con Mónica Obregón</span>
+            </a>
+            <a href="/" style="color: var(--text-muted); font-size: 0.88rem; text-decoration: none; padding: 8px;">
+                ← Volver al sitio principal
+            </a>
+        </div>
+    </div>
+
+</div>
+
+<!-- Image Zoom Modal -->
+<div id="zoom-modal" class="modal-zoom" onclick="closeZoomModal()">
+    <span class="modal-zoom-close">&times;</span>
+    <img id="zoom-modal-img" src="" alt="Zoom">
+</div>
+
+<script>
+    // Configuración oficial de Firebase Firestore (loquese-app)
+    const firebaseConfig = {
+      apiKey: "AIzaSyB6m8lHGJBnl3IalS7wYbQ-wHkYZHGPT3s",
+      authDomain: "loquese-app.firebaseapp.com",
+      projectId: "loquese-app",
+      storageBucket: "loquese-app.firebasestorage.app",
+      messagingSenderId: "654821705406",
+      appId: "1:654821705406:web:5e144cf5599f514046c0ef"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    let uploadedBase64Photo = '';
+
+    // Auto-completar datos desde URL (?paquete=plata&tel=642...)
+    window.addEventListener('DOMContentLoaded', () => {
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('fb_fecha').min = today;
+        document.getElementById('wa_fecha').min = today;
+
+        // Horarios por defecto recomendados
+        document.getElementById('fb_fecha').value = today;
+        document.getElementById('fb_hora').value = "19:00"; // 7:00 PM
+        document.getElementById('wa_fecha').value = today;
+        document.getElementById('wa_hora').value = "13:00"; // 1:00 PM
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const pkgParam = (urlParams.get('paquete') || '').toLowerCase();
+        if (pkgParam.includes('plata')) {
+            document.getElementById('pkg-plata').checked = true;
+        } else if (pkgParam.includes('oro')) {
+            document.getElementById('pkg-oro').checked = true;
+        } else if (pkgParam.includes('bronce')) {
+            document.getElementById('pkg-bronce').checked = true;
+        }
+
+        const telParam = urlParams.get('tel');
+        if (telParam) {
+            let clean = telParam.replace(/\D/g, '');
+            if (clean.startsWith('52') && clean.length === 12) clean = clean.slice(2);
+            document.getElementById('contratante_whatsapp').value = clean;
+        }
+    });
+
+    // Procesar carga de foto con vista previa y compresión en Canvas
+    function handlePhotoUpload(input) {
+        if (input.files && input.files[0]) {
+            const file = input.files[0];
+            const reader = new FileReader();
+
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 1000;
+                    const scaleSize = MAX_WIDTH / img.width;
+                    const finalWidth = img.width > MAX_WIDTH ? MAX_WIDTH : img.width;
+                    const finalHeight = img.width > MAX_WIDTH ? (img.height * scaleSize) : img.height;
+
+                    canvas.width = finalWidth;
+                    canvas.height = finalHeight;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, finalWidth, finalHeight);
+
+                    uploadedBase64Photo = canvas.toDataURL('image/jpeg', 0.82);
+
+                    document.getElementById('preview-img-tag').src = uploadedBase64Photo;
+                    document.getElementById('preview-box').style.display = 'block';
+                    document.getElementById('upload-placeholder').style.display = 'none';
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+
+    function removeUploadedPhoto(e) {
+        if (e) e.stopPropagation();
+        uploadedBase64Photo = '';
+        document.getElementById('foto_oferta').value = '';
+        document.getElementById('preview-img-tag').src = '';
+        document.getElementById('preview-box').style.display = 'none';
+        document.getElementById('upload-placeholder').style.display = 'block';
+    }
+
+    // Modal de Zoom para Imagen Bancaria
+    function openZoomModal(src) {
+        document.getElementById('zoom-modal-img').src = src;
+        document.getElementById('zoom-modal').style.display = 'flex';
+    }
+
+    function closeZoomModal() {
+        document.getElementById('zoom-modal').style.display = 'none';
+    }
+
+    // Envío del Formulario
+    async function handleFormSubmit(e) {
+        e.preventDefault();
+        const submitBtn = document.getElementById('submit-btn');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span>Procesando y Guardando...</span> ⏳';
+
+        const paquete = document.querySelector('input[name="paquete"]:checked').value;
+        const contratanteNombre = document.getElementById('contratante_nombre').value.trim();
+        let contratanteWa = document.getElementById('contratante_whatsapp').value.trim().replace(/\D/g, '');
+        if (contratanteWa.startsWith('52') && contratanteWa.length === 12) contratanteWa = contratanteWa.slice(2);
+
+        const tituloOferta = document.getElementById('titulo_oferta').value.trim();
+        const descuento = document.getElementById('descuento_porcentaje').value.trim() || 'No especificado';
+        const categoria = document.getElementById('categoria_publicidad').value;
+        const descripcion = document.getElementById('descripcion_breve').value.trim();
+
+        const sitioWeb = document.getElementById('sitio_web').value.trim();
+        const fbUrl = document.getElementById('enlace_facebook').value.trim();
+        const igUrl = document.getElementById('enlace_instagram').value.trim();
+        const tiktokUrl = document.getElementById('enlace_tiktok').value.trim();
+        const mapsUrl = document.getElementById('ubicacion_maps').value.trim();
+
+        const contactoNombreVentas = document.getElementById('contacto_nombre_ventas').value.trim();
+        let waVendedor = document.getElementById('whatsapp_vendedor').value.trim().replace(/\D/g, '');
+        if (waVendedor.startsWith('52') && waVendedor.length === 12) waVendedor = waVendedor.slice(2);
+
+        const fbFecha = document.getElementById('fb_fecha').value;
+        const fbHora = document.getElementById('fb_hora').value;
+        const waFecha = document.getElementById('wa_fecha').value;
+        const waHora = document.getElementById('wa_hora').value;
+
+        const orderId = 'ORD-' + Date.now().toString().slice(-6);
+
+        const orderData = {
+            order_id: orderId,
+            paquete: paquete,
+            contratante: {
+                nombre: contratanteNombre,
+                whatsapp: contratanteWa
+            },
+            publicidad: {
+                titulo: tituloOferta,
+                descuento: descuento,
+                categoria: categoria,
+                descripcion: descripcion,
+                foto_base64: uploadedBase64Photo ? uploadedBase64Photo : '',
+                sitio_web: sitioWeb,
+                facebook: fbUrl,
+                instagram: igUrl,
+                tiktok: tiktokUrl,
+                maps: mapsUrl,
+                contacto_ventas_nombre: contactoNombreVentas,
+                contacto_ventas_whatsapp: waVendedor
+            },
+            programacion: {
+                facebook: { fecha: fbFecha, hora: fbHora },
+                whatsapp: { fecha: waFecha, hora: waHora }
+            },
+            estado_pago: 'pendiente_comprobante',
+            estado_diseno: 'en_espera_de_pago',
+            fecha_registro: new Date().toLocaleString('es-MX'),
+            timestamp: Date.now()
+        };
+
+        try {
+            // 1. Guardar en Firestore en colección 'anuncios_pedidos'
+            await db.collection('anuncios_pedidos').doc(orderId).set(orderData);
+
+            // 2. Guardar también al contratante en el directorio de contactos CRM
+            if (contratanteWa) {
+                await db.collection('contacts').doc(contratanteWa).set({
+                    nombre: contratanteNombre,
+                    whatsapp: contratanteWa,
+                    interes_anunciar: 'Sí',
+                    estado_comercial: 'prospecto',
+                    origen: 'Formulario de Contratación Publicitaria',
+                    ultimo_pedido_id: orderId,
+                    last_msg: `Solicitud de Anuncio: ${paquete}`,
+                    last_time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                    timestamp: Date.now()
+                }, { merge: true });
+            }
+
+            // 3. Generar mensaje estructurado de WhatsApp para Mónica Obregón (647 482 0862)
+            const waText = 
+`👑 *NUEVA SOLICITUD DE PUBLICIDAD - PUBLICA NAVOJOA*
+📋 *Folio:* ${orderId}
+📦 *Paquete:* ${paquete}
+
+👤 *Contratante:* ${contratanteNombre}
+📱 *WhatsApp Contratante:* ${contratanteWa}
+
+🏷️ *Título del Anuncio:* ${tituloOferta}
+💰 *Descuento/Promoción:* ${descuento}
+📂 *Categoría:* ${categoria}
+📝 *Descripción:* ${descripcion}
+
+📅 *Programación Deseada:*
+• *Facebook (+78.7k):* ${fbFecha} a las ${fbHora} hrs
+• *WhatsApp Masivo:* ${waFecha} a las ${waHora} hrs
+
+🛍️ *Atención a Clientes:* ${contactoNombreVentas} (${waVendedor})
+${mapsUrl ? `📍 *Maps:* ${mapsUrl}\n` : ''}${fbUrl ? `📘 *FB:* ${fbUrl}\n` : ''}${igUrl ? `📸 *IG:* ${igUrl}\n` : ''}
+Adjunto mi comprobante de pago para iniciar el borrador de 24 horas. ✨`;
+
+            const waEncoded = encodeURIComponent(waText);
+            const waMonicaUniversal = `https://wa.me/526474820862?text=${waEncoded}`;
+            const waMonicaScheme = `whatsapp://send?phone=526474820862&text=${waEncoded}`;
+
+            // Configurar enlace para botón
+            const waBtn = document.getElementById('wa-monica-link');
+            if (waBtn) waBtn.href = waMonicaUniversal;
+
+            // Renderizar resumen en pantalla de éxito
+            document.getElementById('summary-content').innerHTML = `
+                <div class="summary-row">
+                    <span class="summary-label">Folio de Pedido:</span>
+                    <span class="summary-val" style="color:var(--accent-green);">${orderId}</span>
+                </div>
+                <div class="summary-row">
+                    <span class="summary-label">Paquete:</span>
+                    <span class="summary-val">${paquete}</span>
+                </div>
+                <div class="summary-row">
+                    <span class="summary-label">Contratante:</span>
+                    <span class="summary-val">${contratanteNombre}</span>
+                </div>
+                <div class="summary-row">
+                    <span class="summary-label">Título:</span>
+                    <span class="summary-val">${tituloOferta}</span>
+                </div>
+                <div class="summary-row">
+                    <span class="summary-label">Fecha Facebook:</span>
+                    <span class="summary-val">${fbFecha} (${fbHora})</span>
+                </div>
+                <div class="summary-row">
+                    <span class="summary-label">Fecha WhatsApp:</span>
+                    <span class="summary-val">${waFecha} (${waHora})</span>
+                </div>
+            `;
+
+            // Cambiar pantallas
+            document.getElementById('publicidad-form').style.display = 'none';
+            document.getElementById('success-screen').style.display = 'block';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+
+            // Disparar deep linking a WhatsApp en iOS/Android
+            const directLink = document.createElement('a');
+            directLink.href = waMonicaScheme;
+            directLink.style.display = 'none';
+            document.body.appendChild(directLink);
+            directLink.click();
+
+            setTimeout(() => {
+                window.location.href = waMonicaUniversal;
+            }, 600);
+
+        } catch (err) {
+            console.error('Error guardando pedido:', err);
+            alert('Ocurrió un detalle al guardar en base de datos, pero te redirigiremos a WhatsApp con Mónica para completar tu solicitud.');
+            const waText = encodeURIComponent(`Hola Mónica, quiero contratar el ${paquete} para "${tituloOferta}". Mi nombre es ${contratanteNombre}.`);
+            window.location.href = `https://wa.me/526474820862?text=${waText}`;
+        }
+    }
+</script>
+
+</body>
+</html>

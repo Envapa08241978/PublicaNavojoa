@@ -6,6 +6,8 @@
     { "source": "/media_kit", "destination": "/index.html" },
     { "source": "/registro", "destination": "/registro.html" },
     { "source": "/admin", "destination": "/admin.html" },
+    { "source": "/formulario", "destination": "/formulario.html" },
+    { "source": "/contratar", "destination": "/formulario.html" },
     { "source": "/privacidad", "destination": "/privacidad.html" }
   ]
 }
