@@ -224,8 +224,238 @@ async function getOffersFromFirestore() {
     return [];
 }
 
+// ═════════════════════════════════════════════════════════════════════
+// TAXONOMÍA DE CATEGORÍAS & SINÓNIMOS PARA BÚSQUEDA INTELIGENTE
+// ═════════════════════════════════════════════════════════════════════
+const CATEGORIES_TAXONOMY = [
+    {
+        id: 'restaurantes',
+        nombre: '🍔 Comida, Restaurantes & Gastronomía',
+        shortName: 'Comida & Restaurantes',
+        keywords: [
+            'comida', 'restaurante', 'restaurantes', 'gastronomia', 'comer', 'cenar', 'desayuno', 'desayunos', 
+            'almuerzo', 'almuerzos', 'cena', 'cenas', 'taco', 'tacos', 'taqueria', 'taquería', 'hamburguesa', 
+            'hamburguesas', 'burger', 'burgers', 'pizza', 'pizzas', 'pizzeria', 'pizzería', 'marisco', 'mariscos', 
+            'marisqueria', 'marisquería', 'sushi', 'hotdog', 'hotdogs', 'dogo', 'dogos', 'carne asada', 'asador', 
+            'postre', 'postres', 'pastel', 'pasteles', 'pasteleria', 'pastelería', 'reposteria', 'repostería', 
+            'cafe', 'café', 'cafes', 'cafeteria', 'cafetería', 'bar', 'antojito', 'antojitos', 'snack', 'snacks', 
+            'alita', 'alitas', 'boneless', 'fondita', 'birria', 'menudo', 'desayunar', 'lonche', 'alimentos', 
+            'carnitas', 'pollos', 'pollo asado', 'tortas', 'mariscos navojoa', 'cenaduria'
+        ]
+    },
+    {
+        id: 'ropa',
+        nombre: '👗 Ropa, Calzado & Accesorios de Moda',
+        shortName: 'Ropa & Moda',
+        keywords: [
+            'ropa', 'calzado', 'moda', 'zapato', 'zapatos', 'zapateria', 'zapatería', 'tenis', 'vestido', 
+            'vestidos', 'pantalon', 'pantalón', 'pantalones', 'camisa', 'camisas', 'blusa', 'blusas', 'boutique', 
+            'closet', 'accesorios', 'bolsa', 'bolsas', 'joyeria', 'joyería', 'joyas', 'joya', 'reloj', 'relojes', 
+            'gorra', 'gorras', 'falda', 'faldas', 'traje', 'trajes', 'lentes', 'bebe', 'bebé', 'bebes', 
+            'ropa de bebe', 'infantil', 'tienda de ropa', 'jeans', 'playeras', 'playera', 'sandalias', 'tacones', 
+            'ropa interior', 'lenceria', 'perfumes', 'perfume', 'outfit'
+        ]
+    },
+    {
+        id: 'muebles',
+        nombre: '🛋️ Muebles, Hogar & Decoración',
+        shortName: 'Muebles & Hogar',
+        keywords: [
+            'mueble', 'muebles', 'muebleria', 'mueblería', 'hogar', 'decoracion', 'decoración', 'casa', 'sala', 
+            'salas', 'comedor', 'comedores', 'recamara', 'recámaras', 'recamaras', 'colchon', 'colchón', 
+            'colchones', 'cocina', 'cocinas', 'carpinteria', 'carpintería', 'cortina', 'cortinas', 'persiana', 
+            'persianas', 'lampara', 'lámparas', 'lamparas', 'jardineria', 'jardinería', 'jardin', 'jardín', 
+            'ferreteria', 'ferretería', 'herramientas', 'pintura', 'electrodomesticos', 'electrodomésticos', 
+            'linea blanca', 'refrigerador', 'refrigeradores', 'estufa', 'estufas', 'lavadora', 'lavadoras', 
+            'almohada', 'almohadas', 'sabanas', 'sillon', 'sillones', 'closets', 'muebleria navojoa', 'tapiceria'
+        ]
+    },
+    {
+        id: 'belleza',
+        nombre: '✂️ Belleza, Barberías, Uñas & Spa',
+        shortName: 'Belleza & Barberías',
+        keywords: [
+            'belleza', 'barberia', 'barbería', 'barbero', 'barber', 'barbershop', 'spa', 'estetica', 'estética', 
+            'salon de belleza', 'salón de belleza', 'unas', 'uñas', 'acrilicas', 'pestanas', 'pestañas', 'ceja', 
+            'cejas', 'corte de pelo', 'corte de cabello', 'corte', 'tinte', 'tintes', 'peinado', 'peinados', 
+            'maquillaje', 'makeup', 'masaje', 'masajes', 'facial', 'faciales', 'depilacion', 'depilación', 
+            'skincare', 'cuidado personal', 'cosmeticos', 'manicure', 'pedicure', 'microblading', 'alisado', 
+            'keratina', 'barba'
+        ]
+    },
+    {
+        id: 'salud',
+        nombre: '🩺 Salud, Clínicas & Médicos Especialistas',
+        shortName: 'Salud & Médicos',
+        keywords: [
+            'salud', 'medico', 'médico', 'medicos', 'médicos', 'doctor', 'doctores', 'doctora', 'doctoras', 
+            'clinica', 'clínica', 'consultorio', 'hospital', 'farmacia', 'farmacias', 'medicamento', 
+            'medicamentos', 'dentista', 'dentistas', 'dental', 'dientes', 'odontologo', 'odontólogo', 
+            'odontologia', 'optica', 'óptica', 'oftalmologo', 'lentes', 'psicologo', 'psicólogo', 'psicologia', 
+            'nutriologo', 'nutriólogo', 'nutricion', 'laboratorio', 'analisis', 'análisis', 'pediatra', 
+            'ginecologo', 'ginecólogo', 'ginecologia', 'fisioterapia', 'rehabilitacion', 'terapia', 'medicina', 
+            'cardiologo', 'traumatologo', 'ultrasonido', 'rayos x'
+        ]
+    },
+    {
+        id: 'autos',
+        nombre: '🚗 Autos, Talleres Mecánicos & Refacciones',
+        shortName: 'Autos & Talleres',
+        keywords: [
+            'auto', 'autos', 'carro', 'carros', 'coche', 'coches', 'vehiculo', 'vehículos', 'vehiculos', 
+            'taller', 'talleres', 'mecanico', 'mecánico', 'mecanicos', 'refacciones', 'refaccionaria', 'llanta', 
+            'llantas', 'vulcanizadora', 'car wash', 'autolavado', 'lavado de autos', 'aceite', 'cambio de aceite', 
+            'frenos', 'suspension', 'suspensión', 'laminado', 'pintura automotriz', 'bateria', 'batería', 
+            'baterias', 'acumuladores', 'moto', 'motos', 'motocicleta', 'motocicletas', 'parabrisas', 
+            'polarizado', 'transmisiones', 'afinacion'
+        ]
+    },
+    {
+        id: 'inmobiliaria',
+        nombre: '🏡 Bienes Raíces, Renta y Venta de Casas/Terrenos',
+        shortName: 'Bienes Raíces & Terrenos',
+        keywords: [
+            'bienes raices', 'bienes raíces', 'inmobiliaria', 'casa', 'casas', 'terreno', 'terrenos', 'lote', 
+            'lotes', 'renta', 'rentar', 'rentas', 'se renta', 'se vende', 'venta de casas', 'departamento', 
+            'departamentos', 'depa', 'depas', 'local', 'locales', 'local comercial', 'bodega', 'bodegas', 
+            'rancho', 'ranchos', 'propiedad', 'propiedades', 'inmueble', 'inmuebles', 'arrendamiento', 
+            'traspaso', 'fraccionamiento'
+        ]
+    },
+    {
+        id: 'eventos',
+        nombre: '🎉 Eventos, Fiestas, Grupos & Banquetes',
+        shortName: 'Eventos & Fiestas',
+        keywords: [
+            'evento', 'eventos', 'fiesta', 'fiestas', 'sonido', 'musica', 'música', 'grupo musical', 'banda', 
+            'norteno', 'norteño', 'mariachi', 'dj', 'salon de fiestas', 'salon de eventos', 'salón de eventos', 
+            'quinceanera', 'quinceañera', 'boda', 'bodas', 'cumpleanos', 'cumpleaños', 'banquete', 'banquetes', 
+            'mesas y sillas', 'manteleria', 'brincolin', 'brincolines', 'inflable', 'inflables', 'fotografia', 
+            'fotografía', 'video', 'pinata', 'piñata', 'decoracion de fiestas', 'animacion', 'sonido disco', 'toldos'
+        ]
+    },
+    {
+        id: 'tecnologia',
+        nombre: '📱 Celulares, Computación & Tecnología',
+        shortName: 'Celulares & Tecnología',
+        keywords: [
+            'celular', 'celulares', 'telefono', 'teléfono', 'telefonos', 'smartphone', 'smartphones', 
+            'computacion', 'computación', 'computadora', 'computadoras', 'laptop', 'laptops', 'pc', 'tablet', 
+            'tablets', 'electronica', 'electrónica', 'reparacion de celulares', 'accesorios de celular', 
+            'pantalla', 'pantallas', 'funda', 'fundas', 'cargador', 'cargadores', 'tecnologia', 'tecnología', 
+            'videojuegos', 'consola', 'consolas', 'audifonos', 'impresoras', 'camaras de seguridad', 'iphone', 'samsung'
+        ]
+    },
+    {
+        id: 'servicios',
+        nombre: '💼 Servicios Profesionales, Técnicos & Oficios',
+        shortName: 'Servicios Profesionales',
+        keywords: [
+            'servicios', 'servicio', 'abogado', 'abogados', 'contador', 'contadores', 'arquitecto', 
+            'arquitectos', 'ingeniero', 'electricista', 'plomero', 'plomeria', 'plomería', 'aire acondicionado', 
+            'refrigeracion', 'refrigeración', 'minisplit', 'climas', 'carpintero', 'herrero', 'herreria', 
+            'herrería', 'cerrajero', 'cerrajeria', 'cerrajería', 'fumigacion', 'fumigación', 'fumigador', 
+            'limpieza', 'diseno', 'diseño', 'imprenta', 'publicidad', 'rotulacion', 'mantenimiento', 
+            'soldadura', 'mudanzas', 'fletes', 'seguros', 'tramites'
+        ]
+    }
+];
+
+function normalizeText(str) {
+    if (!str) return '';
+    return str
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '') // Quitar acentos
+        .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?"'¡!¿]/g, ' ') // Quitar puntuación
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function findCategoryByQuery(queryText) {
+    const normQuery = normalizeText(queryText);
+    if (!normQuery || normQuery.length < 3) return null;
+
+    const words = normQuery.split(' ');
+
+    for (const cat of CATEGORIES_TAXONOMY) {
+        for (const kw of cat.keywords) {
+            const normKw = normalizeText(kw);
+            if (normKw.includes(' ')) {
+                if (normQuery.includes(normKw)) return cat;
+            } else {
+                if (words.includes(normKw)) return cat;
+            }
+        }
+    }
+    return null;
+}
+
+function filterOffersByCategory(offers, categoryObj) {
+    const catKeywords = categoryObj.keywords.map(k => normalizeText(k));
+    const catShort = normalizeText(categoryObj.shortName);
+    const catId = normalizeText(categoryObj.id);
+
+    return offers.filter(off => {
+        const offCat = normalizeText(off.categoria || '');
+        const offTit = normalizeText(off.titulo || '');
+        const offDesc = normalizeText(off.descripcion || '');
+
+        // 1. Coincidencia directa en el campo categoría
+        if (offCat.includes(catId) || offCat.includes(catShort)) return true;
+        if (catKeywords.some(kw => offCat.includes(kw))) return true;
+
+        // 2. Coincidencia de palabras clave en título o descripción
+        if (catKeywords.some(kw => offTit.includes(kw) || offDesc.includes(kw))) return true;
+
+        return false;
+    });
+}
+
+async function sendOffersList(metaTo, rawPhone, finalName, offersList, introHeader) {
+    if (offersList.length === 0) return;
+
+    // Mensaje inicial de cabecera
+    await sendWhatsAppMessage(metaTo, introHeader, rawPhone, finalName);
+
+    // Envío de cada oferta de una por una con intervalo de 2 segundos
+    for (let idx = 0; idx < offersList.length; idx++) {
+        await new Promise(r => setTimeout(r, 2000)); // pausa de 2 segundos exacta entre ofertas
+
+        const off = offersList[idx];
+        const cleanT = off.contacto_telefono ? off.contacto_telefono.replace(/\D/g, '') : '';
+        
+        // Construir texto de la oferta
+        let cardMsg = `👑 *Publicación #${idx + 1}: ${off.titulo}*\n`;
+        if (off.categoria) cardMsg += `🏷️ *Categoría:* ${off.categoria}\n`;
+        cardMsg += `\n📝 ${off.descripcion}\n`;
+
+        if (off.enlace_maps) {
+            cardMsg += `\n📍 *Cómo llegar (Google Maps):*\n👉 ${off.enlace_maps}\n`;
+        }
+        if (off.enlace_facebook) {
+            cardMsg += `\n📸 *Ver fotos y detalles en Facebook:*\n👉 ${off.enlace_facebook}\n`;
+        }
+        if (cleanT) {
+            cardMsg += `\n📲 *Contacto directo / WhatsApp:*\n👉 wa.me/52${cleanT} (${off.contacto_nombre || 'Contacto'})\n`;
+        }
+
+        // Si tiene foto, enviarla con el texto como caption. Si no, enviar texto solo
+        const hasPhoto = off.imagen_url || (off.imagenes && off.imagenes.length > 0);
+        if (hasPhoto) {
+            const imgUrl = (off.imagen_url && off.imagen_url.startsWith('http')) 
+                ? off.imagen_url 
+                : `https://publicanavojoa.com/api/img?offerId=${off.id}&index=0`;
+            await sendWhatsAppImage(metaTo, imgUrl, cardMsg, rawPhone, finalName);
+        } else {
+            await sendWhatsAppMessage(metaTo, cardMsg, rawPhone, finalName);
+        }
+    }
+}
+
 async function processBotRules(senderPhone, rawPhone, senderName, msgText) {
     const textLower = msgText.toLowerCase().trim();
+    const textNorm = normalizeText(msgText);
     const metaTo = senderPhone || (rawPhone.length === 10 ? '52' + rawPhone : rawPhone);
 
     // 1. Consultar si el contacto ya está registrado en Firebase Firestore
@@ -249,7 +479,7 @@ async function processBotRules(senderPhone, rawPhone, senderName, msgText) {
             const freshInfo = await getContactFromFirestore(rawPhone);
             if (freshInfo.isRegistered) {
                 const fName = freshInfo.nombre.split(' ')[0];
-                const welcomeText = `${fName ? `¡Hola ${fName}!` : '¡Hola!'} 👋 Tu registro al *Club VIP de Publica Navojoa* ha quedado 100% confirmado para la colonia *${freshInfo.colonia}*.\n\nPor favor *guarda este número en tus contactos* para que te llegue el Catálogo Semanal de Ofertas y Remates de tu zona. ¡Bienvenido! 🎉\n\n📌 Comandos rápidos:\n- Escribe *OFERTAS* para ver los descuentos de esta semana.\n- Escribe *ANUNCIAR* si deseas promocionar tu negocio.`;
+                const welcomeText = `${fName ? `¡Hola ${fName}!` : '¡Hola!'} 👋 Tu registro al *Club VIP de Publica Navojoa* ha quedado 100% confirmado para la colonia *${freshInfo.colonia}*.\n\nPor favor *guarda este número en tus contactos* para que te llegue el Catálogo Semanal de Ofertas y Remates de tu zona. ¡Bienvenido! 🎉\n\n📌 Comandos rápidos:\n- Escribe *OFERTAS* para ver los descuentos de esta semana.\n- Escribe *CATEGORÍAS* para buscar por giro comercial (comida, ropa, muebles, etc.).\n- Escribe *ANUNCIAR* si deseas promocionar tu negocio.`;
                 await sendWhatsAppMessage(metaTo, welcomeText, rawPhone, freshInfo.nombre);
                 return;
             }
@@ -267,12 +497,39 @@ async function processBotRules(senderPhone, rawPhone, senderName, msgText) {
 
     // Regla 1: Saludo / Bienvenida / Club VIP
     if (textLower.includes('club vip') || textLower.includes('unirme') || textLower.includes('hola') || textLower.includes('bienvenid') || textLower.includes('confirmar mi registro') || textLower.includes('terminar mi registro')) {
-        const welcomeText = `${nameSalute} 👋 Qué gusto saludarte de nuevo en *Publica Navojoa*.\n\n👑 Tu Membresía VIP al Catálogo de Ofertas sigue activa${coloniaText}.\n\n📌 Comandos rápidos:\n- Escribe *OFERTAS* para ver los descuentos y remates de esta semana.\n- Escribe *ANUNCIAR* si deseas promocionar tu negocio.`;
+        const welcomeText = `${nameSalute} 👋 Qué gusto saludarte de nuevo en *Publica Navojoa*.\n\n👑 Tu Membresía VIP al Catálogo de Ofertas sigue activa${coloniaText}.\n\n📌 Comandos rápidos:\n- Escribe *OFERTAS* para ver todo el catálogo de esta semana.\n- Escribe *CATEGORÍAS* para ver la lista de giros disponibles (comida, ropa, muebles, autos, etc.).\n- Escribe *ANUNCIAR* si deseas promocionar tu negocio.`;
         await sendWhatsAppMessage(metaTo, welcomeText, rawPhone, finalName);
         return;
     }
 
-    // Regla 2: Catálogo Dinámico de Ofertas (Envío secuencial 1 por 1 cada 2 segundos)
+    // Regla 2: Menú de Categorías (cuando escriben 'categorias', 'categoria', 'giros', 'rubros', 'buscar', 'menu')
+    const isCategoryMenu = ['categorias', 'categoria', 'giros', 'giro', 'rubros', 'rubro', 'menu', 'secciones', 'que venden', 'que hay'].some(w => textNorm === w || textNorm === `ver ${w}` || textNorm === `mostrar ${w}` || textNorm.startsWith('buscar'));
+    if (isCategoryMenu && !textNorm.includes('oferta') && !textNorm.includes('anunciar')) {
+        const menuCategorias = `🏷️ *Categorías Disponibles en Publica Navojoa* 🛍️\n\n${nameSalute} Puedes buscar ofertas exclusivas escribiendo directamente la categoría o producto que necesitas:\n\n1️⃣ 🍔 *COMIDA* (Restaurantes, Tacos, Sushi, Mariscos)\n2️⃣ 👗 *ROPA* (Moda, Calzado, Boutiques, Accesorios)\n3️⃣ 🛋️ *MUEBLES* (Hogar, Salas, Comedores, Decoración)\n4️⃣ ✂️ *BELLEZA* (Barberías, Uñas, Spa, Estéticas)\n5️⃣ 🩺 *SALUD* (Médicos, Dentistas, Clínicas, Farmacias)\n6️⃣ 🚗 *AUTOS* (Talleres, Refacciones, Car Wash, Mecánicos)\n7️⃣ 🏡 *CASAS* (Bienes Raíces, Renta, Terrenos, Locales)\n8️⃣ 🎉 *FIESTAS* (Eventos, Música, Grupos, Inflables)\n9️⃣ 📱 *CELULARES* (Tecnología, Laptops, Reparaciones)\n🔟 💼 *SERVICIOS* (Abogados, Contadores, Refrigeración, Oficios)\n\n💡 *Tip:* Escribe directamente lo que buscas (ejemplo: *tacos*, *mueblería*, *dentista*, *rentas*, *ropa*) y te enviaremos las ofertas de esa categoría al instante.`;
+        await sendWhatsAppMessage(metaTo, menuCategorias, rawPhone, finalName);
+        return;
+    }
+
+    // Regla 3: Búsqueda Inteligente por Categoría Específica y Sinónimos
+    const matchedCategory = findCategoryByQuery(msgText);
+    const isGeneralCatalogWord = textNorm === 'ofertas' || textNorm === 'oferta' || textNorm === 'catalogo' || textNorm === 'remates' || textNorm === 'remate' || textNorm === 'ver catalogo' || textNorm === 'ver ofertas';
+
+    if (matchedCategory && !isGeneralCatalogWord) {
+        const allActiveOffers = await getOffersFromFirestore();
+        const categoryOffers = filterOffersByCategory(allActiveOffers, matchedCategory);
+
+        if (categoryOffers.length === 0) {
+            const respuestaVaciaCat = `🏷️ *Categoría: ${matchedCategory.nombre}*\n\n${nameSalute} Por el momento no tenemos ofertas vigentes en esta categoría específica.\n\n✨ Escribe *OFERTAS* para ver todo el catálogo semanal o *CATEGORÍAS* para consultar otros giros comerciales.`;
+            await sendWhatsAppMessage(metaTo, respuestaVaciaCat, rawPhone, finalName);
+            return;
+        }
+
+        const introCatMsg = `🏷️ *Categoría: ${matchedCategory.nombre}* 🛍️\n\n${nameSalute} Encontramos *${categoryOffers.length}* promociones activas para ti en este rubro.\n\n_Te enviamos cada una a continuación 👇_`;
+        await sendOffersList(metaTo, rawPhone, finalName, categoryOffers, introCatMsg);
+        return;
+    }
+
+    // Regla 4: Catálogo Dinámico General de Ofertas (Envío secuencial cronológico más reciente primero)
     if (textLower.includes('catálogo') || textLower.includes('catalogo') || textLower.includes('oferta') || textLower.includes('remate')) {
         const activeOffers = await getOffersFromFirestore();
 
@@ -282,54 +539,19 @@ async function processBotRules(senderPhone, rawPhone, senderName, msgText) {
             return;
         }
 
-        // Mensaje inicial de cabecera
-        const introMsg = `🛍️ *Catálogo de Ofertas y Eventos — Publica Navojoa* 🛍️\n\n${nameSalute} Aquí tienes las *${activeOffers.length}* promociones y eventos destacados activos esta semana.\n\n_Te enviamos cada una a continuación 👇_`;
-        await sendWhatsAppMessage(metaTo, introMsg, rawPhone, finalName);
-
-        // Envío de cada oferta de una por una con intervalo de 2 segundos
-        for (let idx = 0; idx < activeOffers.length; idx++) {
-            await new Promise(r => setTimeout(r, 2000)); // pausa de 2 segundos exacta entre ofertas
-
-            const off = activeOffers[idx];
-            const cleanT = off.contacto_telefono ? off.contacto_telefono.replace(/\D/g, '') : '';
-            
-            // Construir texto de la oferta
-            let cardMsg = `👑 *Publicación #${idx + 1}: ${off.titulo}*\n`;
-            if (off.categoria) cardMsg += `🏷️ *Categoría:* ${off.categoria}\n`;
-            cardMsg += `\n📝 ${off.descripcion}\n`;
-
-            if (off.enlace_maps) {
-                cardMsg += `\n📍 *Cómo llegar (Google Maps):*\n👉 ${off.enlace_maps}\n`;
-            }
-            if (off.enlace_facebook) {
-                cardMsg += `\n📸 *Ver fotos y detalles en Facebook:*\n👉 ${off.enlace_facebook}\n`;
-            }
-            if (cleanT) {
-                cardMsg += `\n📲 *Contacto directo / WhatsApp:*\n👉 wa.me/52${cleanT} (${off.contacto_nombre || 'Contacto'})\n`;
-            }
-
-            // Si tiene foto, enviarla con el texto como caption. Si no, enviar texto solo
-            const hasPhoto = off.imagen_url || (off.imagenes && off.imagenes.length > 0);
-            if (hasPhoto) {
-                const imgUrl = (off.imagen_url && off.imagen_url.startsWith('http')) 
-                    ? off.imagen_url 
-                    : `https://publicanavojoa.com/api/img?offerId=${off.id}&index=0`;
-                await sendWhatsAppImage(metaTo, imgUrl, cardMsg, rawPhone, finalName);
-            } else {
-                await sendWhatsAppMessage(metaTo, cardMsg, rawPhone, finalName);
-            }
-        }
+        const introMsg = `🛍️ *Catálogo de Ofertas y Eventos — Publica Navojoa* 🛍️\n\n${nameSalute} Aquí tienes las *${activeOffers.length}* promociones y eventos destacados activos esta semana (mostrando las más recientes primero).\n\n_Te enviamos cada una a continuación 👇_`;
+        await sendOffersList(metaTo, rawPhone, finalName, activeOffers, introMsg);
         return;
     }
 
-    // Regla 3: Atención Comercial para Negocios y Anunciantes
+    // Regla 5: Atención Comercial para Negocios y Anunciantes
     if (textLower.includes('anunciar') || textLower.includes('paquete') || textLower.includes('publicidad') || textLower.includes('precio')) {
         const respuesta = `📢 *Atención Comercial — Publica Navojoa* 🚀\n\n${nameSalute} Qué gusto que desees dar a conocer tus productos o negocio ante nuestros más de *78,700 miembros locales* en Navojoa.\n\n👤 *Un asesor comercial de nuestro equipo te contactará directamente en este chat a la brevedad* para conocer tu negocio y brindarte la atención personalizada.\n\n🌟 *Nuestra red incluye publicaciones fijadas en el grupo de Facebook más grande de la ciudad y difusión directa al celular de nuestra comunidad de WhatsApp.*`;
         await sendWhatsAppMessage(metaTo, respuesta, rawPhone, finalName);
         return;
     }
 
-    // Regla 4: Agradecimiento / Confirmación (ok, gracias, perfecto, listo, etc.)
+    // Regla 6: Agradecimiento / Confirmación (ok, gracias, perfecto, listo, etc.)
     const confirmWords = ['ok', 'okay', 'gracias', 'perfecto', 'esta bien', 'está bien', 'entendido', 'excelente', 'listo', 'sale', 'va', 'super', 'súper', 'muy bien', 'de acuerdo', 'muchas gracias'];
     const isConfirm = confirmWords.some(w => textLower === w || textLower.startsWith(w + ' ') || textLower.endsWith(' ' + w) || textLower === 'ok');
 
@@ -339,15 +561,15 @@ async function processBotRules(senderPhone, rawPhone, senderName, msgText) {
         return;
     }
 
-    // Regla 5: Cancelar suscripción
+    // Regla 7: Cancelar suscripción
     if (textLower.includes('baja') || textLower.includes('cancelar')) {
         const respuesta = `✅ ${nameSalute} Has sido dado de baja de la lista de difusión de Publica Navojoa. ¡Gracias por habernos acompañado!`;
         await sendWhatsAppMessage(metaTo, respuesta, rawPhone, finalName);
         return;
     }
 
-    // Regla 6: Respuesta por defecto (Mensajes libres)
-    const respuestaDefault = `¡Hola ${firstName || ''}! 👋 Recibimos tu mensaje en *Publica Navojoa*.\n\nUn asesor de nuestro equipo te responderá aquí mismo a la brevedad.`;
+    // Regla 8: Respuesta por defecto (Mensajes libres)
+    const respuestaDefault = `¡Hola ${firstName || ''}! 👋 Recibimos tu mensaje en *Publica Navojoa*.\n\nUn asesor de nuestro equipo te responderá aquí mismo a la brevedad.\n\n💡 *Comandos disponibles:*\n- Escribe *OFERTAS* para ver el catálogo semanal.\n- Escribe *CATEGORÍAS* para buscar por giros (comida, ropa, muebles, etc.).\n- Escribe *ANUNCIAR* si deseas promocionar tu negocio.`;
     await sendWhatsAppMessage(metaTo, respuestaDefault, rawPhone, finalName);
 }
 
