@@ -751,6 +751,48 @@
         .btn-logout:hover {
             background: #fecaca;
         }
+
+        /* Finance Module Styles */
+        .finance-period-btn {
+            background: transparent;
+            color: var(--text-muted);
+            border: none;
+            border-radius: 9px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            padding: 7px 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .finance-period-btn.active {
+            background: #ffffff;
+            color: var(--accent-green);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+        .fin-badge-in {
+            background: #dcfce7;
+            color: #15803d;
+            border: 1px solid #86efac;
+            font-weight: 800;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 0.78rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .fin-badge-out {
+            background: #fee2e2;
+            color: #dc2626;
+            border: 1px solid #fca5a5;
+            font-weight: 800;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 0.78rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
     </style>
 </head>
 <body>
@@ -859,6 +901,7 @@
         <button class="tab-btn" onclick="switchTab('crm')">📊 Base de Datos & Contactos CRM</button>
         <button class="tab-btn" onclick="switchTab('offers')">🏷️ Catálogo de Ofertas (Bot WhatsApp)</button>
         <button class="tab-btn" onclick="switchTab('orders')" id="tab-btn-orders">📋 Solicitudes de Publicidad (<span id="orders-count-badge">0</span>)</button>
+        <button class="tab-btn" onclick="switchTab('finances')" id="tab-btn-finances">💰 Finanzas & Contabilidad</button>
     </div>
 
     <!-- TAB 1: LIVE CHAT WHATSAPP API -->
@@ -1036,6 +1079,217 @@
 
         <div id="orders-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 24px; margin-bottom: 30px;">
             <!-- Renderizado dinámico de solicitudes desde Firestore -->
+        </div>
+    </div>
+
+    <!-- TAB 5: FINANZAS & CONTABILIDAD (ENTRADAS Y SALIDAS) -->
+    <div id="tab-finances" class="tab-content">
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 20px; flex-wrap: wrap;">
+            <div>
+                <h2 style="font-size: 1.35rem; font-weight: 800; color: var(--text-main);">💰 Control Financiero, Flujo de Caja & Contabilidad</h2>
+                <p style="color: var(--text-muted); font-size: 0.88rem; margin-top: 4px;">
+                    Registro de todas las <strong>ventas de paquetes (Entradas)</strong>, <strong>gastos operativos</strong> y <strong>sueldos/comisiones sobre porcentaje de venta (Salidas)</strong> con estadísticas en tiempo real.
+                </p>
+            </div>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                <div style="display: inline-flex; background: #e2e8f0; padding: 3px; border-radius: 12px; gap: 2px;">
+                    <button class="finance-period-btn active" id="f-period-dia" onclick="setFinancePeriod('dia')">📅 Hoy (Diario)</button>
+                    <button class="finance-period-btn" id="f-period-mes" onclick="setFinancePeriod('mes')">📆 Mensual</button>
+                    <button class="finance-period-btn" id="f-period-ano" onclick="setFinancePeriod('ano')">📊 Anual</button>
+                    <button class="finance-period-btn" id="f-period-todo" onclick="setFinancePeriod('todo')">🎛️ Todo</button>
+                </div>
+                <button class="btn btn-green" onclick="openFinanceModal('entrada')" style="box-shadow: 0 4px 14px rgba(22, 163, 74, 0.25);">+ Registrar Venta (Entrada) 🟢</button>
+                <button class="btn" onclick="openFinanceModal('salida')" style="background: #ef4444; color: #fff; box-shadow: 0 4px 14px rgba(239, 68, 68, 0.25);">+ Registrar Gasto / Sueldo 🔴</button>
+                <button class="btn btn-blue" onclick="exportFinancesCSV()" title="Descargar reporte en formato Excel/CSV">📥 Exportar CSV</button>
+            </div>
+        </div>
+
+        <!-- Indicador de período activo -->
+        <div id="finance-period-indicator" style="background: #f1f5f9; border-left: 4px solid var(--accent-green); padding: 8px 14px; border-radius: 0 10px 10px 0; margin-bottom: 20px; font-size: 0.88rem; font-weight: 700; color: #334155;">
+            Mostrando estadísticas de: <span id="finance-period-label" style="color: var(--accent-green); font-weight: 900;">Hoy</span>
+        </div>
+
+        <!-- Estadísticas & KPIs Principales -->
+        <div class="stats-grid" style="margin-bottom: 24px;">
+            <div class="stat-card" style="border-left: 4px solid #16a34a;">
+                <div class="stat-val" id="kpi-fin-entradas" style="color: #16a34a;">$0.00</div>
+                <div class="stat-label">📈 Total Entradas (Ventas)</div>
+                <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 4px;" id="kpi-fin-entradas-sub">0 ventas registradas</div>
+            </div>
+            <div class="stat-card" style="border-left: 4px solid #ef4444;">
+                <div class="stat-val" id="kpi-fin-salidas" style="color: #ef4444;">$0.00</div>
+                <div class="stat-label">📉 Total Salidas (Gastos & Sueldos)</div>
+                <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 4px;" id="kpi-fin-salidas-sub">0 egresos registrados</div>
+            </div>
+            <div class="stat-card" style="border-left: 4px solid #2563eb;" id="card-fin-utilidad">
+                <div class="stat-val" id="kpi-fin-utilidad" style="color: #2563eb;">$0.00</div>
+                <div class="stat-label">💵 Utilidad Neta (Balance Real)</div>
+                <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 4px;" id="kpi-fin-utilidad-sub">Margen de Ganancia: 0%</div>
+            </div>
+            <div class="stat-card" style="border-left: 4px solid #d97706;">
+                <div class="stat-val gold" id="kpi-fin-comisiones">$0.00</div>
+                <div class="stat-label">💼 Sueldos & Comisiones Pagadas (%)</div>
+                <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 4px;" id="kpi-fin-comisiones-sub">Comisiones sobre ventas</div>
+            </div>
+        </div>
+
+        <!-- Gráficos de Desglose & Comparativas de Giros -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 20px; margin-bottom: 24px;">
+            <!-- Desglose de Ventas por Paquete -->
+            <div style="background: #ffffff; border: 1px solid var(--border-color); border-radius: 18px; padding: 22px; box-shadow: var(--shadow-sm);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                    <h3 style="font-size: 1.05rem; font-weight: 800; color: var(--text-main);">📦 Ventas por Paquete Publicitario</h3>
+                    <span style="font-size: 0.78rem; font-weight: 700; color: #16a34a; background: #dcfce7; padding: 3px 8px; border-radius: 6px;">Ingresos</span>
+                </div>
+                <div id="bars-ventas-paquetes" style="display: flex; flex-direction: column; gap: 12px;">
+                    <!-- Barras dinámicas de ventas -->
+                </div>
+            </div>
+
+            <!-- Desglose de Gastos & Sueldos por Concepto -->
+            <div style="background: #ffffff; border: 1px solid var(--border-color); border-radius: 18px; padding: 22px; box-shadow: var(--shadow-sm);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                    <h3 style="font-size: 1.05rem; font-weight: 800; color: var(--text-main);">📉 Distribución de Egresos & Sueldos</h3>
+                    <span style="font-size: 0.78rem; font-weight: 700; color: #ef4444; background: #fee2e2; padding: 3px 8px; border-radius: 6px;">Salidas</span>
+                </div>
+                <div id="bars-gastos-categorias" style="display: flex; flex-direction: column; gap: 12px;">
+                    <!-- Barras dinámicas de egresos -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Filtros & Buscador de Movimientos Contables -->
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 16px; flex-wrap: wrap;">
+            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                <h3 style="font-size: 1.15rem; font-weight: 800;">Libro Diario de Movimientos</h3>
+                <span id="fin-records-count" style="font-size: 0.8rem; font-weight: 700; background: #e2e8f0; color: #475569; padding: 2px 8px; border-radius: 12px;">0 movimientos</span>
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                <select id="filter-fin-type" onchange="renderFinancesTable()" style="padding: 10px 14px; border-radius: 10px; border: 1.5px solid #e2e8f0; font-size: 0.88rem; font-weight: 600; cursor: pointer; background: #ffffff;">
+                    <option value="todos">Todos los Movimientos</option>
+                    <option value="entrada">🟢 Solo Entradas (Ventas)</option>
+                    <option value="salida">🔴 Solo Salidas (Gastos & Sueldos)</option>
+                    <option value="sueldo_comision">💼 Solo Sueldos / Comisiones %</option>
+                    <option value="meta_ads">📢 Solo Publicidad Meta Ads</option>
+                    <option value="operativo">⚙️ Solo Gastos Operativos</option>
+                </select>
+                <input type="text" id="search-finances" placeholder="🔍 Buscar por concepto, persona o folio..." style="padding: 10px 14px; border-radius: 10px; border: 1.5px solid #e2e8f0; font-size: 0.88rem; min-width: 250px; margin: 0;" onkeyup="renderFinancesTable()">
+                <button class="btn btn-blue" onclick="syncPaidOrdersToFinances()" title="Sincronizar automáticamente solicitudes pagadas del formulario">🔄 Sincronizar Ventas</button>
+            </div>
+        </div>
+
+        <!-- Tabla de Movimientos Contables -->
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Tipo</th>
+                        <th>Categoría</th>
+                        <th>Concepto / Detalle</th>
+                        <th>Cliente / Beneficiario</th>
+                        <th>Método de Pago</th>
+                        <th>% Comisión</th>
+                        <th style="text-align: right;">Monto ($ MXN)</th>
+                        <th style="text-align: center;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="finances-table-body">
+                    <!-- Filas renderizadas con JS -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Registro de Entrada / Salida Financiera -->
+<div class="modal" id="modal-finance-tx">
+    <div class="modal-content" style="max-width: 580px;">
+        <h3 id="finance-modal-title" style="margin-bottom: 16px; font-size: 1.25rem; font-weight: 800;">Registrar Movimiento Contable</h3>
+        <input type="hidden" id="tx-id">
+
+        <!-- Selector Tipo: Entrada vs Salida -->
+        <div style="display: flex; gap: 10px; margin-bottom: 16px;">
+            <button type="button" id="btn-tx-type-in" class="btn" onclick="setFinanceTxType('entrada')" style="flex: 1; justify-content: center; background: #16a34a; color: #fff; border: 2px solid #16a34a; font-weight: 800;">
+                🟢 Entrada (Venta)
+            </button>
+            <button type="button" id="btn-tx-type-out" class="btn" onclick="setFinanceTxType('salida')" style="flex: 1; justify-content: center; background: #f1f5f9; color: #475569; border: 2px solid #e2e8f0; font-weight: 800;">
+                🔴 Salida (Gasto / Sueldo)
+            </button>
+        </div>
+        <input type="hidden" id="tx-type" value="entrada">
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+            <div>
+                <label style="font-size: 0.85rem; font-weight: 700;">Fecha del Movimiento:</label>
+                <input type="date" id="tx-fecha" required>
+            </div>
+            <div>
+                <label style="font-size: 0.85rem; font-weight: 700;">Categoría / Concepto:</label>
+                <select id="tx-categoria" onchange="handleFinanceCategoryChange()" style="padding: 10px 14px; border-radius: 10px; border: 1.5px solid #e2e8f0; font-size: 0.88rem; width: 100%; font-weight: 600; background: #ffffff;">
+                    <!-- Opciones dinámicas según entrada/salida -->
+                </select>
+            </div>
+        </div>
+
+        <label style="font-size: 0.85rem; font-weight: 700;">Concepto / Descripción Detallada:</label>
+        <input type="text" id="tx-concepto" placeholder="Ej. Contratación Paquete Oro - Mueblería del Yaqui" required>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+            <div>
+                <label style="font-size: 0.85rem; font-weight: 700;" id="lbl-tx-person">Cliente / Negocio:</label>
+                <input type="text" id="tx-persona" placeholder="Ej. Juan Pérez / Mónica Obregón">
+            </div>
+            <div>
+                <label style="font-size: 0.85rem; font-weight: 700;">Método de Pago / Cuenta:</label>
+                <select id="tx-metodo" style="padding: 10px 14px; border-radius: 10px; border: 1.5px solid #e2e8f0; font-size: 0.88rem; width: 100%; font-weight: 600; background: #ffffff;">
+                    <option value="Transferencia BBVA">Transferencia BBVA</option>
+                    <option value="Transferencia Santander">Transferencia Santander</option>
+                    <option value="Depósito OXXO">Depósito OXXO</option>
+                    <option value="Efectivo">Efectivo en Mano</option>
+                    <option value="Tarjeta / Stripe">Tarjeta de Crédito / Débito</option>
+                    <option value="Otro">Otro Método</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Sección de Comisión / Sueldo % (Visible solo si categoría es Sueldo/Comisión) -->
+        <div id="box-commission-calc" style="display: none; background: #fef3c7; border: 1px solid #fde68a; border-radius: 12px; padding: 14px; margin-bottom: 14px;">
+            <div style="font-weight: 800; font-size: 0.85rem; color: #92400e; margin-bottom: 8px;">💼 Cálculo de Sueldo / Comisión sobre Venta:</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <div>
+                    <label style="font-size: 0.78rem; font-weight: 700; color: #78350f;">Monto Base de Venta ($):</label>
+                    <input type="number" id="tx-base-venta" placeholder="Ej. 2500" oninput="calculateCommissionAmount()" style="margin-bottom: 0;">
+                </div>
+                <div>
+                    <label style="font-size: 0.78rem; font-weight: 700; color: #78350f;">% Porcentaje de Comisión:</label>
+                    <select id="tx-comision-pct" onchange="calculateCommissionAmount()" style="padding: 10px 12px; border-radius: 10px; border: 1.5px solid #cbd5e1; font-size: 0.85rem; width: 100%; font-weight: 700; background: #ffffff;">
+                        <option value="10">10% de Comisión</option>
+                        <option value="15">15% de Comisión</option>
+                        <option value="20">20% de Comisión</option>
+                        <option value="25">25% de Comisión</option>
+                        <option value="30" selected>30% de Comisión</option>
+                        <option value="40">40% de Comisión</option>
+                        <option value="50">50% de Comisión</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+            <div>
+                <label style="font-size: 0.85rem; font-weight: 700;">Monto Total ($ MXN):</label>
+                <input type="number" step="0.01" id="tx-monto" placeholder="Ej. 1200.00" required style="font-size: 1.1rem; font-weight: 800; color: #0f172a;">
+            </div>
+            <div>
+                <label style="font-size: 0.85rem; font-weight: 700;">Folio / Referencia:</label>
+                <input type="text" id="tx-referencia" placeholder="Ej. Folio PN-1234 / Ticket">
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 10px;">
+            <button class="btn btn-green" style="flex:1;" onclick="saveFinanceTx()">Guardar Movimiento</button>
+            <button class="btn btn-blue" onclick="closeFinanceModal()">Cancelar</button>
         </div>
     </div>
 </div>
@@ -1310,6 +1564,11 @@
             document.querySelectorAll('.tab-btn')[3].classList.add('active');
             document.getElementById('tab-orders').classList.add('active');
             listenFirebaseOrders();
+        } else if (tabName === 'finances') {
+            document.querySelectorAll('.tab-btn')[4].classList.add('active');
+            document.getElementById('tab-finances').classList.add('active');
+            listenFirebaseFinances();
+            renderFinancesView();
         }
     }
 
@@ -2566,6 +2825,9 @@
                     <button class="btn btn-green" style="flex: 1; padding: 7px 10px; font-size: 0.78rem; justify-content: center;" onclick="copyOrderToCatalog('${ord.id || ord.order_id}')" title="Copiar este anuncio automáticamente al Catálogo de Ofertas del Bot de WhatsApp">
                         🏷️ Pasar a Catálogo Bot
                     </button>
+                    <button class="btn" style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a; padding: 7px 10px; font-size: 0.78rem; font-weight: 700; cursor: pointer;" onclick="quickRegisterOrderFinance('${ord.id || ord.order_id}')" title="Registrar venta o comisión de este pedido en Finanzas">
+                        💰 Finanzas
+                    </button>
                     <a href="https://wa.me/52${(cont.whatsapp || '').replace(/\\D/g, '')}?text=Hola%20${encodeURIComponent(cont.nombre || '')}%2C%20te%20contacto%20de%20Publica%20Navojoa%20respecto%20a%20tu%20anuncio%20%22${encodeURIComponent(pub.titulo || '')}%22" target="_blank" class="btn btn-blue" style="padding: 7px 10px; font-size: 0.78rem; text-decoration: none; display: inline-flex; align-items: center; justify-content: center;">
                         💬 WhatsApp
                     </a>
@@ -2779,6 +3041,643 @@
     }
 
     // ═════════════════════════════════════════════════════════════════════
+    // MÓDULO DE FINANZAS, CONTABILIDAD & FLUJO DE CAJA (ENTRADAS & SALIDAS)
+    // ═════════════════════════════════════════════════════════════════════
+    let currentFinances = [];
+    let currentFinancePeriod = 'dia'; // 'dia', 'mes', 'ano', 'todo'
+
+    const FINANCE_CATEGORIES_IN = [
+        { id: 'paquete_bronce', label: 'Paquete Bronce ($600 MXN)', defaultAmount: 600 },
+        { id: 'paquete_plata', label: 'Paquete Plata ($1,200 MXN)', defaultAmount: 1200 },
+        { id: 'paquete_oro', label: 'Paquete Oro VIP ($2,500 MXN)', defaultAmount: 2500 },
+        { id: 'publicidad_extra', label: 'Publicidad / Anuncio Especial', defaultAmount: 0 },
+        { id: 'banner_web', label: 'Banner / Sitio Web', defaultAmount: 0 },
+        { id: 'otro_ingreso', label: 'Otro Ingreso Comercial', defaultAmount: 0 }
+    ];
+
+    const FINANCE_CATEGORIES_OUT = [
+        { id: 'sueldo_comision', label: '💼 Sueldo / Comisión (% sobre Venta)', isCommission: true },
+        { id: 'meta_ads', label: '📢 Publicidad Meta Ads (Facebook / Instagram)', isCommission: false },
+        { id: 'diseno_creativos', label: '🎨 Diseño Gráfico & Creativos', isCommission: false },
+        { id: 'tecnologia_servidores', label: '💻 Tecnología, WhatsApp Cloud API & Hosting', isCommission: false },
+        { id: 'telefono_internet', label: '📱 Saldo Celular & Telefonía Comercial', isCommission: false },
+        { id: 'papeleria_oficina', label: '📑 Papelería, Viáticos & Operativos', isCommission: false },
+        { id: 'impuestos_contable', label: '⚖️ Servicios Contables & Legales', isCommission: false },
+        { id: 'otro_gasto', label: '💸 Otro Gasto / Salida', isCommission: false }
+    ];
+
+    function setFinancePeriod(period) {
+        currentFinancePeriod = period;
+        ['dia', 'mes', 'ano', 'todo'].forEach(p => {
+            const btn = document.getElementById('f-period-' + p);
+            if (btn) {
+                if (p === period) btn.classList.add('active');
+                else btn.classList.remove('active');
+            }
+        });
+
+        const now = new Date();
+        const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+        const labelEl = document.getElementById('finance-period-label');
+        if (labelEl) {
+            if (period === 'dia') {
+                labelEl.innerText = `Hoy (${now.toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' })})`;
+            } else if (period === 'mes') {
+                labelEl.innerText = `${meses[now.getMonth()]} ${now.getFullYear()} (Mes Actual)`;
+            } else if (period === 'ano') {
+                labelEl.innerText = `Año ${now.getFullYear()} Completo`;
+            } else {
+                labelEl.innerText = 'Todo el Historial Contable';
+            }
+        }
+
+        renderFinancesView();
+    }
+
+    function listenFirebaseFinances() {
+        try {
+            db.collection('finanzas_movimientos').onSnapshot(snapshot => {
+                currentFinances = [];
+                snapshot.forEach(doc => {
+                    currentFinances.push({ id: doc.id, ...doc.data() });
+                });
+
+                // Ordenar por fecha y timestamp descendente (lo más reciente primero)
+                currentFinances.sort((a, b) => {
+                    const tsA = a.timestamp || (a.fecha ? new Date(a.fecha).getTime() : 0);
+                    const tsB = b.timestamp || (b.fecha ? new Date(b.fecha).getTime() : 0);
+                    return tsB - tsA;
+                });
+
+                renderFinancesView();
+            }, err => {
+                console.log('Error listening finances:', err);
+            });
+        } catch (e) {
+            console.error('Firebase finances error:', e);
+        }
+    }
+
+    function isTxInPeriod(tx) {
+        if (currentFinancePeriod === 'todo') return true;
+
+        const txDateStr = tx.fecha || (tx.timestamp ? new Date(tx.timestamp).toISOString().split('T')[0] : '');
+        if (!txDateStr) return true;
+
+        const parts = txDateStr.split(/[-/]/);
+        let txDate;
+        if (parts.length === 3) {
+            if (parts[0].length === 4) {
+                txDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+            } else {
+                txDate = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+            }
+        } else {
+            txDate = new Date(txDateStr);
+        }
+
+        if (isNaN(txDate.getTime())) return true;
+
+        const now = new Date();
+        if (currentFinancePeriod === 'dia') {
+            return txDate.getDate() === now.getDate() &&
+                   txDate.getMonth() === now.getMonth() &&
+                   txDate.getFullYear() === now.getFullYear();
+        } else if (currentFinancePeriod === 'mes') {
+            return txDate.getMonth() === now.getMonth() &&
+                   txDate.getFullYear() === now.getFullYear();
+        } else if (currentFinancePeriod === 'ano') {
+            return txDate.getFullYear() === now.getFullYear();
+        }
+        return true;
+    }
+
+    function renderFinancesView() {
+        const periodTxs = currentFinances.filter(isTxInPeriod);
+
+        let totalEntradas = 0;
+        let countEntradas = 0;
+        let totalSalidas = 0;
+        let countSalidas = 0;
+        let totalComisiones = 0;
+
+        // Distribuciones
+        const ventasPaquetes = {
+            paquete_bronce: { label: 'Paquete Bronce ($600)', count: 0, total: 0, color: '#b45309' },
+            paquete_plata: { label: 'Paquete Plata ($1,200)', count: 0, total: 0, color: '#64748b' },
+            paquete_oro: { label: 'Paquete Oro ($2,500)', count: 0, total: 0, color: '#d97706' },
+            otro: { label: 'Otros / Personalizados', count: 0, total: 0, color: '#16a34a' }
+        };
+
+        const gastosCategorias = {
+            sueldo_comision: { label: '💼 Sueldos & Comisiones %', total: 0, color: '#d97706' },
+            meta_ads: { label: '📢 Publicidad Meta Ads', total: 0, color: '#2563eb' },
+            tecnologia_servidores: { label: '💻 Tecnología & Servidores', total: 0, color: '#0f172a' },
+            diseno_creativos: { label: '🎨 Diseño & Creativos', total: 0, color: '#8b5cf6' },
+            operativo: { label: '📑 Operativos & Otros', total: 0, color: '#ef4444' }
+        };
+
+        periodTxs.forEach(tx => {
+            const monto = Number(tx.monto || 0);
+            if (tx.tipo === 'entrada') {
+                totalEntradas += monto;
+                countEntradas++;
+
+                const cat = tx.categoria || '';
+                if (cat.includes('bronce')) {
+                    ventasPaquetes.paquete_bronce.count++;
+                    ventasPaquetes.paquete_bronce.total += monto;
+                } else if (cat.includes('plata')) {
+                    ventasPaquetes.paquete_plata.count++;
+                    ventasPaquetes.paquete_plata.total += monto;
+                } else if (cat.includes('oro')) {
+                    ventasPaquetes.paquete_oro.count++;
+                    ventasPaquetes.paquete_oro.total += monto;
+                } else {
+                    ventasPaquetes.otro.count++;
+                    ventasPaquetes.otro.total += monto;
+                }
+            } else if (tx.tipo === 'salida') {
+                totalSalidas += monto;
+                countSalidas++;
+
+                const cat = tx.categoria || '';
+                if (cat === 'sueldo_comision' || cat.includes('comision') || cat.includes('sueldo')) {
+                    totalComisiones += monto;
+                    gastosCategorias.sueldo_comision.total += monto;
+                } else if (cat === 'meta_ads' || cat.includes('meta') || cat.includes('facebook')) {
+                    gastosCategorias.meta_ads.total += monto;
+                } else if (cat === 'tecnologia_servidores' || cat.includes('tecnologia') || cat.includes('servidor') || cat.includes('hosting')) {
+                    gastosCategorias.tecnologia_servidores.total += monto;
+                } else if (cat === 'diseno_creativos' || cat.includes('diseno')) {
+                    gastosCategorias.diseno_creativos.total += monto;
+                } else {
+                    gastosCategorias.operativo.total += monto;
+                }
+            }
+        });
+
+        const utilidadNeta = totalEntradas - totalSalidas;
+        const margen = totalEntradas > 0 ? ((utilidadNeta / totalEntradas) * 100).toFixed(1) : 0;
+
+        // Actualizar KPIs
+        const elIn = document.getElementById('kpi-fin-entradas');
+        const elInSub = document.getElementById('kpi-fin-entradas-sub');
+        const elOut = document.getElementById('kpi-fin-salidas');
+        const elOutSub = document.getElementById('kpi-fin-salidas-sub');
+        const elUtil = document.getElementById('kpi-fin-utilidad');
+        const elUtilSub = document.getElementById('kpi-fin-utilidad-sub');
+        const elCom = document.getElementById('kpi-fin-comisiones');
+        const elComSub = document.getElementById('kpi-fin-comisiones-sub');
+        const cardUtil = document.getElementById('card-fin-utilidad');
+
+        if (elIn) elIn.innerText = `$${totalEntradas.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`;
+        if (elInSub) elInSub.innerText = `${countEntradas} ventas registradas`;
+
+        if (elOut) elOut.innerText = `$${totalSalidas.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`;
+        if (elOutSub) elOutSub.innerText = `${countSalidas} egresos registrados`;
+
+        if (elUtil) {
+            elUtil.innerText = `${utilidadNeta >= 0 ? '+' : ''}$${utilidadNeta.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`;
+            elUtil.style.color = utilidadNeta >= 0 ? '#16a34a' : '#ef4444';
+        }
+        if (cardUtil) {
+            cardUtil.style.borderLeftColor = utilidadNeta >= 0 ? '#16a34a' : '#ef4444';
+        }
+        if (elUtilSub) elUtilSub.innerText = `Margen de Ganancia: ${margen}%`;
+
+        if (elCom) elCom.innerText = `$${totalComisiones.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`;
+        if (elComSub) elComSub.innerText = countEntradas > 0 ? `Promedio: $${(totalComisiones / (countEntradas || 1)).toFixed(2)} por venta` : 'Comisiones sobre ventas';
+
+        // Renderizar Barras de Ventas por Paquete
+        const barsVentas = document.getElementById('bars-ventas-paquetes');
+        if (barsVentas) {
+            if (totalEntradas === 0) {
+                barsVentas.innerHTML = `<div style="text-align:center; color:#94a3b8; font-size:0.85rem; padding:15px;">Sin ventas en el período seleccionado.</div>`;
+            } else {
+                barsVentas.innerHTML = Object.values(ventasPaquetes).map(pkg => {
+                    const pct = totalEntradas > 0 ? ((pkg.total / totalEntradas) * 100).toFixed(0) : 0;
+                    return `
+                        <div>
+                            <div style="display:flex; justify-content:space-between; font-size:0.82rem; font-weight:700; margin-bottom:4px;">
+                                <span>${pkg.label} (${pkg.count})</span>
+                                <strong style="color:${pkg.color};">$${pkg.total.toLocaleString('es-MX', {minimumFractionDigits:2})} (${pct}%)</strong>
+                            </div>
+                            <div style="width:100%; height:8px; background:#f1f5f9; border-radius:4px; overflow:hidden;">
+                                <div style="width:${pct}%; height:100%; background:${pkg.color}; border-radius:4px; transition:width 0.3s ease;"></div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+
+        // Renderizar Barras de Egresos por Categoría
+        const barsGastos = document.getElementById('bars-gastos-categorias');
+        if (barsGastos) {
+            if (totalSalidas === 0) {
+                barsGastos.innerHTML = `<div style="text-align:center; color:#94a3b8; font-size:0.85rem; padding:15px;">Sin egresos en el período seleccionado.</div>`;
+            } else {
+                barsGastos.innerHTML = Object.values(gastosCategorias).map(cat => {
+                    const pct = totalSalidas > 0 ? ((cat.total / totalSalidas) * 100).toFixed(0) : 0;
+                    return `
+                        <div>
+                            <div style="display:flex; justify-content:space-between; font-size:0.82rem; font-weight:700; margin-bottom:4px;">
+                                <span>${cat.label}</span>
+                                <strong style="color:${cat.color};">$${cat.total.toLocaleString('es-MX', {minimumFractionDigits:2})} (${pct}%)</strong>
+                            </div>
+                            <div style="width:100%; height:8px; background:#f1f5f9; border-radius:4px; overflow:hidden;">
+                                <div style="width:${pct}%; height:100%; background:${cat.color}; border-radius:4px; transition:width 0.3s ease;"></div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+
+        renderFinancesTable();
+    }
+
+    function renderFinancesTable() {
+        const tbody = document.getElementById('finances-table-body');
+        const countBadge = document.getElementById('fin-records-count');
+        if (!tbody) return;
+
+        const periodTxs = currentFinances.filter(isTxInPeriod);
+        const filterType = document.getElementById('filter-fin-type')?.value || 'todos';
+        const search = (document.getElementById('search-finances')?.value || '').toLowerCase().trim();
+
+        let filtered = periodTxs.filter(tx => {
+            if (filterType === 'entrada' && tx.tipo !== 'entrada') return false;
+            if (filterType === 'salida' && tx.tipo !== 'salida') return false;
+            if (filterType === 'sueldo_comision' && !(tx.categoria === 'sueldo_comision' || tx.categoria?.includes('comision') || tx.categoria?.includes('sueldo'))) return false;
+            if (filterType === 'meta_ads' && !(tx.categoria === 'meta_ads' || tx.categoria?.includes('meta') || tx.categoria?.includes('facebook'))) return false;
+            if (filterType === 'operativo' && (tx.categoria === 'sueldo_comision' || tx.categoria === 'meta_ads' || tx.tipo === 'entrada')) return false;
+
+            if (search) {
+                const fullText = `${tx.concepto || ''} ${tx.persona || ''} ${tx.referencia || ''} ${tx.categoria || ''} ${tx.metodo || ''}`.toLowerCase();
+                if (!fullText.includes(search)) return false;
+            }
+            return true;
+        });
+
+        if (countBadge) countBadge.innerText = `${filtered.length} movimientos`;
+
+        if (filtered.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="9" style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
+                        <div style="font-size: 2rem; margin-bottom: 8px;">📊</div>
+                        <strong>No hay movimientos registrados para este filtro.</strong>
+                        <p style="font-size: 0.85rem; margin-top: 4px;">Usa los botones superiores para registrar una Venta (Entrada) o Gasto/Sueldo (Salida).</p>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = filtered.map(tx => {
+            const isEntrada = tx.tipo === 'entrada';
+            const monto = Number(tx.monto || 0);
+            const fechaStr = tx.fecha || (tx.timestamp ? new Date(tx.timestamp).toLocaleDateString('es-MX') : '-');
+
+            let catLabel = tx.categoria || '-';
+            if (isEntrada) {
+                const found = FINANCE_CATEGORIES_IN.find(c => c.id === tx.categoria);
+                if (found) catLabel = found.label;
+            } else {
+                const found = FINANCE_CATEGORIES_OUT.find(c => c.id === tx.categoria);
+                if (found) catLabel = found.label;
+            }
+
+            return `
+                <tr style="transition: background 0.15s ease;">
+                    <td style="font-size: 0.85rem; font-weight: 600; white-space: nowrap;">
+                        📅 ${fechaStr}
+                    </td>
+                    <td>
+                        <span class="${isEntrada ? 'fin-badge-in' : 'fin-badge-out'}">
+                            ${isEntrada ? '🟢 Entrada (Venta)' : '🔴 Salida (Gasto)'}
+                        </span>
+                    </td>
+                    <td style="font-size: 0.84rem; font-weight: 700; color: #334155;">
+                        ${catLabel}
+                    </td>
+                    <td style="font-size: 0.88rem; font-weight: 600; color: var(--text-main);">
+                        ${tx.concepto || '-'}
+                        ${tx.referencia ? `<div style="font-size: 0.75rem; color: #64748b; font-family: monospace;">Ref: ${tx.referencia}</div>` : ''}
+                    </td>
+                    <td style="font-size: 0.85rem; color: #334155;">
+                        ${tx.persona || '-'}
+                    </td>
+                    <td style="font-size: 0.82rem; color: #64748b; font-weight: 600;">
+                        💳 ${tx.metodo || 'Transferencia'}
+                    </td>
+                    <td style="font-size: 0.85rem; font-weight: 800; color: #b45309;">
+                        ${tx.comision_pct ? `${tx.comision_pct}%` : '-'}
+                    </td>
+                    <td style="text-align: right; font-size: 0.95rem; font-weight: 900; color: ${isEntrada ? '#16a34a' : '#dc2626'}; white-space: nowrap;">
+                        ${isEntrada ? '+' : '-'} $${monto.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                    </td>
+                    <td style="text-align: center; white-space: nowrap;">
+                        <button class="btn btn-blue" style="padding: 4px 8px; font-size: 0.78rem;" onclick="openFinanceModal('${tx.tipo}', '${tx.id}')" title="Editar">✏️</button>
+                        <button style="background: none; border: 1px solid #fee2e2; color: #ef4444; border-radius: 6px; padding: 4px 6px; cursor: pointer; margin-left: 4px;" onclick="deleteFinanceTx('${tx.id}', '${(tx.concepto || '').replace(/'/g, "\\'")}')" title="Eliminar">🗑️</button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    function openFinanceModal(defaultType = 'entrada', id = '') {
+        const modal = document.getElementById('modal-finance-tx');
+        if (!modal) return;
+
+        modal.style.display = 'flex';
+        const todayStr = new Date().toISOString().split('T')[0];
+
+        if (id) {
+            const tx = currentFinances.find(t => t.id === id);
+            if (tx) {
+                document.getElementById('finance-modal-title').innerText = 'Editar Movimiento Contable';
+                document.getElementById('tx-id').value = tx.id;
+                setFinanceTxType(tx.tipo || 'entrada');
+                document.getElementById('tx-fecha').value = tx.fecha || todayStr;
+                document.getElementById('tx-categoria').value = tx.categoria || '';
+                document.getElementById('tx-concepto').value = tx.concepto || '';
+                document.getElementById('tx-persona').value = tx.persona || '';
+                document.getElementById('tx-metodo').value = tx.metodo || 'Transferencia BBVA';
+                document.getElementById('tx-monto').value = tx.monto || '';
+                document.getElementById('tx-referencia').value = tx.referencia || '';
+                if (tx.comision_pct) document.getElementById('tx-comision-pct').value = tx.comision_pct;
+                if (tx.base_venta) document.getElementById('tx-base-venta').value = tx.base_venta;
+                handleFinanceCategoryChange();
+                return;
+            }
+        }
+
+        document.getElementById('finance-modal-title').innerText = 'Registrar Movimiento Contable';
+        document.getElementById('tx-id').value = '';
+        setFinanceTxType(defaultType);
+        document.getElementById('tx-fecha').value = todayStr;
+        document.getElementById('tx-concepto').value = '';
+        document.getElementById('tx-persona').value = '';
+        document.getElementById('tx-metodo').value = 'Transferencia BBVA';
+        document.getElementById('tx-monto').value = '';
+        document.getElementById('tx-referencia').value = '';
+        document.getElementById('tx-base-venta').value = '';
+        document.getElementById('tx-comision-pct').value = '30';
+    }
+
+    function closeFinanceModal() {
+        const modal = document.getElementById('modal-finance-tx');
+        if (modal) modal.style.display = 'none';
+    }
+
+    function setFinanceTxType(type) {
+        document.getElementById('tx-type').value = type;
+        const btnIn = document.getElementById('btn-tx-type-in');
+        const btnOut = document.getElementById('btn-tx-type-out');
+        const lblPerson = document.getElementById('lbl-tx-person');
+        const catSelect = document.getElementById('tx-categoria');
+
+        if (type === 'entrada') {
+            btnIn.style.background = '#16a34a';
+            btnIn.style.color = '#fff';
+            btnIn.style.borderColor = '#16a34a';
+
+            btnOut.style.background = '#f1f5f9';
+            btnOut.style.color = '#475569';
+            btnOut.style.borderColor = '#e2e8f0';
+
+            if (lblPerson) lblPerson.innerText = 'Cliente / Negocio Contratante:';
+
+            catSelect.innerHTML = FINANCE_CATEGORIES_IN.map(c => `
+                <option value="${c.id}">${c.label}</option>
+            `).join('');
+        } else {
+            btnOut.style.background = '#ef4444';
+            btnOut.style.color = '#fff';
+            btnOut.style.borderColor = '#ef4444';
+
+            btnIn.style.background = '#f1f5f9';
+            btnIn.style.color = '#475569';
+            btnIn.style.borderColor = '#e2e8f0';
+
+            if (lblPerson) lblPerson.innerText = 'Destinatario / Colaborador / Proveedor:';
+
+            catSelect.innerHTML = FINANCE_CATEGORIES_OUT.map(c => `
+                <option value="${c.id}">${c.label}</option>
+            `).join('');
+        }
+        handleFinanceCategoryChange();
+    }
+
+    function handleFinanceCategoryChange() {
+        const type = document.getElementById('tx-type').value;
+        const cat = document.getElementById('tx-categoria').value;
+        const boxComm = document.getElementById('box-commission-calc');
+        const montoInput = document.getElementById('tx-monto');
+
+        if (type === 'salida' && (cat === 'sueldo_comision' || cat.includes('comision'))) {
+            if (boxComm) boxComm.style.display = 'block';
+            calculateCommissionAmount();
+        } else {
+            if (boxComm) boxComm.style.display = 'none';
+        }
+
+        // Auto-fill amount for standard packages if empty
+        if (type === 'entrada') {
+            const found = FINANCE_CATEGORIES_IN.find(c => c.id === cat);
+            if (found && found.defaultAmount > 0 && !montoInput.value) {
+                montoInput.value = found.defaultAmount;
+            }
+        }
+    }
+
+    function calculateCommissionAmount() {
+        const baseVenta = parseFloat(document.getElementById('tx-base-venta')?.value || '0');
+        const pct = parseFloat(document.getElementById('tx-comision-pct')?.value || '30');
+        if (baseVenta > 0 && pct > 0) {
+            const comm = (baseVenta * pct) / 100;
+            const montoInput = document.getElementById('tx-monto');
+            if (montoInput) montoInput.value = comm.toFixed(2);
+        }
+    }
+
+    async function saveFinanceTx() {
+        const id = document.getElementById('tx-id').value.trim();
+        const tipo = document.getElementById('tx-type').value;
+        const fecha = document.getElementById('tx-fecha').value || new Date().toISOString().split('T')[0];
+        const categoria = document.getElementById('tx-categoria').value;
+        const concepto = document.getElementById('tx-concepto').value.trim();
+        const persona = document.getElementById('tx-persona').value.trim();
+        const metodo = document.getElementById('tx-metodo').value;
+        const monto = parseFloat(document.getElementById('tx-monto').value || '0');
+        const referencia = document.getElementById('tx-referencia').value.trim();
+        const comisionPct = (tipo === 'salida' && categoria === 'sueldo_comision') ? parseFloat(document.getElementById('tx-comision-pct').value || '0') : null;
+        const baseVenta = (tipo === 'salida' && categoria === 'sueldo_comision') ? parseFloat(document.getElementById('tx-base-venta').value || '0') : null;
+
+        if (!concepto || monto <= 0) {
+            return alert('Por favor ingresa un concepto válido y un monto mayor a $0.');
+        }
+
+        const docId = id || ('tx_' + Date.now());
+        const txData = {
+            tipo: tipo,
+            fecha: fecha,
+            categoria: categoria,
+            concepto: concepto,
+            persona: persona || (tipo === 'entrada' ? 'Cliente General' : 'Operación'),
+            metodo: metodo,
+            monto: monto,
+            comision_pct: comisionPct,
+            base_venta: baseVenta,
+            referencia: referencia,
+            timestamp: Date.now()
+        };
+
+        try {
+            await db.collection('finanzas_movimientos').doc(docId).set(txData, { merge: true });
+            closeFinanceModal();
+        } catch (e) {
+            console.error('Error guardando movimiento:', e);
+            alert('Error al guardar: ' + e.message);
+        }
+    }
+
+    async function deleteFinanceTx(id, concept) {
+        if (!confirm(`¿Estás seguro de eliminar el movimiento "${concept}" de la contabilidad?`)) return;
+        try {
+            await db.collection('finanzas_movimientos').doc(id).delete();
+        } catch (e) {
+            console.error('Error eliminando movimiento:', e);
+            alert('Error al eliminar: ' + e.message);
+        }
+    }
+
+    async function syncPaidOrdersToFinances() {
+        if (currentOrders.length === 0) return alert('No hay solicitudes de publicidad disponibles.');
+
+        let syncedCount = 0;
+        for (const ord of currentOrders) {
+            const isPaid = ord.estado_pago === 'publicado' || ord.estado_pago === 'pagado' || ord.publicado_en_fb === true;
+            if (isPaid) {
+                const orderId = ord.order_id || ord.id;
+                const existing = currentFinances.find(f => f.referencia === orderId || f.id === `order_${orderId}`);
+                if (!existing) {
+                    const pub = ord.publicidad || {};
+                    const cont = ord.contratante || {};
+                    const paquete = ord.paquete || 'Bronce';
+
+                    let amount = 600;
+                    let catId = 'paquete_bronce';
+                    if (paquete.toLowerCase().includes('oro')) {
+                        amount = 2500;
+                        catId = 'paquete_oro';
+                    } else if (paquete.toLowerCase().includes('plata')) {
+                        amount = 1200;
+                        catId = 'paquete_plata';
+                    }
+
+                    const txData = {
+                        tipo: 'entrada',
+                        fecha: ord.fecha_publicado_fb || (ord.fecha_registro ? ord.fecha_registro.split(' ')[0] : new Date().toISOString().split('T')[0]),
+                        categoria: catId,
+                        concepto: `Venta ${paquete} - ${pub.titulo || 'Publicidad'}`,
+                        persona: cont.nombre || 'Cliente',
+                        metodo: 'Transferencia BBVA',
+                        monto: amount,
+                        referencia: orderId,
+                        timestamp: ord.timestamp || Date.now()
+                    };
+
+                    try {
+                        await db.collection('finanzas_movimientos').doc(`order_${orderId}`).set(txData, { merge: true });
+                        syncedCount++;
+                    } catch(e) {}
+                }
+            }
+        }
+
+        alert(`✅ Sincronización finalizada: ${syncedCount} nuevas ventas agregadas al libro contable.`);
+    }
+
+    function exportFinancesCSV() {
+        const periodTxs = currentFinances.filter(isTxInPeriod);
+        if (periodTxs.length === 0) return alert('No hay movimientos en el período seleccionado para exportar.');
+
+        let csv = 'Fecha,Tipo,Categoria,Concepto,Persona,Metodo_Pago,Comision_Porcentaje,Monto_MXN,Referencia\n';
+        periodTxs.forEach(tx => {
+            const row = [
+                `"${tx.fecha || ''}"`,
+                `"${tx.tipo || ''}"`,
+                `"${tx.categoria || ''}"`,
+                `"${(tx.concepto || '').replace(/"/g, '""')}"`,
+                `"${(tx.persona || '').replace(/"/g, '""')}"`,
+                `"${tx.metodo || ''}"`,
+                `"${tx.comision_pct || ''}"`,
+                `"${tx.monto || 0}"`,
+                `"${tx.referencia || ''}"`
+            ];
+            csv += row.join(',') + '\n';
+        });
+
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `Reporte_Contable_PublicaNavojoa_${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    function quickRegisterOrderFinance(orderId) {
+        const ord = currentOrders.find(o => (o.order_id === orderId || o.id === orderId));
+        if (!ord) return;
+
+        const pub = ord.publicidad || {};
+        const cont = ord.contratante || {};
+        const paquete = ord.paquete || 'Bronce';
+
+        let baseAmount = 600;
+        let catId = 'paquete_bronce';
+        if (paquete.toLowerCase().includes('oro')) {
+            baseAmount = 2500;
+            catId = 'paquete_oro';
+        } else if (paquete.toLowerCase().includes('plata')) {
+            baseAmount = 1200;
+            catId = 'paquete_plata';
+        }
+
+        const action = confirm(
+            `¿Qué deseas registrar para la solicitud "${pub.titulo || 'Publicidad'}" (${paquete})?\n\n` +
+            `• ACEPTAR: Registrar COMISIÓN / SUELDO (%) al vendedor o colaborador (Salida)\n` +
+            `• CANCELAR: Registrar INGRESO / VENTA del paquete (Entrada)`
+        );
+
+        if (action) {
+            // Salida / Comisión
+            openFinanceModal('salida');
+            document.getElementById('tx-categoria').value = 'sueldo_comision';
+            handleFinanceCategoryChange();
+            document.getElementById('tx-concepto').value = `Comisión Venta ${paquete} - ${pub.titulo || 'Publicidad'}`;
+            document.getElementById('tx-persona').value = pub.contacto_ventas_nombre || cont.nombre || 'Colaborador Ventas';
+            document.getElementById('tx-base-venta').value = baseAmount;
+            document.getElementById('tx-comision-pct').value = '30';
+            document.getElementById('tx-referencia').value = orderId;
+            calculateCommissionAmount();
+        } else {
+            // Entrada / Venta
+            openFinanceModal('entrada');
+            document.getElementById('tx-categoria').value = catId;
+            document.getElementById('tx-concepto').value = `Venta ${paquete} - ${pub.titulo || 'Publicidad'}`;
+            document.getElementById('tx-persona').value = cont.nombre || 'Cliente';
+            document.getElementById('tx-monto').value = baseAmount;
+            document.getElementById('tx-referencia').value = orderId;
+        }
+    }
+
+    // ═════════════════════════════════════════════════════════════════════
     // MÓDULO DE AUTENTICACIÓN FIREBASE (Login, Logout, Reset Password)
     // ═════════════════════════════════════════════════════════════════════
     const auth = firebase.auth();
@@ -2952,6 +3851,7 @@
                 listenFirebaseMessages();
                 listenFirebaseOffers();
                 listenFirebaseOrders();
+                listenFirebaseFinances();
             }
         } else {
             // Usuario No Autenticado: Ocultar panel y mostrar login
