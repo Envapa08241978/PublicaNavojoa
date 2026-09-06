@@ -1098,6 +1098,9 @@
                     <button class="finance-period-btn" id="f-period-ano" onclick="setFinancePeriod('ano')">📊 Anual</button>
                     <button class="finance-period-btn" id="f-period-todo" onclick="setFinancePeriod('todo')">🎛️ Todo</button>
                 </div>
+                <button class="btn" onclick="openCommissionsModal()" style="background: #f59e0b; color: #fff; font-weight: 800; box-shadow: 0 4px 14px rgba(245, 158, 11, 0.3);">
+                    👥 Comisiones Mónica & Enrique (<span id="btn-pending-comm-badge">$0.00 Pendiente</span>)
+                </button>
                 <button class="btn btn-green" onclick="openFinanceModal('entrada')" style="box-shadow: 0 4px 14px rgba(22, 163, 74, 0.25);">+ Registrar Venta (Entrada) 🟢</button>
                 <button class="btn" onclick="openFinanceModal('salida')" style="background: #ef4444; color: #fff; box-shadow: 0 4px 14px rgba(239, 68, 68, 0.25);">+ Registrar Gasto / Sueldo 🔴</button>
                 <button class="btn btn-blue" onclick="exportFinancesCSV()" title="Descargar reporte en formato Excel/CSV">📥 Exportar CSV</button>
@@ -1110,26 +1113,43 @@
         </div>
 
         <!-- Estadísticas & KPIs Principales -->
-        <div class="stats-grid" style="margin-bottom: 24px;">
+        <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); margin-bottom: 24px;">
+            <!-- KPI 1: Total Entradas -->
             <div class="stat-card" style="border-left: 4px solid #16a34a;">
                 <div class="stat-val" id="kpi-fin-entradas" style="color: #16a34a;">$0.00</div>
                 <div class="stat-label">📈 Total Entradas (Ventas)</div>
                 <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 4px;" id="kpi-fin-entradas-sub">0 ventas registradas</div>
             </div>
-            <div class="stat-card" style="border-left: 4px solid #ef4444;">
-                <div class="stat-val" id="kpi-fin-salidas" style="color: #ef4444;">$0.00</div>
-                <div class="stat-label">📉 Total Salidas (Gastos & Sueldos)</div>
-                <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 4px;" id="kpi-fin-salidas-sub">0 egresos registrados</div>
-            </div>
+
+            <!-- KPI 2: Utilidad Neta -->
             <div class="stat-card" style="border-left: 4px solid #2563eb;" id="card-fin-utilidad">
                 <div class="stat-val" id="kpi-fin-utilidad" style="color: #2563eb;">$0.00</div>
                 <div class="stat-label">💵 Utilidad Neta (Balance Real)</div>
                 <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 4px;" id="kpi-fin-utilidad-sub">Margen de Ganancia: 0%</div>
             </div>
-            <div class="stat-card" style="border-left: 4px solid #d97706;">
-                <div class="stat-val gold" id="kpi-fin-comisiones">$0.00</div>
-                <div class="stat-label">💼 Sueldos & Comisiones Pagadas (%)</div>
-                <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 4px;" id="kpi-fin-comisiones-sub">Comisiones sobre ventas</div>
+
+            <!-- KPI 3: Comisiones Pagadas -->
+            <div class="stat-card" style="border-left: 4px solid #16a34a;">
+                <div class="stat-val" id="kpi-fin-comisiones" style="color: #16a34a;">$0.00</div>
+                <div class="stat-label">💼 Comisiones Pagadas (30% M + 30% E)</div>
+                <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 4px;" id="kpi-fin-comisiones-sub">Mónica: $0.00 | Enrique: $0.00</div>
+            </div>
+
+            <!-- KPI 4: Comisiones Pendientes por Pagar -->
+            <div class="stat-card" style="border-left: 4px solid #f59e0b; background: #fffbeb;">
+                <div class="stat-val" id="kpi-fin-comisiones-pendientes" style="color: #b45309;">$0.00</div>
+                <div class="stat-label" style="color: #92400e; font-weight: 800;">⏳ Falta por Pagar Comisiones (60%)</div>
+                <div style="font-size: 0.78rem; color: #b45309; font-weight: 700; margin-top: 4px;" id="kpi-fin-comisiones-pendientes-sub">Mónica: $0.00 | Enrique: $0.00</div>
+                <button onclick="openCommissionsModal()" class="btn" style="padding: 5px 10px; font-size: 0.75rem; background: #f59e0b; color: #fff; border-radius: 8px; font-weight: 800; margin-top: 6px; justify-content: center; width: 100%;">
+                    ⚡ Ver / Liquidar Comisiones ➔
+                </button>
+            </div>
+
+            <!-- KPI 5: Total Salidas -->
+            <div class="stat-card" style="border-left: 4px solid #ef4444;">
+                <div class="stat-val" id="kpi-fin-salidas" style="color: #ef4444;">$0.00</div>
+                <div class="stat-label">📉 Total Salidas (Gastos & Sueldos)</div>
+                <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 4px;" id="kpi-fin-salidas-sub">0 egresos registrados</div>
             </div>
         </div>
 
@@ -1290,6 +1310,108 @@
         <div style="display: flex; gap: 10px;">
             <button class="btn btn-green" style="flex:1;" onclick="saveFinanceTx()">Guardar Movimiento</button>
             <button class="btn btn-blue" onclick="closeFinanceModal()">Cancelar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Detalle & Liquidación de Comisiones (Mónica 30% & Enrique 30%) -->
+<div class="modal" id="modal-commissions-detail" style="display: none;">
+    <div class="modal-content" style="max-width: 820px; max-height: 90vh; overflow-y: auto;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
+            <div>
+                <h3 style="font-size: 1.25rem; font-weight: 800; color: #0f172a;">👥 Control & Liquidación de Comisiones de Ventas</h3>
+                <p style="font-size: 0.82rem; color: #64748b; margin-top: 2px;">Cálculo institucional del <strong>30% para Mónica Obregón</strong> y <strong>30% para Enrique</strong> sobre cada venta.</p>
+            </div>
+            <button onclick="closeCommissionsModal()" style="background: none; border: none; font-size: 1.5rem; color: #64748b; cursor: pointer; font-weight: 800; padding: 0 6px;">&times;</button>
+        </div>
+
+        <!-- 3 Cards de Resumen de Comisiones -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 20px;">
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 14px;">
+                <div style="font-size: 0.78rem; font-weight: 700; color: #64748b; text-transform: uppercase;">Total Ventas Registradas</div>
+                <div style="font-size: 1.45rem; font-weight: 900; color: #0f172a; margin: 4px 0;" id="comm-modal-total-ventas">$0.00</div>
+                <div style="font-size: 0.75rem; color: #64748b;" id="comm-modal-count-ventas">0 paquetes vendidos</div>
+            </div>
+
+            <div style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 14px; padding: 14px;">
+                <div style="font-size: 0.78rem; font-weight: 700; color: #166534; text-transform: uppercase;">Total Pagado en Comisiones</div>
+                <div style="font-size: 1.45rem; font-weight: 900; color: #16a34a; margin: 4px 0;" id="comm-modal-total-pagado">$0.00</div>
+                <div style="font-size: 0.76rem; color: #15803d; font-weight: 700;" id="comm-modal-pagado-breakdown">Mónica: $0.00 | Enrique: $0.00</div>
+            </div>
+
+            <div style="background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 14px; padding: 14px;">
+                <div style="font-size: 0.78rem; font-weight: 800; color: #92400e; text-transform: uppercase;">⚠️ Saldo Pendiente por Pagar (60%)</div>
+                <div style="font-size: 1.45rem; font-weight: 900; color: #b45309; margin: 4px 0;" id="comm-modal-total-pendiente">$0.00</div>
+                <div style="font-size: 0.76rem; color: #92400e; font-weight: 800;" id="comm-modal-pendiente-breakdown">Mónica: $0.00 | Enrique: $0.00</div>
+            </div>
+        </div>
+
+        <!-- Botones de Acción de Pago Rápido -->
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 16px; margin-bottom: 20px;">
+            <div style="font-size: 0.85rem; font-weight: 800; color: #0f172a; margin-bottom: 10px;">⚡ Liquidación Rápida de Comisiones Pendientes:</div>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <button class="btn btn-green" id="btn-pay-monica" onclick="payPendingCommission('monica')" style="flex: 1; min-width: 200px; justify-content: center; padding: 10px 14px; font-size: 0.85rem;">
+                    👩 Pagar Pendiente a Mónica (<span id="lbl-pay-monica-amount">$0.00</span>)
+                </button>
+                <button class="btn" id="btn-pay-enrique" onclick="payPendingCommission('enrique')" style="flex: 1; min-width: 200px; justify-content: center; padding: 10px 14px; font-size: 0.85rem; background: #0284c7; color:#fff; border-color: #0284c7; font-weight: 800;">
+                    👨 Pagar Pendiente a Enrique (<span id="lbl-pay-enrique-amount">$0.00</span>)
+                </button>
+                <button class="btn" id="btn-pay-both" onclick="payPendingCommission('both')" style="background: #f59e0b; color: #fff; font-weight: 800; padding: 10px 14px; font-size: 0.85rem; justify-content: center;">
+                    💸 Liquidar a Ambos
+                </button>
+                <button class="btn btn-blue" onclick="openFinanceModal('salida')" style="padding: 10px 14px; font-size: 0.85rem;">
+                    + Pago Manual / Abono
+                </button>
+            </div>
+        </div>
+
+        <!-- Tabla Desglose Venta por Venta -->
+        <div style="margin-bottom: 20px;">
+            <h4 style="font-size: 0.95rem; font-weight: 800; color: #0f172a; margin-bottom: 8px;">📦 Desglose de Comisiones Calculadas por Venta</h4>
+            <div class="table-container" style="max-height: 220px; overflow-y: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Venta / Anuncio</th>
+                            <th>Cliente</th>
+                            <th style="text-align: right;">Total Venta</th>
+                            <th style="text-align: right;">30% Mónica</th>
+                            <th style="text-align: right;">30% Enrique</th>
+                            <th style="text-align: right;">Total 60%</th>
+                        </tr>
+                    </thead>
+                    <tbody id="comm-sales-breakdown-body">
+                        <!-- Renderizado dinámico -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Historial de Pagos de Comisiones Realizados -->
+        <div>
+            <h4 style="font-size: 0.95rem; font-weight: 800; color: #0f172a; margin-bottom: 8px;">📑 Historial de Pagos de Comisiones Realizados (Egresos Registrados)</h4>
+            <div class="table-container" style="max-height: 200px; overflow-y: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Beneficiario</th>
+                            <th>Concepto</th>
+                            <th>Método</th>
+                            <th style="text-align: right;">Monto Pagado</th>
+                            <th style="text-align: center;">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody id="comm-payments-history-body">
+                        <!-- Renderizado dinámico -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div style="margin-top: 20px; text-align: right;">
+            <button class="btn btn-blue" onclick="closeCommissionsModal()">Cerrar Ventana</button>
         </div>
     </div>
 </div>
@@ -3160,6 +3282,8 @@
         let totalSalidas = 0;
         let countSalidas = 0;
         let totalComisiones = 0;
+        let comisionesPagadasMonica = 0;
+        let comisionesPagadasEnrique = 0;
 
         // Distribuciones
         const ventasPaquetes = {
@@ -3202,9 +3326,22 @@
                 countSalidas++;
 
                 const cat = tx.categoria || '';
-                if (cat === 'sueldo_comision' || cat.includes('comision') || cat.includes('sueldo')) {
+                const persona = (tx.persona || '').toLowerCase();
+                const concepto = (tx.concepto || '').toLowerCase();
+
+                if (cat === 'sueldo_comision' || cat.includes('comision') || cat.includes('sueldo') || concepto.includes('comisi') || concepto.includes('sueldo')) {
                     totalComisiones += monto;
                     gastosCategorias.sueldo_comision.total += monto;
+
+                    if (persona.includes('monica') || persona.includes('mónica') || concepto.includes('monica') || concepto.includes('mónica')) {
+                        comisionesPagadasMonica += monto;
+                    } else if (persona.includes('enrique') || concepto.includes('enrique')) {
+                        comisionesPagadasEnrique += monto;
+                    } else {
+                        // Pago general / dividido a partes iguales
+                        comisionesPagadasMonica += monto / 2;
+                        comisionesPagadasEnrique += monto / 2;
+                    }
                 } else if (cat === 'meta_ads' || cat.includes('meta') || cat.includes('facebook')) {
                     gastosCategorias.meta_ads.total += monto;
                 } else if (cat === 'tecnologia_servidores' || cat.includes('tecnologia') || cat.includes('servidor') || cat.includes('hosting')) {
@@ -3216,6 +3353,13 @@
                 }
             }
         });
+
+        // Comisiones institucionales: 30% Mónica y 30% Enrique por cada venta
+        const totalComisionesGeneradasMonica = totalEntradas * 0.30;
+        const totalComisionesGeneradasEnrique = totalEntradas * 0.30;
+        const pendienteMonica = Math.max(0, totalComisionesGeneradasMonica - comisionesPagadasMonica);
+        const pendienteEnrique = Math.max(0, totalComisionesGeneradasEnrique - comisionesPagadasEnrique);
+        const totalComisionesPendientes = pendienteMonica + pendienteEnrique;
 
         const utilidadNeta = totalEntradas - totalSalidas;
         const margen = totalEntradas > 0 ? ((utilidadNeta / totalEntradas) * 100).toFixed(1) : 0;
@@ -3229,6 +3373,9 @@
         const elUtilSub = document.getElementById('kpi-fin-utilidad-sub');
         const elCom = document.getElementById('kpi-fin-comisiones');
         const elComSub = document.getElementById('kpi-fin-comisiones-sub');
+        const elPend = document.getElementById('kpi-fin-comisiones-pendientes');
+        const elPendSub = document.getElementById('kpi-fin-comisiones-pendientes-sub');
+        const elBadgeTop = document.getElementById('btn-pending-comm-badge');
         const cardUtil = document.getElementById('card-fin-utilidad');
 
         if (elIn) elIn.innerText = `$${totalEntradas.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`;
@@ -3247,7 +3394,27 @@
         if (elUtilSub) elUtilSub.innerText = `Margen de Ganancia: ${margen}%`;
 
         if (elCom) elCom.innerText = `$${totalComisiones.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`;
-        if (elComSub) elComSub.innerText = countEntradas > 0 ? `Promedio: $${(totalComisiones / (countEntradas || 1)).toFixed(2)} por venta` : 'Comisiones sobre ventas';
+        if (elComSub) elComSub.innerText = `Mónica: $${comisionesPagadasMonica.toLocaleString('es-MX', {minimumFractionDigits:2})} | Enrique: $${comisionesPagadasEnrique.toLocaleString('es-MX', {minimumFractionDigits:2})}`;
+
+        if (elPend) elPend.innerText = `$${totalComisionesPendientes.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`;
+        if (elPendSub) elPendSub.innerText = `Mónica (30%): $${pendienteMonica.toLocaleString('es-MX', {minimumFractionDigits:2})} | Enrique (30%): $${pendienteEnrique.toLocaleString('es-MX', {minimumFractionDigits:2})}`;
+
+        if (elBadgeTop) elBadgeTop.innerText = `$${totalComisionesPendientes.toLocaleString('es-MX', { minimumFractionDigits: 2 })} Pendiente`;
+
+        // Cache global para el modal de comisiones
+        window.lastCommCalc = {
+            periodTxs,
+            totalEntradas,
+            countEntradas,
+            totalComisiones,
+            comisionesPagadasMonica,
+            comisionesPagadasEnrique,
+            totalComisionesGeneradasMonica,
+            totalComisionesGeneradasEnrique,
+            pendienteMonica,
+            pendienteEnrique,
+            totalComisionesPendientes
+        };
 
         // Renderizar Barras de Ventas por Paquete
         const barsVentas = document.getElementById('bars-ventas-paquetes');
@@ -3674,6 +3841,218 @@
             document.getElementById('tx-persona').value = cont.nombre || 'Cliente';
             document.getElementById('tx-monto').value = baseAmount;
             document.getElementById('tx-referencia').value = orderId;
+        }
+    }
+
+    // ═════════════════════════════════════════════════════════════════════
+    // MÓDULO DE LIQUIDACIÓN Y CONTROL DE COMISIONES (MÓNICA & ENRIQUE 30%)
+    // ═════════════════════════════════════════════════════════════════════
+    function openCommissionsModal() {
+        const modal = document.getElementById('modal-commissions-detail');
+        if (!modal) return;
+        modal.style.display = 'flex';
+        renderCommissionsModalContent();
+    }
+
+    function closeCommissionsModal() {
+        const modal = document.getElementById('modal-commissions-detail');
+        if (modal) modal.style.display = 'none';
+    }
+
+    function renderCommissionsModalContent() {
+        const calc = window.lastCommCalc || {
+            periodTxs: currentFinances,
+            totalEntradas: 0,
+            countEntradas: 0,
+            comisionesPagadasMonica: 0,
+            comisionesPagadasEnrique: 0,
+            pendienteMonica: 0,
+            pendienteEnrique: 0,
+            totalComisionesPendientes: 0
+        };
+
+        const totalPagado = (calc.comisionesPagadasMonica || 0) + (calc.comisionesPagadasEnrique || 0);
+
+        // Elementos de resumen
+        const elVentas = document.getElementById('comm-modal-total-ventas');
+        const elCount = document.getElementById('comm-modal-count-ventas');
+        const elPagado = document.getElementById('comm-modal-total-pagado');
+        const elPagadoSub = document.getElementById('comm-modal-pagado-breakdown');
+        const elPendiente = document.getElementById('comm-modal-total-pendiente');
+        const elPendienteSub = document.getElementById('comm-modal-pendiente-breakdown');
+        const lblPayMonica = document.getElementById('lbl-pay-monica-amount');
+        const lblPayEnrique = document.getElementById('lbl-pay-enrique-amount');
+
+        if (elVentas) elVentas.innerText = `$${(calc.totalEntradas || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}`;
+        if (elCount) elCount.innerText = `${calc.countEntradas || 0} paquetes vendidos`;
+
+        if (elPagado) elPagado.innerText = `$${totalPagado.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`;
+        if (elPagadoSub) elPagadoSub.innerText = `Mónica: $${(calc.comisionesPagadasMonica || 0).toLocaleString('es-MX', {minimumFractionDigits:2})} | Enrique: $${(calc.comisionesPagadasEnrique || 0).toLocaleString('es-MX', {minimumFractionDigits:2})}`;
+
+        if (elPendiente) elPendiente.innerText = `$${(calc.totalComisionesPendientes || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}`;
+        if (elPendienteSub) elPendienteSub.innerText = `Mónica (30%): $${(calc.pendienteMonica || 0).toLocaleString('es-MX', {minimumFractionDigits:2})} | Enrique (30%): $${(calc.pendienteEnrique || 0).toLocaleString('es-MX', {minimumFractionDigits:2})}`;
+
+        if (lblPayMonica) lblPayMonica.innerText = `$${(calc.pendienteMonica || 0).toLocaleString('es-MX', {minimumFractionDigits:2})}`;
+        if (lblPayEnrique) lblPayEnrique.innerText = `$${(calc.pendienteEnrique || 0).toLocaleString('es-MX', {minimumFractionDigits:2})}`;
+
+        // Tabla de ventas y cálculo 30% / 30%
+        const tbodySales = document.getElementById('comm-sales-breakdown-body');
+        if (tbodySales) {
+            const salesTxs = currentFinances.filter(t => t.tipo === 'entrada');
+            if (salesTxs.length === 0) {
+                tbodySales.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:20px; color:#64748b;">No hay ventas registradas en la contabilidad.</td></tr>`;
+            } else {
+                tbodySales.innerHTML = salesTxs.map(tx => {
+                    const monto = Number(tx.monto || 0);
+                    const commMon = monto * 0.30;
+                    const commEnr = monto * 0.30;
+                    const commTotal = monto * 0.60;
+                    const fechaStr = tx.fecha || (tx.timestamp ? new Date(tx.timestamp).toLocaleDateString('es-MX') : '-');
+
+                    return `
+                        <tr>
+                            <td style="font-size: 0.82rem; white-space: nowrap;">📅 ${fechaStr}</td>
+                            <td style="font-size: 0.85rem; font-weight: 700; color: #0f172a;">${tx.concepto || 'Venta Publicidad'}</td>
+                            <td style="font-size: 0.82rem; color: #475569;">${tx.persona || 'Cliente'}</td>
+                            <td style="text-align: right; font-weight: 800; color: #0f172a;">$${monto.toLocaleString('es-MX', {minimumFractionDigits:2})}</td>
+                            <td style="text-align: right; font-weight: 700; color: #15803d;">$${commMon.toLocaleString('es-MX', {minimumFractionDigits:2})}</td>
+                            <td style="text-align: right; font-weight: 700; color: #0369a1;">$${commEnr.toLocaleString('es-MX', {minimumFractionDigits:2})}</td>
+                            <td style="text-align: right; font-weight: 900; color: #b45309;">$${commTotal.toLocaleString('es-MX', {minimumFractionDigits:2})}</td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+        }
+
+        // Tabla de historial de pagos de comisiones (Salidas)
+        const tbodyPayments = document.getElementById('comm-payments-history-body');
+        if (tbodyPayments) {
+            const payTxs = currentFinances.filter(t => {
+                const cat = t.categoria || '';
+                const conc = (t.concepto || '').toLowerCase();
+                return t.tipo === 'salida' && (cat === 'sueldo_comision' || cat.includes('comision') || conc.includes('comisi') || conc.includes('sueldo'));
+            });
+
+            if (payTxs.length === 0) {
+                tbodyPayments.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px; color:#64748b;">No hay pagos de comisiones registrados aún.</td></tr>`;
+            } else {
+                tbodyPayments.innerHTML = payTxs.map(tx => {
+                    const monto = Number(tx.monto || 0);
+                    const fechaStr = tx.fecha || (tx.timestamp ? new Date(tx.timestamp).toLocaleDateString('es-MX') : '-');
+                    return `
+                        <tr>
+                            <td style="font-size: 0.82rem; white-space: nowrap;">📅 ${fechaStr}</td>
+                            <td style="font-size: 0.85rem; font-weight: 800; color: #0f172a;">👤 ${tx.persona || 'Colaborador'}</td>
+                            <td style="font-size: 0.82rem; color: #475569;">${tx.concepto || 'Comisión'}</td>
+                            <td style="font-size: 0.8rem; color: #64748b;">💳 ${tx.metodo || 'Transferencia'}</td>
+                            <td style="text-align: right; font-size: 0.9rem; font-weight: 900; color: #dc2626;">-$${monto.toLocaleString('es-MX', {minimumFractionDigits:2})}</td>
+                            <td style="text-align: center;">
+                                <button style="background: none; border: 1px solid #fee2e2; color: #ef4444; border-radius: 6px; padding: 3px 6px; cursor: pointer;" onclick="deleteFinanceTx('${tx.id}', '${(tx.concepto || '').replace(/'/g, "\\'")}')" title="Eliminar movimiento">🗑️</button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+        }
+    }
+
+    async function payPendingCommission(target) {
+        const calc = window.lastCommCalc;
+        if (!calc) return alert('No hay información de comisiones disponible.');
+
+        const todayStr = new Date().toISOString().split('T')[0];
+
+        if (target === 'monica') {
+            const amount = calc.pendienteMonica;
+            if (amount <= 0) return alert('Mónica no tiene comisiones pendientes por cobrar.');
+
+            if (!confirm(`¿Confirmas registrar el pago de comisión de $${amount.toLocaleString('es-MX', {minimumFractionDigits:2})} MXN a MÓNICA OBREGÓN (30%)?`)) return;
+
+            const docId = 'comm_monica_' + Date.now();
+            await db.collection('finanzas_movimientos').doc(docId).set({
+                tipo: 'salida',
+                fecha: todayStr,
+                categoria: 'sueldo_comision',
+                concepto: `Liquidación de comisión sobre ventas (30%)`,
+                persona: 'Mónica Obregón',
+                metodo: 'Transferencia BBVA',
+                monto: amount,
+                comision_pct: 30,
+                referencia: `Liquidación-${todayStr}`,
+                timestamp: Date.now()
+            });
+
+            alert('✅ Pago de comisión a Mónica Obregón registrado con éxito en la contabilidad.');
+            closeCommissionsModal();
+        } else if (target === 'enrique') {
+            const amount = calc.pendienteEnrique;
+            if (amount <= 0) return alert('Enrique no tiene comisiones pendientes por cobrar.');
+
+            if (!confirm(`¿Confirmas registrar el pago de comisión de $${amount.toLocaleString('es-MX', {minimumFractionDigits:2})} MXN a ENRIQUE (30%)?`)) return;
+
+            const docId = 'comm_enrique_' + Date.now();
+            await db.collection('finanzas_movimientos').doc(docId).set({
+                tipo: 'salida',
+                fecha: todayStr,
+                categoria: 'sueldo_comision',
+                concepto: `Liquidación de comisión sobre ventas (30%)`,
+                persona: 'Enrique',
+                metodo: 'Transferencia BBVA',
+                monto: amount,
+                comision_pct: 30,
+                referencia: `Liquidación-${todayStr}`,
+                timestamp: Date.now()
+            });
+
+            alert('✅ Pago de comisión a Enrique registrado con éxito en la contabilidad.');
+            closeCommissionsModal();
+        } else if (target === 'both') {
+            const amtM = calc.pendienteMonica;
+            const amtE = calc.pendienteEnrique;
+            const total = amtM + amtE;
+
+            if (total <= 0) return alert('No hay comisiones pendientes por pagar a ninguno de los dos.');
+
+            if (!confirm(`¿Confirmas liquidar todas las comisiones pendientes por un total de $${total.toLocaleString('es-MX', {minimumFractionDigits:2})} MXN?\n\n• Mónica (30%): $${amtM.toLocaleString('es-MX', {minimumFractionDigits:2})}\n• Enrique (30%): $${amtE.toLocaleString('es-MX', {minimumFractionDigits:2})}`)) return;
+
+            const now = Date.now();
+            const batch = db.batch();
+
+            if (amtM > 0) {
+                const docRefM = db.collection('finanzas_movimientos').doc('comm_monica_' + now);
+                batch.set(docRefM, {
+                    tipo: 'salida',
+                    fecha: todayStr,
+                    categoria: 'sueldo_comision',
+                    concepto: `Liquidación de comisión sobre ventas (30%)`,
+                    persona: 'Mónica Obregón',
+                    metodo: 'Transferencia BBVA',
+                    monto: amtM,
+                    comision_pct: 30,
+                    referencia: `Liquidación-${todayStr}`,
+                    timestamp: now
+                });
+            }
+
+            if (amtE > 0) {
+                const docRefE = db.collection('finanzas_movimientos').doc('comm_enrique_' + (now + 1));
+                batch.set(docRefE, {
+                    tipo: 'salida',
+                    fecha: todayStr,
+                    categoria: 'sueldo_comision',
+                    concepto: `Liquidación de comisión sobre ventas (30%)`,
+                    persona: 'Enrique',
+                    metodo: 'Transferencia BBVA',
+                    monto: amtE,
+                    comision_pct: 30,
+                    referencia: `Liquidación-${todayStr}`,
+                    timestamp: now + 1
+                });
+            }
+
+            await batch.commit();
+            alert('✅ Liquidación completa registrada con éxito para Mónica y Enrique.');
+            closeCommissionsModal();
         }
     }
 
