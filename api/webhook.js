@@ -169,6 +169,16 @@ async function getOffersFromFirestore() {
                 const f = doc.fields || {};
                 const activo = f.activo?.booleanValue !== undefined ? f.activo.booleanValue : true;
                 if (activo) {
+                    // Verificar si la oferta ya expiró según su fecha de expiración configurada
+                    const diasVig = f.dias_vigencia?.integerValue !== undefined ? Number(f.dias_vigencia.integerValue) : (f.dias_vigencia?.doubleValue !== undefined ? Number(f.dias_vigencia.doubleValue) : 30);
+                    const fechaExp = f.fecha_expiracion_bot?.stringValue || '';
+                    if (diasVig !== 999 && fechaExp) {
+                        const expDate = new Date(fechaExp + 'T23:59:59');
+                        if (!isNaN(expDate.getTime()) && Date.now() > expDate.getTime()) {
+                            return; // Expirada: no incluir en catálogo activo del bot
+                        }
+                    }
+
                     let pList = [];
                     if (f.imagenes_json?.stringValue) {
                         try { pList = JSON.parse(f.imagenes_json.stringValue); } catch(e) {}
@@ -176,6 +186,17 @@ async function getOffersFromFirestore() {
                     if (pList.length === 0 && f.imagen_url?.stringValue) {
                         pList = [f.imagen_url.stringValue];
                     }
+
+                    let ts = 0;
+                    if (f.timestamp?.integerValue) ts = Number(f.timestamp.integerValue);
+                    else if (f.timestamp?.doubleValue) ts = Number(f.timestamp.doubleValue);
+                    else if (f.fecha_activacion_bot?.stringValue) {
+                        try { ts = new Date(f.fecha_activacion_bot.stringValue + 'T00:00:00').getTime(); } catch(e) {}
+                    }
+                    else if (f.fecha?.stringValue) {
+                        try { ts = new Date(f.fecha.stringValue).getTime(); } catch(e) {}
+                    }
+                    if (!ts) ts = Date.now();
 
                     offers.push({
                         id: doc.name.split('/').pop(),
@@ -188,11 +209,13 @@ async function getOffersFromFirestore() {
                         enlace_maps: f.enlace_maps?.stringValue || '',
                         contacto_nombre: f.contacto_nombre?.stringValue || '',
                         contacto_telefono: f.contacto_telefono?.stringValue || '',
+                        timestamp: ts,
                         orden: Number(f.orden?.integerValue || 1)
                     });
                 }
             });
-            offers.sort((a, b) => a.orden - b.orden);
+            // Orden cronológico estricto: La publicación más reciente aparece primero
+            offers.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
             return offers;
         }
     } catch(e) {

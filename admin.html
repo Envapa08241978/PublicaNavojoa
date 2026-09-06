@@ -1092,7 +1092,23 @@
             </div>
         </div>
 
-        <div style="margin-top: 10px; margin-bottom: 16px; display: flex; align-items: center; gap: 10px;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 6px;">
+            <div>
+                <label style="font-size: 0.85rem; font-weight: 700;">Fecha de Publicación en Bot:</label>
+                <input type="date" id="off-fecha-publicacion">
+            </div>
+            <div>
+                <label style="font-size: 0.85rem; font-weight: 700;">Vigencia en Bot de WhatsApp:</label>
+                <select id="off-vigencia-dias" style="padding: 10px 14px; border-radius: 10px; border: 1.5px solid #e2e8f0; font-size: 0.88rem; width: 100%; font-weight: 600; background: #ffffff;">
+                    <option value="7">7 Días (Paquete Bronce)</option>
+                    <option value="15">15 Días</option>
+                    <option value="30" selected>30 Días / 1 Mes (Plata / Oro)</option>
+                    <option value="999">Permanente / Sin límite</option>
+                </select>
+            </div>
+        </div>
+
+        <div style="margin-top: 12px; margin-bottom: 16px; display: flex; align-items: center; gap: 10px;">
             <input type="checkbox" id="off-activo" checked style="width: 18px; height: 18px; cursor: pointer;">
             <label for="off-activo" style="font-size: 0.9rem; font-weight: 700; cursor: pointer;">Oferta Activa en el Bot de WhatsApp</label>
         </div>
@@ -1890,6 +1906,8 @@
         document.getElementById('offer-modal').style.display = 'flex';
         removeOfferImage();
 
+        const todayStr = new Date().toISOString().split('T')[0];
+
         if (id) {
             const offer = currentOffers.find(o => o.id === id);
             if (offer) {
@@ -1902,6 +1920,8 @@
                 document.getElementById('off-maps').value = offer.enlace_maps || '';
                 document.getElementById('off-nombre').value = offer.contacto_nombre || '';
                 document.getElementById('off-tel').value = offer.contacto_telefono || '';
+                document.getElementById('off-fecha-publicacion').value = offer.fecha_activacion_bot || todayStr;
+                document.getElementById('off-vigencia-dias').value = String(offer.dias_vigencia !== undefined ? offer.dias_vigencia : 30);
                 document.getElementById('off-activo').checked = offer.activo !== false;
 
                 // Cargar foto existente si tiene
@@ -1931,6 +1951,8 @@
         document.getElementById('off-maps').value = '';
         document.getElementById('off-nombre').value = '';
         document.getElementById('off-tel').value = '';
+        document.getElementById('off-fecha-publicacion').value = todayStr;
+        document.getElementById('off-vigencia-dias').value = '30';
         document.getElementById('off-activo').checked = true;
     }
 
@@ -1948,10 +1970,22 @@
         const maps = document.getElementById('off-maps').value.trim();
         const nombre = document.getElementById('off-nombre').value.trim();
         const tel = document.getElementById('off-tel').value.trim();
+        const fechaPub = document.getElementById('off-fecha-publicacion').value || new Date().toISOString().split('T')[0];
+        const vigenciaDias = parseInt(document.getElementById('off-vigencia-dias').value || '30', 10);
         const activo = document.getElementById('off-activo').checked;
 
         if (!titulo || !descripcion) {
             return alert('Por favor ingresa al menos el título y la descripción de la oferta.');
+        }
+
+        let fechaExpiracionBot = '';
+        if (vigenciaDias !== 999 && fechaPub) {
+            try {
+                const parts = fechaPub.split('-');
+                const d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+                d.setDate(d.getDate() + vigenciaDias);
+                fechaExpiracionBot = d.toISOString().split('T')[0];
+            } catch(e) {}
         }
 
         const photoVal = document.getElementById('off-img-1').value.trim();
@@ -1962,6 +1996,9 @@
         saveBtn.disabled = true;
 
         const docId = id || ('oferta_' + Date.now());
+        const existingOffer = id ? currentOffers.find(o => o.id === id) : null;
+        const offerTimestamp = existingOffer && existingOffer.timestamp ? existingOffer.timestamp : Date.now();
+
         const offerData = {
             titulo: titulo,
             categoria: categoria || 'General',
@@ -1972,9 +2009,13 @@
             enlace_maps: maps,
             contacto_nombre: nombre,
             contacto_telefono: tel.replace(/\D/g, ''),
+            fecha_activacion_bot: fechaPub,
+            dias_vigencia: vigenciaDias,
+            fecha_expiracion_bot: fechaExpiracionBot,
             activo: activo,
             orden: 1,
-            fecha: new Date().toLocaleDateString()
+            fecha: new Date().toLocaleDateString(),
+            timestamp: offerTimestamp
         };
 
         try {
@@ -2014,6 +2055,8 @@
                 snapshot.forEach(doc => {
                     currentOffers.push({ id: doc.id, ...doc.data() });
                 });
+                // Orden cronológico: La publicación más reciente aparece primero
+                currentOffers.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
                 renderOffersGrid();
             }, err => {
                 console.log('Error listening offers:', err);
@@ -2039,8 +2082,62 @@
             return;
         }
 
-        container.innerHTML = currentOffers.map((off, idx) => `
-            <div style="background: #ffffff; border: 1px solid ${off.activo ? '#bbf7d0' : '#e2e8f0'}; border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 2px 8px rgba(0,0,0,0.04); position: relative;">
+        // Orden cronológico estricto: La publicación más reciente primero
+        currentOffers.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        container.innerHTML = currentOffers.map((off, idx) => {
+            const diasVig = off.dias_vigencia !== undefined ? off.dias_vigencia : 30;
+            const fechaPub = off.fecha_activacion_bot || (off.fecha ? off.fecha : '');
+            let fechaExpStr = off.fecha_expiracion_bot || '';
+            let daysLeft = null;
+            let botBadgeHtml = '';
+
+            if (diasVig === 999) {
+                botBadgeHtml = `<span style="background:#dcfce7; color:#15803d; border:1px solid #86efac; padding:4px 8px; border-radius:6px; font-size:0.75rem; font-weight:800;">🟢 Permanente en WhatsApp Bot</span>`;
+            } else if (fechaPub) {
+                try {
+                    let startDate;
+                    const parts = String(fechaPub).split(/[-/]/);
+                    if (parts.length === 3) {
+                        if (parts[0].length === 4) {
+                            startDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+                        } else {
+                            startDate = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+                        }
+                    } else {
+                        startDate = new Date(fechaPub);
+                    }
+
+                    if (!isNaN(startDate.getTime())) {
+                        const endDate = new Date(startDate);
+                        endDate.setDate(endDate.getDate() + diasVig);
+                        fechaExpStr = endDate.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
+
+                        startDate.setHours(0, 0, 0, 0);
+                        endDate.setHours(0, 0, 0, 0);
+                        const diffTime = endDate.getTime() - today.getTime();
+                        daysLeft = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+                        if (!off.activo) {
+                            botBadgeHtml = `<span style="background:#f1f5f9; color:#64748b; border:1px solid #cbd5e1; padding:4px 8px; border-radius:6px; font-size:0.75rem; font-weight:700;">⚪ Pausada en Bot</span>`;
+                        } else if (daysLeft > 1) {
+                            botBadgeHtml = `<span style="background:#dcfce7; color:#15803d; border:1px solid #86efac; padding:4px 8px; border-radius:6px; font-size:0.75rem; font-weight:800;">🟢 Activo en Bot • Quedan ${daysLeft} días</span>`;
+                        } else if (daysLeft === 1) {
+                            botBadgeHtml = `<span style="background:#fef3c7; color:#b45309; border:1px solid #fde68a; padding:4px 8px; border-radius:6px; font-size:0.75rem; font-weight:800;">🟡 Expira Mañana en Bot</span>`;
+                        } else if (daysLeft === 0) {
+                            botBadgeHtml = `<span style="background:#fee2e2; color:#dc2626; border:1px solid #fca5a5; padding:4px 8px; border-radius:6px; font-size:0.75rem; font-weight:900;">⚠️ ¡EXPIRA HOY EN BOT!</span>`;
+                        } else {
+                            botBadgeHtml = `<span style="background:#fef2f2; color:#b91c1c; border:1px solid #f87171; padding:4px 8px; border-radius:6px; font-size:0.75rem; font-weight:900;">🔴 ¡VENCIDO hace ${Math.abs(daysLeft)} días!</span>`;
+                        }
+                    }
+                } catch(e) {}
+            }
+
+            return `
+            <div style="background: #ffffff; border: 1px solid ${daysLeft !== null && daysLeft <= 0 && off.activo ? '#ef4444' : (off.activo ? '#bbf7d0' : '#e2e8f0')}; border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 2px 8px rgba(0,0,0,0.04); position: relative;">
                 ${off.imagen_url ? `
                     <div style="width: 100%; height: 200px; overflow: hidden; background: #0f172a; position: relative;">
                         <img src="${off.imagen_url}" alt="${off.titulo}" style="width: 100%; height: 100%; object-fit: cover;">
@@ -2051,18 +2148,34 @@
                 ` : ''}
 
                 <div style="padding: 18px;">
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 10px;">
-                        <span style="font-size: 0.72rem; font-weight: 800; background: ${off.activo ? '#dcfce7' : '#f1f5f9'}; color: ${off.activo ? '#15803d' : '#64748b'}; padding: 4px 10px; border-radius: 20px; text-transform: uppercase;">
-                            ${off.activo ? '🟢 Activa en WhatsApp' : '⚪ Pausada'}
-                        </span>
-                        <span style="font-size: 0.75rem; color: #94a3b8; font-weight: 700;">#${idx + 1}</span>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 10px; flex-wrap: wrap;">
+                        ${botBadgeHtml || `
+                            <span style="font-size: 0.72rem; font-weight: 800; background: ${off.activo ? '#dcfce7' : '#f1f5f9'}; color: ${off.activo ? '#15803d' : '#64748b'}; padding: 4px 10px; border-radius: 20px; text-transform: uppercase;">
+                                ${off.activo ? '🟢 Activa en WhatsApp' : '⚪ Pausada'}
+                            </span>
+                        `}
+                        <span style="font-size: 0.75rem; color: #94a3b8; font-weight: 800; font-family: monospace;">#${idx + 1}</span>
                     </div>
 
                     <h3 style="font-size: 1.05rem; font-weight: 800; color: #0f172a; margin-bottom: 6px; line-height: 1.3;">
                         ${off.titulo}
                     </h3>
                     
-                    ${off.categoria ? `<div style="font-size: 0.8rem; font-weight: 700; color: #2563eb; margin-bottom: 10px;">🏷️ ${off.categoria}</div>` : ''}
+                    ${off.categoria ? `<div style="font-size: 0.8rem; font-weight: 700; color: #2563eb; margin-bottom: 8px;">🏷️ ${off.categoria}</div>` : ''}
+
+                    <!-- Panel de Fechas y Vigencia en Bot -->
+                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 8px 12px; margin-bottom: 12px; font-size: 0.8rem;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                            <span style="color: #64748b; font-weight: 600;">📅 Publicado en Bot:</span>
+                            <strong style="color: #0f172a;">${fechaPub || 'Al guardar'}</strong>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span style="color: #64748b; font-weight: 600;">⏰ Fecha de Retiro:</span>
+                            <strong style="color: ${daysLeft !== null && daysLeft <= 1 ? '#dc2626' : '#16a34a'}; font-weight: 800;">
+                                ${diasVig === 999 ? 'Permanente' : (fechaExpStr || `${diasVig} días`)}
+                            </strong>
+                        </div>
+                    </div>
 
                     <p style="font-size: 0.88rem; color: #475569; line-height: 1.45; margin-bottom: 14px; white-space: pre-line;">
                         ${off.descripcion}
@@ -2076,7 +2189,7 @@
                         ` : ''}
                         ${off.enlace_maps ? `
                             <a href="${off.enlace_maps}" target="_blank" style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.8rem; font-weight: 700; color: #b91c1c; text-decoration: none; background: #fef2f2; padding: 6px 12px; border-radius: 8px;">
-                                📍 Cómo Llegar (Google Maps) ↗
+                                📍 Cómo Llegar (Maps) ↗
                             </a>
                         ` : ''}
                     </div>
@@ -2084,7 +2197,7 @@
                     ${off.contacto_telefono ? `
                         <div style="font-size: 0.82rem; color: #334155; margin-bottom: 14px;">
                             <strong>Vendedor:</strong> ${off.contacto_nombre || 'Contacto'} 
-                            <a href="https://wa.me/52${off.contacto_telefono.replace(/\D/g, '')}" target="_blank" style="color: #16a34a; font-weight: 700; margin-left: 4px; text-decoration: none;">
+                            <a href="https://wa.me/52${String(off.contacto_telefono).replace(/\D/g, '')}" target="_blank" style="color: #16a34a; font-weight: 700; margin-left: 4px; text-decoration: none;">
                                 +52 ${off.contacto_telefono} 📲
                             </a>
                         </div>
@@ -2099,7 +2212,8 @@
                     <button style="background: none; border: 1px solid #fee2e2; color: #ef4444; border-radius: 8px; padding: 8px 10px; cursor: pointer;" onclick="deleteOffer('${off.id}', '${off.titulo.replace(/'/g, "\\'")}')" title="Eliminar">🗑️</button>
                 </div>
             </div>
-        `).join('');
+            `;
+        }).join('');
     }
 
     // ═════════════════════════════════════════════════════════════════════
@@ -2539,8 +2653,22 @@
 
         const pub = order.publicidad || {};
         const cont = order.contratante || {};
+        const paquete = order.paquete || '';
 
-        if (!confirm(`¿Deseas agregar el anuncio "${pub.titulo}" al Catálogo Dinámico de Ofertas del Bot de WhatsApp?`)) return;
+        let diasVigencia = 30; // Por defecto Plata u Oro = 30 días en Bot
+        if (paquete.toLowerCase().includes('bronce')) {
+            diasVigencia = 7; // Paquete Bronce = 7 días
+        }
+
+        const todayStr = new Date().toISOString().split('T')[0];
+        let fechaExpiracionBot = '';
+        try {
+            const d = new Date();
+            d.setDate(d.getDate() + diasVigencia);
+            fechaExpiracionBot = d.toISOString().split('T')[0];
+        } catch(e) {}
+
+        if (!confirm(`¿Deseas agregar el anuncio "${pub.titulo}" al Catálogo Dinámico de Ofertas del Bot de WhatsApp (${diasVigencia} días de vigencia)?`)) return;
 
         const docId = 'oferta_' + (order.order_id || Date.now());
         const offerData = {
@@ -2552,15 +2680,19 @@
             enlace_facebook: pub.facebook || '',
             enlace_maps: pub.maps || '',
             contacto_nombre: pub.contacto_ventas_nombre || cont.nombre || 'Atención a Clientes',
-            contacto_telefono: (pub.contacto_ventas_whatsapp || cont.whatsapp || '').replace(/\\D/g, ''),
+            contacto_telefono: (pub.contacto_ventas_whatsapp || cont.whatsapp || '').replace(/\D/g, ''),
+            fecha_activacion_bot: todayStr,
+            dias_vigencia: diasVigencia,
+            fecha_expiracion_bot: fechaExpiracionBot,
             activo: true,
             orden: 1,
-            fecha: new Date().toLocaleDateString()
+            fecha: new Date().toLocaleDateString(),
+            timestamp: Date.now()
         };
 
         try {
             await db.collection('offers').doc(docId).set(offerData, { merge: true });
-            alert(`✅ ¡Listo! El anuncio "${pub.titulo}" fue agregado con éxito al Catálogo del Bot de WhatsApp.`);
+            alert(`✅ ¡Listo! El anuncio "${pub.titulo}" fue agregado con éxito al Catálogo del Bot de WhatsApp (${diasVigencia} días de vigencia).`);
             switchTab('offers');
         } catch(e) {
             console.error('Error copiando a catálogo:', e);
@@ -2818,6 +2950,7 @@
                 selectContact(1);
                 listenFirebaseContacts();
                 listenFirebaseMessages();
+                listenFirebaseOffers();
                 listenFirebaseOrders();
             }
         } else {
