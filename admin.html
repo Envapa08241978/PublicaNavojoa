@@ -518,6 +518,80 @@
             gap: 20px;
         }
 
+        /* Order Card Styles */
+        .order-card {
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 18px;
+            overflow: hidden;
+            box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: all 0.2s ease;
+        }
+        .order-card:hover {
+            box-shadow: 0 8px 25px rgba(15, 23, 42, 0.09);
+            border-color: #cbd5e1;
+        }
+        .order-card-header {
+            padding: 14px 18px;
+            background: #f8fafc;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+        }
+        .order-photo-container {
+            width: 100%;
+            height: 220px;
+            background: #0f172a;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .order-photo-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            cursor: pointer;
+            transition: transform 0.25s ease;
+        }
+        .order-photo-img:hover {
+            transform: scale(1.03);
+        }
+        .order-photo-overlay-btns {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            display: flex;
+            gap: 6px;
+        }
+        .order-photo-btn {
+            background: rgba(15, 23, 42, 0.82);
+            color: #ffffff;
+            border: none;
+            border-radius: 8px;
+            padding: 5px 10px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            cursor: pointer;
+            backdrop-filter: blur(4px);
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .order-photo-btn:hover {
+            background: rgba(22, 163, 74, 0.9);
+        }
+        .order-info-section {
+            padding: 18px;
+            flex: 1;
+        }
+
         /* Modal */
         .modal {
             display: none;
@@ -784,6 +858,7 @@
         <button class="tab-btn active" onclick="switchTab('chat')">💬 Chat WhatsApp Cloud API (En vivo)</button>
         <button class="tab-btn" onclick="switchTab('crm')">📊 Base de Datos & Contactos CRM</button>
         <button class="tab-btn" onclick="switchTab('offers')">🏷️ Catálogo de Ofertas (Bot WhatsApp)</button>
+        <button class="tab-btn" onclick="switchTab('orders')" id="tab-btn-orders">📋 Solicitudes de Publicidad (<span id="orders-count-badge">0</span>)</button>
     </div>
 
     <!-- TAB 1: LIVE CHAT WHATSAPP API -->
@@ -918,6 +993,32 @@
 
         <div id="offers-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; margin-bottom: 30px;">
             <!-- Renderizado dinámico de ofertas desde Firebase -->
+        </div>
+    </div>
+
+    <!-- TAB 4: SOLICITUDES DE PUBLICIDAD & ANUNCIOS (FORMULARIOS) -->
+    <div id="tab-orders" class="tab-content">
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 20px; flex-wrap: wrap;">
+            <div>
+                <h2 style="font-size: 1.3rem; font-weight: 800; color: var(--text-main);">📋 Solicitudes de Publicidad & Anuncios</h2>
+                <p style="color: var(--text-muted); font-size: 0.88rem; margin-top: 4px;">
+                    Visualiza toda la información, datos bancarios, programación de fechas y la <strong>fotografía en alta resolución</strong> enviada por cada cliente en el formulario de contratación.
+                </p>
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                <select id="filter-orders-status" onchange="renderOrdersGrid()" style="padding: 10px 14px; border-radius: 10px; border: 1.5px solid #e2e8f0; font-size: 0.88rem; font-weight: 600; cursor: pointer; background: #ffffff;">
+                    <option value="todos">Todos los Estados</option>
+                    <option value="pendiente_comprobante">⏳ Pendiente de Comprobante</option>
+                    <option value="en_diseno">🎨 En Diseño / Revisión</option>
+                    <option value="aprobado">✅ Aprobado / Listo</option>
+                    <option value="publicado">🚀 Publicado</option>
+                </select>
+                <input type="text" id="search-orders" placeholder="🔍 Buscar por cliente, título o folio..." style="padding: 10px 14px; border-radius: 10px; border: 1.5px solid #e2e8f0; font-size: 0.88rem; min-width: 250px; margin: 0;" onkeyup="renderOrdersGrid()">
+            </div>
+        </div>
+
+        <div id="orders-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 24px; margin-bottom: 30px;">
+            <!-- Renderizado dinámico de solicitudes desde Firestore -->
         </div>
     </div>
 </div>
@@ -1172,6 +1273,10 @@
             document.querySelectorAll('.tab-btn')[2].classList.add('active');
             document.getElementById('tab-offers').classList.add('active');
             listenFirebaseOffers();
+        } else if (tabName === 'orders') {
+            document.querySelectorAll('.tab-btn')[3].classList.add('active');
+            document.getElementById('tab-orders').classList.add('active');
+            listenFirebaseOrders();
         }
     }
 
@@ -1980,6 +2085,295 @@
         `).join('');
     }
 
+    // ═════════════════════════════════════════════════════════════════════
+    // MÓDULO DE SOLICITUDES DE PUBLICIDAD & ANUNCIOS (Formularios Web)
+    // ═════════════════════════════════════════════════════════════════════
+    let currentOrders = [];
+
+    function listenFirebaseOrders() {
+        try {
+            db.collection('anuncios_pedidos').onSnapshot(snapshot => {
+                currentOrders = [];
+                snapshot.forEach(doc => {
+                    currentOrders.push({ id: doc.id, ...doc.data() });
+                });
+
+                // Ordenar por fecha / timestamp descendente (más recientes arriba)
+                currentOrders.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+                // Actualizar badge del tab
+                const badgeEl = document.getElementById('orders-count-badge');
+                if (badgeEl) badgeEl.innerText = currentOrders.length;
+
+                renderOrdersGrid();
+            }, err => {
+                console.log('Error listening orders:', err);
+            });
+        } catch(e) {
+            console.log('Firebase orders error:', e);
+        }
+    }
+
+    function renderOrdersGrid() {
+        const container = document.getElementById('orders-container');
+        if (!container) return;
+
+        const statusFilter = document.getElementById('filter-orders-status')?.value || 'todos';
+        const search = (document.getElementById('search-orders')?.value || '').toLowerCase();
+
+        let filtered = currentOrders.filter(ord => {
+            const pub = ord.publicidad || {};
+            const cont = ord.contratante || {};
+            const matchSearch = (ord.order_id || ord.id || '').toLowerCase().includes(search) ||
+                                (cont.nombre || '').toLowerCase().includes(search) ||
+                                (cont.whatsapp || '').includes(search) ||
+                                (pub.titulo || '').toLowerCase().includes(search) ||
+                                (pub.categoria || '').toLowerCase().includes(search) ||
+                                (pub.descripcion || '').toLowerCase().includes(search);
+
+            if (!matchSearch) return false;
+            if (statusFilter === 'todos') return true;
+            return ord.estado_pago === statusFilter || ord.estado_diseno === statusFilter;
+        });
+
+        if (filtered.length === 0) {
+            container.innerHTML = `
+                <div style="grid-column: 1 / -1; text-align: center; padding: 60px 20px; background: #ffffff; border-radius: 16px; border: 1px dashed #cbd5e1;">
+                    <div style="font-size: 2.5rem; margin-bottom: 10px;">📋</div>
+                    <h3 style="font-size: 1.15rem; color: var(--text-main); font-weight: 800;">No hay solicitudes de publicidad que coincidan</h3>
+                    <p style="font-size: 0.88rem; color: var(--text-muted); margin: 6px 0 16px;">
+                        Las contrataciones enviadas desde <a href="/formulario" target="_blank" style="color:#16a34a; font-weight:700;">publicanavojoa.com/formulario</a> aparecerán aquí automáticamente en tiempo real.
+                    </p>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = filtered.map((ord, idx) => {
+            const pub = ord.publicidad || {};
+            const cont = ord.contratante || {};
+            const prog = ord.programacion || {};
+            const fbProg = prog.facebook || {};
+            const waProg = prog.whatsapp || {};
+            const photo = pub.foto_base64 || '';
+            const status = ord.estado_pago || 'pendiente_comprobante';
+
+            return `
+            <div class="order-card">
+                <!-- Header Card -->
+                <div class="order-card-header">
+                    <div>
+                        <span style="font-size: 0.85rem; font-weight: 900; color: #16a34a; font-family: monospace;">
+                            ${ord.order_id || ord.id}
+                        </span>
+                        <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 1px;">
+                            ${ord.fecha_registro || new Date(ord.timestamp || Date.now()).toLocaleDateString()}
+                        </div>
+                    </div>
+
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 0.75rem; font-weight: 800; background: #fef3c7; color: #b45309; padding: 3px 8px; border-radius: 6px; border: 1px solid rgba(217,119,6,0.2);">
+                            ${ord.paquete || 'Publicidad'}
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Foto de la Oferta -->
+                ${photo ? `
+                    <div class="order-photo-container">
+                        <img src="${photo}" alt="${pub.titulo || 'Foto Oferta'}" class="order-photo-img" onclick="openAdminZoomModal('${photo}')">
+                        <div class="order-photo-overlay-btns">
+                            <button type="button" class="order-photo-btn" onclick="openAdminZoomModal('${photo}')">
+                                🔍 Ampliar
+                            </button>
+                            <button type="button" class="order-photo-btn" onclick="downloadBase64Image('${photo}', '${ord.order_id || 'anuncio'}_${(pub.titulo || 'foto').replace(/\\s+/g, '_')}.jpg')">
+                                📥 Descargar
+                            </button>
+                        </div>
+                    </div>
+                ` : `
+                    <div style="height: 90px; background: #f1f5f9; display: flex; align-items: center; justify-content: center; color: #94a3b8; font-size: 0.82rem; font-weight: 600; border-bottom: 1px solid #e2e8f0;">
+                        📸 Sin fotografía adjunta
+                    </div>
+                `}
+
+                <!-- Contenido de la Información -->
+                <div class="order-info-section">
+                    <!-- Título y Categoría -->
+                    <h3 style="font-size: 1.15rem; font-weight: 800; color: #0f172a; margin-bottom: 4px; line-height: 1.25;">
+                        ${pub.titulo || 'Sin Título'}
+                    </h3>
+                    <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px;">
+                        <span style="font-size: 0.75rem; font-weight: 700; color: #2563eb; background: #eff6ff; padding: 2px 8px; border-radius: 6px;">
+                            📂 ${pub.categoria || 'General'}
+                        </span>
+                        ${pub.descuento && pub.descuento !== 'No especificado' ? `
+                            <span style="font-size: 0.75rem; font-weight: 800; color: #dc2626; background: #fef2f2; padding: 2px 8px; border-radius: 6px;">
+                                🏷️ ${pub.descuento}
+                            </span>
+                        ` : ''}
+                    </div>
+
+                    <!-- Descripción -->
+                    <p style="font-size: 0.88rem; color: #334155; line-height: 1.45; margin-bottom: 14px; background: #f8fafc; padding: 10px 12px; border-radius: 10px; border: 1px solid #e2e8f0; white-space: pre-line;">
+                        ${pub.descripcion || 'Sin descripción'}
+                    </p>
+
+                    <!-- Datos del Contratante -->
+                    <div style="font-size: 0.82rem; color: #475569; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed #e2e8f0;">
+                        <div style="font-weight: 800; color: #0f172a; margin-bottom: 2px;">👤 Contratante:</div>
+                        <div><strong>${cont.nombre || 'No indicado'}</strong></div>
+                        <div style="display: flex; align-items: center; gap: 6px; margin-top: 2px;">
+                            <span>📱 WhatsApp:</span>
+                            <a href="https://wa.me/52${(cont.whatsapp || '').replace(/\\D/g, '')}" target="_blank" style="color: #16a34a; font-weight: 800; text-decoration: none;">
+                                +52 ${cont.whatsapp || '-'} ↗
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Datos de Atención / Vendedor -->
+                    <div style="font-size: 0.82rem; color: #475569; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed #e2e8f0;">
+                        <div style="font-weight: 800; color: #0f172a; margin-bottom: 2px;">🛍️ Atención a Clientes:</div>
+                        <div>${pub.contacto_ventas_nombre || 'Mismo que contratante'}</div>
+                        <div style="display: flex; align-items: center; gap: 6px; margin-top: 2px;">
+                            <span>📲 WhatsApp Ventas:</span>
+                            <a href="https://wa.me/52${(pub.contacto_ventas_whatsapp || '').replace(/\\D/g, '')}" target="_blank" style="color: #16a34a; font-weight: 800; text-decoration: none;">
+                                +52 ${pub.contacto_ventas_whatsapp || '-'} ↗
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Programación de Fechas -->
+                    <div style="font-size: 0.82rem; color: #475569; margin-bottom: 12px;">
+                        <div style="font-weight: 800; color: #0f172a; margin-bottom: 4px;">📅 Fechas Programadas:</div>
+                        <div style="display: flex; flex-direction: column; gap: 3px;">
+                            <div>📘 <strong>Facebook:</strong> ${fbProg.fecha || 'Por definir'} (${fbProg.hora || '19:00'})</div>
+                            <div>💬 <strong>WhatsApp Masivo:</strong> ${waProg.fecha || 'Por definir'} (${waProg.hora || '13:00'})</div>
+                        </div>
+                    </div>
+
+                    <!-- Enlaces Redes / Maps -->
+                    <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px;">
+                        ${pub.facebook ? `<a href="${pub.facebook}" target="_blank" style="font-size: 0.75rem; color: #1877f2; background: #eff6ff; padding: 4px 8px; border-radius: 6px; text-decoration: none; font-weight: 700;">📘 Facebook ↗</a>` : ''}
+                        ${pub.instagram ? `<a href="${pub.instagram}" target="_blank" style="font-size: 0.75rem; color: #e1306c; background: #fdf2f8; padding: 4px 8px; border-radius: 6px; text-decoration: none; font-weight: 700;">📸 Instagram ↗</a>` : ''}
+                        ${pub.tiktok ? `<a href="${pub.tiktok}" target="_blank" style="font-size: 0.75rem; color: #000000; background: #f1f5f9; padding: 4px 8px; border-radius: 6px; text-decoration: none; font-weight: 700;">🎵 TikTok ↗</a>` : ''}
+                        ${pub.sitio_web ? `<a href="${pub.sitio_web}" target="_blank" style="font-size: 0.75rem; color: #2563eb; background: #eff6ff; padding: 4px 8px; border-radius: 6px; text-decoration: none; font-weight: 700;">🌐 Web ↗</a>` : ''}
+                        ${pub.maps ? `<a href="${pub.maps}" target="_blank" style="font-size: 0.75rem; color: #b91c1c; background: #fef2f2; padding: 4px 8px; border-radius: 6px; text-decoration: none; font-weight: 700;">📍 Google Maps ↗</a>` : ''}
+                    </div>
+
+                    <!-- Estado del Pedido Selector -->
+                    <div style="background: #f1f5f9; padding: 8px 10px; border-radius: 10px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                        <span style="font-size: 0.78rem; font-weight: 800; color: #334155;">Estado:</span>
+                        <select onchange="updateOrderStatus('${ord.id || ord.order_id}', this.value)" style="padding: 4px 8px; border-radius: 6px; border: 1.5px solid #cbd5e1; font-weight: 700; font-size: 0.78rem; cursor: pointer; background: #ffffff;">
+                            <option value="pendiente_comprobante" ${status === 'pendiente_comprobante' ? 'selected' : ''}>⏳ Pendiente Comprobante</option>
+                            <option value="en_diseno" ${status === 'en_diseno' ? 'selected' : ''}>🎨 En Diseño / Revisión</option>
+                            <option value="aprobado" ${status === 'aprobado' ? 'selected' : ''}>✅ Aprobado / Listo</option>
+                            <option value="publicado" ${status === 'publicado' ? 'selected' : ''}>🚀 Publicado</option>
+                            <option value="cancelado" ${status === 'cancelado' ? 'selected' : ''}>❌ Cancelado</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Footer Card Actions -->
+                <div style="display: flex; gap: 6px; border-top: 1px solid #f1f5f9; padding: 12px 16px; background: #fafafa; flex-wrap: wrap;">
+                    <button class="btn btn-green" style="flex: 1; padding: 7px 10px; font-size: 0.78rem; justify-content: center;" onclick="copyOrderToCatalog('${ord.id || ord.order_id}')" title="Copiar este anuncio automáticamente al Catálogo de Ofertas del Bot de WhatsApp">
+                        🏷️ Pasar a Catálogo Bot
+                    </button>
+                    <a href="https://wa.me/52${(cont.whatsapp || '').replace(/\\D/g, '')}?text=Hola%20${encodeURIComponent(cont.nombre || '')}%2C%20te%20contacto%20de%20Publica%20Navojoa%20respecto%20a%20tu%20anuncio%20%22${encodeURIComponent(pub.titulo || '')}%22" target="_blank" class="btn btn-blue" style="padding: 7px 10px; font-size: 0.78rem; text-decoration: none; display: inline-flex; align-items: center; justify-content: center;">
+                        💬 WhatsApp
+                    </a>
+                    <button style="background: none; border: 1px solid #fee2e2; color: #ef4444; border-radius: 8px; padding: 7px 9px; cursor: pointer;" onclick="deleteOrder('${ord.id || ord.order_id}', '${(pub.titulo || 'anuncio').replace(/'/g, "\\'")}')" title="Eliminar solicitud">
+                        🗑️
+                    </button>
+                </div>
+            </div>
+            `;
+        }).join('');
+    }
+
+    async function updateOrderStatus(orderId, newStatus) {
+        try {
+            await db.collection('anuncios_pedidos').doc(orderId).update({
+                estado_pago: newStatus,
+                estado_diseno: newStatus
+            });
+        } catch(e) {
+            console.error('Error al actualizar estado del pedido:', e);
+            alert('No se pudo actualizar el estado: ' + e.message);
+        }
+    }
+
+    async function deleteOrder(orderId, title) {
+        if (!confirm(`¿Estás seguro de eliminar la solicitud "${title}" (${orderId}) de Firebase?`)) return;
+        try {
+            await db.collection('anuncios_pedidos').doc(orderId).delete();
+        } catch(e) {
+            console.error('Error al eliminar orden:', e);
+            alert('Error al eliminar: ' + e.message);
+        }
+    }
+
+    // Copiar datos del formulario directamente al Catálogo del Bot de WhatsApp
+    async function copyOrderToCatalog(orderId) {
+        const order = currentOrders.find(o => (o.id === orderId || o.order_id === orderId));
+        if (!order) return alert('No se encontró el pedido.');
+
+        const pub = order.publicidad || {};
+        const cont = order.contratante || {};
+
+        if (!confirm(`¿Deseas agregar el anuncio "${pub.titulo}" al Catálogo Dinámico de Ofertas del Bot de WhatsApp?`)) return;
+
+        const docId = 'oferta_' + (order.order_id || Date.now());
+        const offerData = {
+            titulo: pub.titulo || 'Promoción Especial',
+            categoria: pub.categoria || 'General',
+            descripcion: pub.descripcion || '',
+            imagen_url: pub.foto_base64 || '',
+            imagenes_json: pub.foto_base64 ? JSON.stringify([pub.foto_base64]) : '[]',
+            enlace_facebook: pub.facebook || '',
+            enlace_maps: pub.maps || '',
+            contacto_nombre: pub.contacto_ventas_nombre || cont.nombre || 'Atención a Clientes',
+            contacto_telefono: (pub.contacto_ventas_whatsapp || cont.whatsapp || '').replace(/\\D/g, ''),
+            activo: true,
+            orden: 1,
+            fecha: new Date().toLocaleDateString()
+        };
+
+        try {
+            await db.collection('offers').doc(docId).set(offerData, { merge: true });
+            alert(`✅ ¡Listo! El anuncio "${pub.titulo}" fue agregado con éxito al Catálogo del Bot de WhatsApp.`);
+            switchTab('offers');
+        } catch(e) {
+            console.error('Error copiando a catálogo:', e);
+            alert('Error al guardar en catálogo: ' + e.message);
+        }
+    }
+
+    // Descarga de Imagen Base64
+    function downloadBase64Image(base64Data, fileName) {
+        const link = document.createElement('a');
+        link.href = base64Data;
+        link.download = fileName || 'foto_publicidad.jpg';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    // Modal Zoom Admin
+    function openAdminZoomModal(src) {
+        const modal = document.getElementById('admin-zoom-modal');
+        const img = document.getElementById('admin-zoom-img');
+        if (modal && img) {
+            img.src = src;
+            modal.style.display = 'flex';
+        }
+    }
+
+    function closeAdminZoomModal() {
+        const modal = document.getElementById('admin-zoom-modal');
+        if (modal) modal.style.display = 'none';
+    }
+
     // Auto Polling del Servidor Webhook local
     async function syncIncomingMessages() {
         try {
@@ -2205,6 +2599,7 @@
                 selectContact(1);
                 listenFirebaseContacts();
                 listenFirebaseMessages();
+                listenFirebaseOrders();
             }
         } else {
             // Usuario No Autenticado: Ocultar panel y mostrar login
@@ -2214,5 +2609,12 @@
         }
     });
 </script>
+
+<!-- Modal Zoom Imagen en Admin -->
+<div id="admin-zoom-modal" class="modal" onclick="closeAdminZoomModal()" style="display:none; z-index: 999999; background: rgba(0,0,0,0.85); backdrop-filter: blur(6px); align-items: center; justify-content: center; padding: 20px;">
+    <span style="position: absolute; top: 20px; right: 25px; color: #ffffff; font-size: 2.2rem; font-weight: 800; cursor: pointer;">&times;</span>
+    <img id="admin-zoom-img" src="" alt="Vista previa completa" style="max-width: 90%; max-height: 90vh; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.5);">
+</div>
+
 </body>
 </html>
