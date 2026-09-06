@@ -998,22 +998,39 @@
 
     <!-- TAB 4: SOLICITUDES DE PUBLICIDAD & ANUNCIOS (FORMULARIOS) -->
     <div id="tab-orders" class="tab-content">
-        <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 20px; flex-wrap: wrap;">
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 16px; flex-wrap: wrap;">
             <div>
-                <h2 style="font-size: 1.3rem; font-weight: 800; color: var(--text-main);">📋 Solicitudes de Publicidad & Anuncios</h2>
+                <h2 style="font-size: 1.3rem; font-weight: 800; color: var(--text-main);">📋 Control de Publicaciones, Vigencias & Envíos Masivos</h2>
                 <p style="color: var(--text-muted); font-size: 0.88rem; margin-top: 4px;">
-                    Visualiza toda la información, datos bancarios, programación de fechas y la <strong>fotografía en alta resolución</strong> enviada por cada cliente en el formulario de contratación.
+                    Controla en automático cuándo quitar anuncios fijados del <strong>Grupo de Facebook (+78.7k)</strong> según el paquete (3, 7 o 15 días) y cuándo realizar los envíos masivos por WhatsApp.
                 </p>
             </div>
             <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                 <select id="filter-orders-status" onchange="renderOrdersGrid()" style="padding: 10px 14px; border-radius: 10px; border: 1.5px solid #e2e8f0; font-size: 0.88rem; font-weight: 600; cursor: pointer; background: #ffffff;">
                     <option value="todos">Todos los Estados</option>
-                    <option value="pendiente_comprobante">⏳ Pendiente de Comprobante</option>
+                    <option value="por_desfijar">⚠️ Por Quitar de FB (Hoy o Vencidos)</option>
+                    <option value="wa_pendiente">💬 Broadcast WhatsApp Pendiente</option>
+                    <option value="publicado">🚀 Publicados Activos</option>
                     <option value="en_diseno">🎨 En Diseño / Revisión</option>
-                    <option value="aprobado">✅ Aprobado / Listo</option>
-                    <option value="publicado">🚀 Publicado</option>
+                    <option value="pendiente_comprobante">⏳ Pendiente de Comprobante</option>
                 </select>
                 <input type="text" id="search-orders" placeholder="🔍 Buscar por cliente, título o folio..." style="padding: 10px 14px; border-radius: 10px; border: 1.5px solid #e2e8f0; font-size: 0.88rem; min-width: 250px; margin: 0;" onkeyup="renderOrdersGrid()">
+            </div>
+        </div>
+
+        <!-- KPIs de Vigencias & Envíos Masivos -->
+        <div class="stats-grid" style="margin-bottom: 22px;">
+            <div class="stat-card" style="border-left: 4px solid #ef4444;">
+                <div class="stat-val" id="kpi-orders-expiring" style="color: #ef4444;">0</div>
+                <div class="stat-label">⚠️ Por Quitar de Facebook (Hoy o Vencidos)</div>
+            </div>
+            <div class="stat-card" style="border-left: 4px solid #16a34a;">
+                <div class="stat-val" id="kpi-orders-active-fb" style="color: #16a34a;">0</div>
+                <div class="stat-label">🟢 Anuncios Fijados Activos en Facebook</div>
+            </div>
+            <div class="stat-card" style="border-left: 4px solid #d97706;">
+                <div class="stat-val" id="kpi-orders-wa-pending" style="color: #d97706;">0</div>
+                <div class="stat-label">💬 Envíos Masivos de WhatsApp Pendientes</div>
             </div>
         </div>
 
@@ -2086,9 +2103,140 @@
     }
 
     // ═════════════════════════════════════════════════════════════════════
-    // MÓDULO DE SOLICITUDES DE PUBLICIDAD & ANUNCIOS (Formularios Web)
+    // MÓDULO DE CONTROL DE PUBLICACIONES, VIGENCIAS & ENVÍOS MASIVOS
     // ═════════════════════════════════════════════════════════════════════
     let currentOrders = [];
+
+    // Helper para calcular vigencia y fechas de despublicación en Facebook y Broadcasts
+    function getVigenciaData(ord) {
+        const paquete = ord.paquete || '';
+        let diasDuracion = 3; // Default Bronce (3 días)
+        let totalBroadcasts = 1;
+
+        if (paquete.toLowerCase().includes('oro')) {
+            diasDuracion = 15;
+            totalBroadcasts = 4;
+        } else if (paquete.toLowerCase().includes('plata')) {
+            diasDuracion = 7;
+            totalBroadcasts = 2;
+        }
+
+        const prog = ord.programacion || {};
+        const fbProg = prog.facebook || {};
+        const waProg = prog.whatsapp || {};
+
+        // Fecha en que se publicó en Facebook
+        const fechaInicioFb = ord.fecha_publicado_fb || (ord.publicado_en_fb ? (ord.fecha_registro ? ord.fecha_registro.split(' ')[0] : '') : fbProg.fecha);
+        const publicadoEnFb = ord.publicado_en_fb === true || ord.estado_pago === 'publicado' || ord.estado_diseno === 'publicado';
+
+        let fechaDesfijarStr = '';
+        let daysLeft = null;
+        let fbStatusType = 'programado'; // 'activo', 'expira_hoy', 'vencido', 'programado'
+        let fbStatusBadge = '';
+
+        if (fechaInicioFb) {
+            try {
+                let parts = String(fechaInicioFb).split(/[-/]/);
+                let startDate;
+                if (parts.length === 3) {
+                    if (parts[0].length === 4) {
+                        startDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+                    } else {
+                        startDate = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+                    }
+                } else {
+                    startDate = new Date(fechaInicioFb);
+                }
+
+                if (!isNaN(startDate.getTime())) {
+                    const endDate = new Date(startDate);
+                    endDate.setDate(endDate.getDate() + diasDuracion);
+                    fechaDesfijarStr = endDate.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
+
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    startDate.setHours(0, 0, 0, 0);
+                    endDate.setHours(0, 0, 0, 0);
+
+                    const diffTime = endDate.getTime() - today.getTime();
+                    daysLeft = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+                    if (publicadoEnFb) {
+                        if (daysLeft > 1) {
+                            fbStatusType = 'activo';
+                            fbStatusBadge = `<span style="background:#dcfce7; color:#15803d; border:1px solid #86efac; padding:5px 10px; border-radius:8px; font-size:0.8rem; font-weight:800; display:inline-flex; align-items:center; gap:5px;">🟢 Activo en FB • Quedan ${daysLeft} días (Quitar el ${fechaDesfijarStr})</span>`;
+                        } else if (daysLeft === 1) {
+                            fbStatusType = 'expira_hoy';
+                            fbStatusBadge = `<span style="background:#fef3c7; color:#b45309; border:1px solid #fde68a; padding:5px 10px; border-radius:8px; font-size:0.8rem; font-weight:800; display:inline-flex; align-items:center; gap:5px;">🟡 Expira Mañana (Desfijar el ${fechaDesfijarStr})</span>`;
+                        } else if (daysLeft === 0) {
+                            fbStatusType = 'expira_hoy';
+                            fbStatusBadge = `<span style="background:#fee2e2; color:#dc2626; border:1px solid #fca5a5; padding:5px 10px; border-radius:8px; font-size:0.8rem; font-weight:900; animation:pulseBadge 1.5s infinite; display:inline-flex; align-items:center; gap:5px;">⚠️ ¡EXPIRA HOY! • Quitar post fijado de FB</span>`;
+                        } else {
+                            fbStatusType = 'vencido';
+                            fbStatusBadge = `<span style="background:#fef2f2; color:#b91c1c; border:1px solid #f87171; padding:5px 10px; border-radius:8px; font-size:0.8rem; font-weight:900; display:inline-flex; align-items:center; gap:5px;">🔴 ¡VENCIDO hace ${Math.abs(daysLeft)} días! • Quitar de FB</span>`;
+                        }
+                    } else {
+                        fbStatusType = 'programado';
+                        fbStatusBadge = `<span style="background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; padding:5px 10px; border-radius:8px; font-size:0.8rem; font-weight:700; display:inline-flex; align-items:center; gap:5px;">⚪ Programado para: ${fbProg.fecha || fechaInicioFb} (${fbProg.hora || '19:00'})</span>`;
+                    }
+                }
+            } catch(e) {}
+        }
+
+        // WhatsApp Broadcast Tracking
+        const broadcastEnviado = ord.broadcast_completado === true;
+        const waFecha = waProg.fecha || '';
+        const waHora = waProg.hora || '13:00';
+
+        let waStatusBadge = '';
+        if (broadcastEnviado) {
+            waStatusBadge = `<span style="background:#dcfce7; color:#15803d; border:1px solid #86efac; padding:5px 10px; border-radius:8px; font-size:0.8rem; font-weight:800;">✅ Broadcast WhatsApp Realizado</span>`;
+        } else {
+            waStatusBadge = `<span style="background:#fef3c7; color:#b45309; border:1px solid #fde68a; padding:5px 10px; border-radius:8px; font-size:0.8rem; font-weight:800;">⏰ Broadcast Programado: ${waFecha || 'Por definir'} (${waHora})</span>`;
+        }
+
+        return {
+            diasDuracion,
+            totalBroadcasts,
+            fechaInicioFb,
+            fechaDesfijarStr,
+            daysLeft,
+            publicadoEnFb,
+            fbStatusType,
+            fbStatusBadge,
+            broadcastEnviado,
+            waFecha,
+            waHora,
+            waStatusBadge
+        };
+    }
+
+    function updateOrdersKPIs() {
+        let expiringCount = 0;
+        let activeFbCount = 0;
+        let waPendingCount = 0;
+
+        currentOrders.forEach(ord => {
+            const v = getVigenciaData(ord);
+            if (v.publicadoEnFb) {
+                activeFbCount++;
+                if (v.fbStatusType === 'expira_hoy' || v.fbStatusType === 'vencido') {
+                    expiringCount++;
+                }
+            }
+            if (!v.broadcastEnviado) {
+                waPendingCount++;
+            }
+        });
+
+        const kpiExp = document.getElementById('kpi-orders-expiring');
+        const kpiAct = document.getElementById('kpi-orders-active-fb');
+        const kpiWa = document.getElementById('kpi-orders-wa-pending');
+
+        if (kpiExp) kpiExp.innerText = expiringCount;
+        if (kpiAct) kpiAct.innerText = activeFbCount;
+        if (kpiWa) kpiWa.innerText = waPendingCount;
+    }
 
     function listenFirebaseOrders() {
         try {
@@ -2098,13 +2246,13 @@
                     currentOrders.push({ id: doc.id, ...doc.data() });
                 });
 
-                // Ordenar por fecha / timestamp descendente (más recientes arriba)
+                // Ordenar por timestamp descendente
                 currentOrders.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
 
-                // Actualizar badge del tab
                 const badgeEl = document.getElementById('orders-count-badge');
                 if (badgeEl) badgeEl.innerText = currentOrders.length;
 
+                updateOrdersKPIs();
                 renderOrdersGrid();
             }, err => {
                 console.log('Error listening orders:', err);
@@ -2124,6 +2272,8 @@
         let filtered = currentOrders.filter(ord => {
             const pub = ord.publicidad || {};
             const cont = ord.contratante || {};
+            const v = getVigenciaData(ord);
+
             const matchSearch = (ord.order_id || ord.id || '').toLowerCase().includes(search) ||
                                 (cont.nombre || '').toLowerCase().includes(search) ||
                                 (cont.whatsapp || '').includes(search) ||
@@ -2132,7 +2282,11 @@
                                 (pub.descripcion || '').toLowerCase().includes(search);
 
             if (!matchSearch) return false;
+
             if (statusFilter === 'todos') return true;
+            if (statusFilter === 'por_desfijar') return v.fbStatusType === 'expira_hoy' || v.fbStatusType === 'vencido';
+            if (statusFilter === 'wa_pendiente') return !v.broadcastEnviado;
+            if (statusFilter === 'publicado') return v.publicadoEnFb;
             return ord.estado_pago === statusFilter || ord.estado_diseno === statusFilter;
         });
 
@@ -2152,14 +2306,12 @@
         container.innerHTML = filtered.map((ord, idx) => {
             const pub = ord.publicidad || {};
             const cont = ord.contratante || {};
-            const prog = ord.programacion || {};
-            const fbProg = prog.facebook || {};
-            const waProg = prog.whatsapp || {};
             const photo = pub.foto_base64 || '';
             const status = ord.estado_pago || 'pendiente_comprobante';
+            const v = getVigenciaData(ord);
 
             return `
-            <div class="order-card">
+            <div class="order-card" style="${v.fbStatusType === 'expira_hoy' || v.fbStatusType === 'vencido' ? 'border: 2px solid #ef4444; box-shadow: 0 4px 18px rgba(239, 68, 68, 0.15);' : ''}">
                 <!-- Header Card -->
                 <div class="order-card-header">
                     <div>
@@ -2173,7 +2325,7 @@
 
                     <div style="display: flex; align-items: center; gap: 8px;">
                         <span style="font-size: 0.75rem; font-weight: 800; background: #fef3c7; color: #b45309; padding: 3px 8px; border-radius: 6px; border: 1px solid rgba(217,119,6,0.2);">
-                            ${ord.paquete || 'Publicidad'}
+                            ${ord.paquete || 'Publicidad'} (${v.diasDuracion} Días FB)
                         </span>
                     </div>
                 </div>
@@ -2203,7 +2355,7 @@
                     <h3 style="font-size: 1.15rem; font-weight: 800; color: #0f172a; margin-bottom: 4px; line-height: 1.25;">
                         ${pub.titulo || 'Sin Título'}
                     </h3>
-                    <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px;">
+                    <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px;">
                         <span style="font-size: 0.75rem; font-weight: 700; color: #2563eb; background: #eff6ff; padding: 2px 8px; border-radius: 6px;">
                             📂 ${pub.categoria || 'General'}
                         </span>
@@ -2214,46 +2366,67 @@
                         ` : ''}
                     </div>
 
+                    <!-- SECCIÓN CRÍTICA: CONTROL DE VIGENCIA FACEBOOK -->
+                    <div style="background: #ffffff; border: 1.5px solid ${v.fbStatusType === 'expira_hoy' || v.fbStatusType === 'vencido' ? '#fca5a5' : '#e2e8f0'}; border-radius: 12px; padding: 12px; margin-bottom: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.02);">
+                        <div style="font-size: 0.78rem; font-weight: 800; color: #1e3a8a; text-transform: uppercase; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
+                            <span>📘 Vigencia Facebook (${v.diasDuracion} Días)</span>
+                            ${v.publicadoEnFb ? `<button onclick="setUnpublishedFacebook('${ord.id || ord.order_id}')" style="background:none; border:none; color:#dc2626; font-size:0.72rem; cursor:pointer; text-decoration:underline;">Desmarcar FB</button>` : ''}
+                        </div>
+
+                        <div style="margin-bottom: 8px;">
+                            ${v.fbStatusBadge}
+                        </div>
+
+                        ${!v.publicadoEnFb ? `
+                            <button class="btn btn-green" style="width: 100%; padding: 6px 10px; font-size: 0.78rem; justify-content: center;" onclick="setPublishFacebookToday('${ord.id || ord.order_id}')">
+                                🚀 Marcar como Publicado en Facebook HOY
+                            </button>
+                        ` : `
+                            <div style="font-size: 0.75rem; color: var(--text-muted);">
+                                📅 Publicado el: <strong>${v.fechaInicioFb}</strong> | ⏰ Quitar el: <strong style="color:#b91c1c;">${v.fechaDesfijarStr}</strong>
+                            </div>
+                        `}
+                    </div>
+
+                    <!-- SECCIÓN CRÍTICA: CONTROL DE BROADCAST WHATSAPP -->
+                    <div style="background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 12px; margin-bottom: 12px;">
+                        <div style="font-size: 0.78rem; font-weight: 800; color: #14532d; text-transform: uppercase; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
+                            <span>💬 Envío Masivo WhatsApp (${v.totalBroadcasts} Envío${v.totalBroadcasts > 1 ? 's' : ''})</span>
+                            <button onclick="toggleBroadcastStatus('${ord.id || ord.order_id}', ${v.broadcastEnviado})" style="background:none; border:none; color:${v.broadcastEnviado ? '#dc2626' : '#16a34a'}; font-size:0.72rem; cursor:pointer; font-weight:700; text-decoration:underline;">
+                                ${v.broadcastEnviado ? 'Desmarcar' : '✓ Marcar como Enviado'}
+                            </button>
+                        </div>
+
+                        <div style="margin-bottom: 4px;">
+                            ${v.waStatusBadge}
+                        </div>
+                    </div>
+
                     <!-- Descripción -->
-                    <p style="font-size: 0.88rem; color: #334155; line-height: 1.45; margin-bottom: 14px; background: #f8fafc; padding: 10px 12px; border-radius: 10px; border: 1px solid #e2e8f0; white-space: pre-line;">
+                    <p style="font-size: 0.86rem; color: #334155; line-height: 1.45; margin-bottom: 12px; background: #f8fafc; padding: 10px 12px; border-radius: 10px; border: 1px solid #e2e8f0; white-space: pre-line;">
                         ${pub.descripcion || 'Sin descripción'}
                     </p>
 
-                    <!-- Datos del Contratante -->
-                    <div style="font-size: 0.82rem; color: #475569; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed #e2e8f0;">
-                        <div style="font-weight: 800; color: #0f172a; margin-bottom: 2px;">👤 Contratante:</div>
-                        <div><strong>${cont.nombre || 'No indicado'}</strong></div>
-                        <div style="display: flex; align-items: center; gap: 6px; margin-top: 2px;">
-                            <span>📱 WhatsApp:</span>
+                    <!-- Datos del Contratante & Vendedor -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.8rem; color: #475569; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed #e2e8f0;">
+                        <div>
+                            <div style="font-weight: 800; color: #0f172a;">👤 Contratante:</div>
+                            <div>${cont.nombre || 'No indicado'}</div>
                             <a href="https://wa.me/52${(cont.whatsapp || '').replace(/\\D/g, '')}" target="_blank" style="color: #16a34a; font-weight: 800; text-decoration: none;">
                                 +52 ${cont.whatsapp || '-'} ↗
                             </a>
                         </div>
-                    </div>
-
-                    <!-- Datos de Atención / Vendedor -->
-                    <div style="font-size: 0.82rem; color: #475569; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed #e2e8f0;">
-                        <div style="font-weight: 800; color: #0f172a; margin-bottom: 2px;">🛍️ Atención a Clientes:</div>
-                        <div>${pub.contacto_ventas_nombre || 'Mismo que contratante'}</div>
-                        <div style="display: flex; align-items: center; gap: 6px; margin-top: 2px;">
-                            <span>📲 WhatsApp Ventas:</span>
-                            <a href="https://wa.me/52${(pub.contacto_ventas_whatsapp || '').replace(/\\D/g, '')}" target="_blank" style="color: #16a34a; font-weight: 800; text-decoration: none;">
-                                +52 ${pub.contacto_ventas_whatsapp || '-'} ↗
+                        <div>
+                            <div style="font-weight: 800; color: #0f172a;">🛍️ Ventas / Info:</div>
+                            <div>${pub.contacto_ventas_nombre || cont.nombre || '-'}</div>
+                            <a href="https://wa.me/52${(pub.contacto_ventas_whatsapp || cont.whatsapp || '').replace(/\\D/g, '')}" target="_blank" style="color: #16a34a; font-weight: 800; text-decoration: none;">
+                                +52 ${pub.contacto_ventas_whatsapp || cont.whatsapp || '-'} ↗
                             </a>
                         </div>
                     </div>
 
-                    <!-- Programación de Fechas -->
-                    <div style="font-size: 0.82rem; color: #475569; margin-bottom: 12px;">
-                        <div style="font-weight: 800; color: #0f172a; margin-bottom: 4px;">📅 Fechas Programadas:</div>
-                        <div style="display: flex; flex-direction: column; gap: 3px;">
-                            <div>📘 <strong>Facebook:</strong> ${fbProg.fecha || 'Por definir'} (${fbProg.hora || '19:00'})</div>
-                            <div>💬 <strong>WhatsApp Masivo:</strong> ${waProg.fecha || 'Por definir'} (${waProg.hora || '13:00'})</div>
-                        </div>
-                    </div>
-
                     <!-- Enlaces Redes / Maps -->
-                    <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px;">
+                    <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px;">
                         ${pub.facebook ? `<a href="${pub.facebook}" target="_blank" style="font-size: 0.75rem; color: #1877f2; background: #eff6ff; padding: 4px 8px; border-radius: 6px; text-decoration: none; font-weight: 700;">📘 Facebook ↗</a>` : ''}
                         ${pub.instagram ? `<a href="${pub.instagram}" target="_blank" style="font-size: 0.75rem; color: #e1306c; background: #fdf2f8; padding: 4px 8px; border-radius: 6px; text-decoration: none; font-weight: 700;">📸 Instagram ↗</a>` : ''}
                         ${pub.tiktok ? `<a href="${pub.tiktok}" target="_blank" style="font-size: 0.75rem; color: #000000; background: #f1f5f9; padding: 4px 8px; border-radius: 6px; text-decoration: none; font-weight: 700;">🎵 TikTok ↗</a>` : ''}
@@ -2263,12 +2436,12 @@
 
                     <!-- Estado del Pedido Selector -->
                     <div style="background: #f1f5f9; padding: 8px 10px; border-radius: 10px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-                        <span style="font-size: 0.78rem; font-weight: 800; color: #334155;">Estado:</span>
+                        <span style="font-size: 0.78rem; font-weight: 800; color: #334155;">Estado General:</span>
                         <select onchange="updateOrderStatus('${ord.id || ord.order_id}', this.value)" style="padding: 4px 8px; border-radius: 6px; border: 1.5px solid #cbd5e1; font-weight: 700; font-size: 0.78rem; cursor: pointer; background: #ffffff;">
                             <option value="pendiente_comprobante" ${status === 'pendiente_comprobante' ? 'selected' : ''}>⏳ Pendiente Comprobante</option>
                             <option value="en_diseno" ${status === 'en_diseno' ? 'selected' : ''}>🎨 En Diseño / Revisión</option>
                             <option value="aprobado" ${status === 'aprobado' ? 'selected' : ''}>✅ Aprobado / Listo</option>
-                            <option value="publicado" ${status === 'publicado' ? 'selected' : ''}>🚀 Publicado</option>
+                            <option value="publicado" ${status === 'publicado' ? 'selected' : ''}>🚀 Publicado Activo</option>
                             <option value="cancelado" ${status === 'cancelado' ? 'selected' : ''}>❌ Cancelado</option>
                         </select>
                     </div>
@@ -2291,12 +2464,58 @@
         }).join('');
     }
 
-    async function updateOrderStatus(orderId, newStatus) {
+    // Funciones de control de vigencias y fechas
+    async function setPublishFacebookToday(orderId) {
+        const todayStr = new Date().toISOString().split('T')[0];
         try {
             await db.collection('anuncios_pedidos').doc(orderId).update({
+                publicado_en_fb: true,
+                fecha_publicado_fb: todayStr,
+                estado_pago: 'publicado',
+                estado_diseno: 'publicado'
+            });
+        } catch(e) {
+            console.error('Error al marcar publicado en FB:', e);
+            alert('Error: ' + e.message);
+        }
+    }
+
+    async function setUnpublishedFacebook(orderId) {
+        if (!confirm('¿Deseas desmarcar la publicación de Facebook para este anuncio?')) return;
+        try {
+            await db.collection('anuncios_pedidos').doc(orderId).update({
+                publicado_en_fb: false,
+                fecha_publicado_fb: ''
+            });
+        } catch(e) {
+            console.error('Error:', e);
+        }
+    }
+
+    async function toggleBroadcastStatus(orderId, currentVal) {
+        try {
+            await db.collection('anuncios_pedidos').doc(orderId).update({
+                broadcast_completado: !currentVal,
+                fecha_broadcast_realizado: !currentVal ? new Date().toISOString().split('T')[0] : ''
+            });
+        } catch(e) {
+            console.error('Error:', e);
+        }
+    }
+
+    async function updateOrderStatus(orderId, newStatus) {
+        try {
+            const updates = {
                 estado_pago: newStatus,
                 estado_diseno: newStatus
-            });
+            };
+            if (newStatus === 'publicado') {
+                updates.publicado_en_fb = true;
+                if (!currentOrders.find(o => o.id === orderId)?.fecha_publicado_fb) {
+                    updates.fecha_publicado_fb = new Date().toISOString().split('T')[0];
+                }
+            }
+            await db.collection('anuncios_pedidos').doc(orderId).update(updates);
         } catch(e) {
             console.error('Error al actualizar estado del pedido:', e);
             alert('No se pudo actualizar el estado: ' + e.message);
