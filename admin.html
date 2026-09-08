@@ -1583,8 +1583,25 @@
         <!-- 5. Consola de Envíos en Tiempo Real -->
         <div style="margin-bottom: 16px;">
             <label style="font-size: 0.8rem; font-weight: 700; color: #64748b; margin-bottom: 4px; display: block;">Consola en Vivo:</label>
-            <div id="bc-log-console" style="background: #0f172a; color: #f8fafc; font-family: monospace; font-size: 0.78rem; padding: 12px; border-radius: 10px; height: 140px; overflow-y: auto; line-height: 1.4;">
-                <div style="color: #94a3b8;">Presiona "▶️ Iniciar Envío Masivo" para comenzar la difusión...</div>
+            <div id="bc-log-console" style="background: #0f172a; color: #f8fafc; font-family: monospace; font-size: 0.78rem; padding: 12px; border-radius: 10px; height: 120px; overflow-y: auto; line-height: 1.4;">
+                <div style="color: #94a3b8;">Presiona "📱 Enviar Prueba" o "▶️ Iniciar Envío Masivo" para comenzar...</div>
+            </div>
+        </div>
+
+        <!-- 6. Sección de Envío de Prueba a Número Determinado -->
+        <div style="background: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 12px; padding: 12px 14px; margin-bottom: 16px;">
+            <div style="font-size: 0.84rem; font-weight: 800; color: #0f172a; margin-bottom: 6px;">
+                🧪 Enviar Mensaje de Prueba a un Número Determinado:
+            </div>
+            <div style="display: grid; grid-template-columns: 1.2fr 1fr auto; gap: 8px; align-items: center;">
+                <input type="tel" id="bc-test-phone" placeholder="WhatsApp (10 dígitos)" value="6421520280" style="margin: 0; padding: 9px 12px; font-size: 0.85rem; background: #ffffff;">
+                <input type="text" id="bc-test-name" placeholder="Nombre de muestra" value="Enrique" style="margin: 0; padding: 9px 12px; font-size: 0.85rem; background: #ffffff;">
+                <button type="button" class="btn btn-blue" onclick="sendBroadcastTestMessage()" style="padding: 9px 14px; font-size: 0.85rem; font-weight: 800; white-space: nowrap;">
+                    📱 Enviar Prueba
+                </button>
+            </div>
+            <div style="font-size: 0.75rem; color: #64748b; margin-top: 5px;">
+                * Se enviará la plantilla seleccionada arriba solo a este número para que compruebes cómo se ve en WhatsApp.
             </div>
         </div>
 
@@ -2446,6 +2463,90 @@
     function stopMassBroadcast() {
         isBroadcastRunning = false;
         logBroadcastConsole('⏸️ Deteniendo proceso de difusión...', 'warn');
+    }
+
+    async function sendBroadcastTestMessage() {
+        const phoneInput = document.getElementById('bc-test-phone');
+        const nameInput = document.getElementById('bc-test-name');
+        const phone = phoneInput?.value.trim();
+        const name = nameInput?.value.trim() || 'Amigo';
+
+        if (!phone || phone.length < 10) {
+            return alert('Por favor ingresa un número de WhatsApp válido de 10 dígitos para enviar la prueba.');
+        }
+
+        const selTemplate = document.getElementById('bc-template-name')?.value;
+        let templateName = selTemplate;
+        if (selTemplate === 'custom') {
+            templateName = document.getElementById('bc-custom-template-input')?.value.trim();
+        }
+        if (!templateName) return alert('Por favor selecciona o ingresa una plantilla válida.');
+
+        const imageUrl = document.getElementById('bc-header-image-url')?.value.trim() || 'https://publicanavojoa.com/logo%20letras.png';
+        const cleanPhone = formatPhoneForMeta(phone);
+        const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+        logBroadcastConsole(`🧪 [Prueba] Enviando plantilla "${templateName}" a ${name} (+52 ${phone})...`, 'warn');
+
+        try {
+            let payload = {
+                messaging_product: 'whatsapp',
+                to: cleanPhone,
+                type: 'template',
+                template: {
+                    name: templateName,
+                    language: { code: 'es_MX' }
+                }
+            };
+
+            if (templateName === 'cpu_gamer_adrian_almada') {
+                payload.template.components = [
+                    {
+                        type: 'header',
+                        parameters: [{ type: 'image', image: { link: imageUrl } }]
+                    },
+                    {
+                        type: 'body',
+                        parameters: [{ type: 'text', text: name }]
+                    }
+                ];
+            }
+
+            let res = await fetch(`https://graph.facebook.com/v20.0/${META_PHONE_ID}/messages`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${META_TOKEN}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+            let data = await res.json();
+
+            if (data.error) {
+                // Fallback a 'es'
+                payload.template.language.code = 'es';
+                res = await fetch(`https://graph.facebook.com/v20.0/${META_PHONE_ID}/messages`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${META_TOKEN}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+                data = await res.json();
+            }
+
+            if (data.error) {
+                logBroadcastConsole(`❌ [Prueba Fallida] Error Meta API: ${data.error.message}`, 'error');
+                alert('⚠️ Error de Meta al enviar la prueba:\n' + data.error.message);
+            } else {
+                logBroadcastConsole(`✅ [Prueba Exitosa] Entregado a +52 ${phone} (ID: ${data.messages?.[0]?.id || 'OK'})`, 'success');
+                alert(`✅ ¡Mensaje de prueba enviado con éxito a +52 ${phone}!\nRevisa tu WhatsApp.`);
+            }
+        } catch (err) {
+            logBroadcastConsole(`❌ Error de conexión: ${err.message}`, 'error');
+            alert('Error de conexión al enviar la prueba: ' + err.message);
+        }
     }
 
     function configureToken() {
