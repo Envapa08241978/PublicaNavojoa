@@ -260,3 +260,89 @@ Todos los contactos se indexan de forma única en la colección `/contacts/{clea
     - Actualización automática del contratante en la colección `contacts`.
     - Deep linking nativo a WhatsApp (`whatsapp://send` y fallback `https://wa.me/...`) dirigido a Mónica Obregón con el mensaje formateado de la solicitud listo para adjuntar comprobante.
 
+---
+
+## 15. CONTROL INSTITUCIONAL DE COMISIONES (30% MÓNICA & 30% ENRIQUE)
+
+* **Regla de Negocio y Reparto Equitativo:**
+  - De cada ingreso o venta publicitaria cobrada (Paquetes Bronce $600, Plata $1,200, Oro $2,500 o servicios adicionales), se genera un **30% de comisión para Mónica Obregón** y un **30% de comisión para Enrique Valenzuela** (total 60% comisionable a socios operativos).
+  - El 40% restante se destina al fondo operativo / reserva de la plataforma.
+
+* **Fórmulas de Liquidación Automatizadas:**
+  - `Comisión Total Generada Mónica = Total Entradas × 0.30`
+  - `Comisión Total Generada Enrique = Total Entradas × 0.30`
+  - `Comisiones Pagadas Mónica = Suma de Salidas de tipo 'Comisión Mónica'`
+  - `Comisiones Pagadas Enrique = Suma de Salidas de tipo 'Comisión Enrique'`
+  - `Saldo Pendiente Mónica = Math.max(0, Comisión Generada Mónica - Comisiones Pagadas Mónica)`
+  - `Saldo Pendiente Enrique = Math.max(0, Comisión Generada Enrique - Comisiones Pagadas Enrique)`
+
+* **Modal de Gestión y Liquidación en 1 Clic (`#modal-commissions-detail`):**
+  - Ubicado en el panel `/admin` (Pestaña Finanzas).
+  - Muestra el desglose detallado de ventas brutas, porcentaje comisionable, montos ya transferidos y adeudo pendiente para cada socio.
+  - **Botones de Pago Inmediato:**
+    - *Liquidar a Mónica:* Registra automáticamente una salida contable categorizada como "Comisión Mónica".
+    - *Liquidar a Enrique:* Registra automáticamente una salida contable categorizada como "Comisión Enrique".
+    - *Liquidar a Ambos:* Realiza el pago simultáneo a ambos socios en una sola operación.
+  - Al liquidar, los saldos pendientes se actualizan en tiempo real en la base de datos de Firebase Firestore (`finanzas_movimientos`).
+
+---
+
+## 16. MÓDULO DE FINANZAS, CONTABILIDAD Y FLUJO DE CAJA (`/admin` Pestaña 5)
+
+* **Estructura Contable Completa:**
+  - **Entradas (Ingresos):** Ventas de paquetes publicitarios (Bronce, Plata, Oro), anuncios clasificados, patrocinios y servicios de diseño web/marketing.
+  - **Salidas (Gastos):** Inversión en publicidad de Meta Ads (Facebook/Instagram), mantenimiento de servidores, herramientas de software, sueldos y liquidación de comisiones de socios.
+* **Métricas y KPIs en Tiempo Real:**
+  - **Total Entradas ($):** Sumatoria de todos los ingresos en el período seleccionado.
+  - **Total Salidas ($):** Sumatoria de todos los egresos y comisiones pagadas.
+  - **Utilidad Neta ($):** Entradas menos Salidas (margen libre en caja).
+  - **Margen de Ganancia (%):** Rentabilidad porcentual sobre ventas.
+  - **Comisiones Socios ($):** Visualizador de pendientes de pago de comisiones (Mónica + Enrique).
+* **Filtros Temporales Inteligentes:**
+  - **Todo el Historial:** Visión acumulada del negocio desde su fundación.
+  - **Hoy / Diario:** Flujo de efectivo del día en curso.
+  - **Este Mes:** Control mensual para cierre contable y pago de utilidades.
+  - **Este Año:** Balance anual para toma de decisiones fiscales y estratégicas.
+* **Sincronización Automática con Pedidos:**
+  - Botón **"Sincronizar Pedidos"**: Importa automáticamente los pedidos aprobados de la colección `anuncios_pedidos` a la tabla contable con un solo clic.
+* **Exportación y Auditoría:**
+  - Botón **"Exportar CSV"** para descargar el libro contable y abrirlo directamente en Microsoft Excel o Google Sheets.
+
+---
+
+## 17. PLANTILLA OFICIAL META WHATSAPP: `cpu_gamer_adrian_almada`
+
+* **Datos de Homologación en Meta Business Manager:**
+  - **Nombre de la Plantilla:** `cpu_gamer_adrian_almada`
+  - **Categoría:** `MARKETING`
+  - **Idioma:** `es_MX` (Español México)
+  - **Estado:** `APROBADA` por Meta
+  - **Línea Oficial Emisora:** `+52 642 152 0280` (Phone Number ID: `1280742211792981`)
+* **Componentes de la Plantilla:**
+  - **HEADER (Imagen en Alta Resolución):**
+    - Desplegada públicamente en `https://publicanavojoa.com/cpu_gamer_adrian_almada.jpg`.
+    - Presenta la fotografía del ensamble gamer con iluminación RGB, panel de cristal templado y especificaciones técnicas.
+  - **BODY (Cuerpo del Mensaje Comercial):**
+    - Presentación del CPU Gamer de alto rendimiento vendido por **Adrián Almada**.
+    - Procesador AMD Ryzen 7 5700X, Tarjeta Gráfica Nvidia RTX 4060 Ti, 32GB RAM DDR4 3200MHz Corsair Vengeance, 1TB SSD NVMe Kingston M.2.
+    - Garantía y precio de oportunidad.
+  - **BUTTONS (Llamada a la Acción Directa):**
+    - Botón oficial tipo `PHONE_NUMBER`: **"📞 Contactar Vendedor"** enlazado a la línea directa de Adrián Almada: `+52 642 117 1453`.
+
+---
+
+## 18. MOTOR DE DIFUSIÓN MASIVA (BROADCAST) Y SISTEMA DE PRUEBAS
+
+* **Panel de Difusión Masiva (`#modal-broadcast-wa`):**
+  - Integrado en la pestaña CRM de `/admin`.
+  - Permite seleccionar la plantilla aprobada por Meta (`cpu_gamer_adrian_almada` u otras futuras).
+  - Cuenta y verifica automáticamente el número de contactos registrados con teléfono válido (actualmente 57 contactos VIP en Navojoa).
+* **Algoritmo de Envío Seguro Anti-Saturación:**
+  - Bucle asíncrono que envía los mensajes individualmente a cada contacto mediante Meta WhatsApp Cloud API (`POST /v22.0/1280742211792981/messages`).
+  - Pausa de protección de **600 milisegundos** entre cada envío para evitar bloqueos por tasa de llamadas (*rate limiting*) de Meta.
+  - Barra de progreso interactiva en tiempo real con contador de envíos exitosos vs. fallidos.
+* **Herramienta de Envío de Prueba Individual:**
+  - Sección integrada en el modal: **"🧪 Enviar Mensaje de Prueba a un Número Determinado"**.
+  - Permite escribir cualquier número de WhatsApp (por ejemplo, el teléfono del administrador o del cliente anunciante) y disparar un envío de prueba instantáneo (`sendBroadcastTestMessage`).
+  - Muestra confirmación en pantalla con el `Message ID` devuelto por Meta para verificar la recepción visual exacta en el dispositivo móvil antes de lanzar la campaña masiva a toda la base de datos.
+
