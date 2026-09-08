@@ -1548,8 +1548,8 @@
         <!-- 2. Imagen del Encabezado (para plantillas con imagen como CPU Gamer) -->
         <div id="bc-header-image-box" style="margin-bottom: 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px;">
             <label style="font-size: 0.82rem; font-weight: 700; color: #334155; margin-bottom: 4px; display: block;">🖼️ URL de la Imagen del Encabezado (Pública HTTPS):</label>
-            <input type="url" id="bc-header-image-url" value="https://publicanavojoa.com/logo%20letras.png" placeholder="https://..." style="margin-bottom: 4px; font-size: 0.85rem;">
-            <div style="font-size: 0.75rem; color: #64748b;">* La imagen se mostrará en la parte superior del mensaje en WhatsApp.</div>
+            <input type="url" id="bc-header-image-url" value="https://publicanavojoa.com/cpu_gamer_adrian_almada.jpg" placeholder="https://..." style="margin-bottom: 4px; font-size: 0.85rem; background: #ffffff;">
+            <div style="font-size: 0.75rem; color: #64748b;">* La imagen oficial del anuncio que aparecerá en la parte superior en WhatsApp.</div>
         </div>
 
         <!-- 3. Selección de Audiencia -->
@@ -2223,6 +2223,10 @@
 
         if (sel === 'cpu_gamer_adrian_almada') {
             if (imgBox) imgBox.style.display = 'block';
+            const imgInput = document.getElementById('bc-header-image-url');
+            if (imgInput && (!imgInput.value || imgInput.value.includes('logo'))) {
+                imgInput.value = 'https://publicanavojoa.com/cpu_gamer_adrian_almada.jpg';
+            }
         } else {
             if (imgBox) imgBox.style.display = 'none';
         }
@@ -2309,7 +2313,7 @@
         }
         if (!templateName) return alert('Por favor ingresa o selecciona una plantilla válida.');
 
-        const imageUrl = document.getElementById('bc-header-image-url')?.value.trim() || 'https://publicanavojoa.com/logo%20letras.png';
+        const imageUrl = document.getElementById('bc-header-image-url')?.value.trim() || 'https://publicanavojoa.com/cpu_gamer_adrian_almada.jpg';
         const orderId = document.getElementById('bc-order-id')?.value;
 
         if (!confirm(`¿Confirmas iniciar el envío masivo de la plantilla "${templateName}" a ${audience.length} contactos de WhatsApp?`)) {
@@ -2482,7 +2486,7 @@
         }
         if (!templateName) return alert('Por favor selecciona o ingresa una plantilla válida.');
 
-        const imageUrl = document.getElementById('bc-header-image-url')?.value.trim() || 'https://publicanavojoa.com/logo%20letras.png';
+        const imageUrl = document.getElementById('bc-header-image-url')?.value.trim() || 'https://publicanavojoa.com/cpu_gamer_adrian_almada.jpg';
         const cleanPhone = formatPhoneForMeta(phone);
         const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
