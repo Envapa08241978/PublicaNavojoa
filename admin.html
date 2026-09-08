@@ -889,7 +889,8 @@
                 <span>👤</span>
                 <span id="current-user-email">admin@publicanavojoa.com</span>
             </div>
-            <button class="btn btn-green" onclick="exportCSV()">📥 Exportar Base a Meta Ads</button>
+            <button class="btn" onclick="openBroadcastModal()" style="background: #16a34a; color: #fff; font-weight: 800; box-shadow: 0 4px 14px rgba(22, 163, 74, 0.35);">🚀 Difusión Masiva WhatsApp</button>
+            <button class="btn btn-blue" onclick="exportCSV()">📥 Exportar Base a Meta Ads</button>
             <button class="btn btn-blue" onclick="openModal()">+ Agregar Contacto FB</button>
             <button class="btn-logout" onclick="handleLogout()" title="Cerrar sesión">Salir 🚪</button>
         </div>
@@ -1522,6 +1523,88 @@
     </div>
 </div>
 
+<!-- Modal de Difusión Masiva por WhatsApp Cloud API -->
+<div class="modal" id="modal-broadcast-wa" style="display: none;">
+    <div class="modal-content" style="max-width: 680px; max-height: 90vh; overflow-y: auto;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
+            <div>
+                <h3 style="font-size: 1.25rem; font-weight: 800; color: #0f172a;">🚀 Difusión Masiva por WhatsApp Cloud API</h3>
+                <p style="font-size: 0.82rem; color: #64748b; margin-top: 2px;">Envío automatizado oficial a tu lista de contactos con Opt-in.</p>
+            </div>
+            <button onclick="closeBroadcastModal()" style="background: none; border: none; font-size: 1.5rem; color: #64748b; cursor: pointer; font-weight: 800; padding: 0 6px;">&times;</button>
+        </div>
+
+        <!-- 1. Selección de Plantilla -->
+        <div style="margin-bottom: 14px;">
+            <label style="font-size: 0.85rem; font-weight: 700; color: #0f172a; margin-bottom: 4px; display: block;">1. Selecciona la Plantilla Aprobada por Meta:</label>
+            <select id="bc-template-name" onchange="handleBroadcastTemplateChange()" style="padding: 10px 14px; border-radius: 10px; border: 1.5px solid #cbd5e1; font-size: 0.9rem; font-weight: 700; width: 100%; background: #ffffff;">
+                <option value="cpu_gamer_adrian_almada" selected>🟢 cpu_gamer_adrian_almada (CPU Gamer - Adrian Almada)</option>
+                <option value="bienvenida_club_vip">🟢 bienvenida_club_vip (Bienvenida Club VIP)</option>
+                <option value="custom">✏️ Otra plantilla personalizada...</option>
+            </select>
+            <input type="text" id="bc-custom-template-input" placeholder="Escribe el nombre exacto de la plantilla en Meta..." style="display: none; margin-top: 8px;">
+        </div>
+
+        <!-- 2. Imagen del Encabezado (para plantillas con imagen como CPU Gamer) -->
+        <div id="bc-header-image-box" style="margin-bottom: 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px;">
+            <label style="font-size: 0.82rem; font-weight: 700; color: #334155; margin-bottom: 4px; display: block;">🖼️ URL de la Imagen del Encabezado (Pública HTTPS):</label>
+            <input type="url" id="bc-header-image-url" value="https://publicanavojoa.com/logo%20letras.png" placeholder="https://..." style="margin-bottom: 4px; font-size: 0.85rem;">
+            <div style="font-size: 0.75rem; color: #64748b;">* La imagen se mostrará en la parte superior del mensaje en WhatsApp.</div>
+        </div>
+
+        <!-- 3. Selección de Audiencia -->
+        <div style="margin-bottom: 14px;">
+            <label style="font-size: 0.85rem; font-weight: 700; color: #0f172a; margin-bottom: 4px; display: block;">2. Destinatarios de la Difusión:</label>
+            <select id="bc-audience-filter" onchange="updateBroadcastAudienceCount()" style="padding: 10px 14px; border-radius: 10px; border: 1.5px solid #cbd5e1; font-size: 0.9rem; font-weight: 600; width: 100%; background: #ffffff;">
+                <option value="todos" selected>👥 Todos los Contactos con Opt-in Autorizado (<span id="bc-count-all">0</span> contactos)</option>
+                <option value="comprador">🛍️ Solo Compradores VIP</option>
+                <option value="anunciante">💼 Solo Anunciantes / Prospectos</option>
+            </select>
+        </div>
+
+        <!-- 4. Resumen de Envío & Controles -->
+        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 14px; padding: 14px; margin-bottom: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <span style="font-size: 0.85rem; font-weight: 800; color: #166534;">Estado del Envío:</span>
+                <span id="bc-status-badge" style="font-size: 0.78rem; font-weight: 800; background: #dcfce7; color: #15803d; padding: 3px 8px; border-radius: 6px;">Listo para iniciar</span>
+            </div>
+            
+            <!-- Barra de Progreso -->
+            <div style="width: 100%; height: 10px; background: #e2e8f0; border-radius: 5px; overflow: hidden; margin-bottom: 8px;">
+                <div id="bc-progress-bar" style="width: 0%; height: 100%; background: #16a34a; transition: width 0.2s ease;"></div>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: 700; color: #334155;">
+                <span>Progreso: <strong id="bc-progress-text">0 / 0</strong></span>
+                <span>Exitosos: <strong id="bc-success-count" style="color: #16a34a;">0</strong> | Errores: <strong id="bc-error-count" style="color: #dc2626;">0</strong></span>
+            </div>
+        </div>
+
+        <!-- 5. Consola de Envíos en Tiempo Real -->
+        <div style="margin-bottom: 16px;">
+            <label style="font-size: 0.8rem; font-weight: 700; color: #64748b; margin-bottom: 4px; display: block;">Consola en Vivo:</label>
+            <div id="bc-log-console" style="background: #0f172a; color: #f8fafc; font-family: monospace; font-size: 0.78rem; padding: 12px; border-radius: 10px; height: 140px; overflow-y: auto; line-height: 1.4;">
+                <div style="color: #94a3b8;">Presiona "▶️ Iniciar Envío Masivo" para comenzar la difusión...</div>
+            </div>
+        </div>
+
+        <input type="hidden" id="bc-order-id">
+
+        <!-- Botones de Acción -->
+        <div style="display: flex; gap: 10px;">
+            <button type="button" class="btn btn-green" id="btn-start-bc" onclick="startMassBroadcast()" style="flex: 2; justify-content: center; font-size: 0.95rem; font-weight: 800; padding: 12px;">
+                ▶️ Iniciar Envío Masivo a <span id="lbl-bc-target-count">0</span> Contactos
+            </button>
+            <button type="button" class="btn" id="btn-stop-bc" onclick="stopMassBroadcast()" style="display: none; background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; font-weight: 800; padding: 12px 18px;">
+                ⏸️ Detener
+            </button>
+            <button type="button" class="btn btn-blue" onclick="closeBroadcastModal()" style="padding: 12px 16px;">
+                Cerrar
+            </button>
+        </div>
+    </div>
+</div>
+
 <!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
@@ -1991,53 +2074,79 @@
         }
     }
 
-    async function sendTemplateWelcome() {
+    async function sendTemplateWelcome(templateName = 'bienvenida_club_vip') {
         const leads = getLeads();
         const contact = leads.find(l => String(l.id) === String(activeContactId));
-        if (!contact) return;
+        if (!contact) return alert('Selecciona un contacto primero.');
+
+        const choice = prompt(
+            `¿Qué plantilla deseas enviar a ${contact.nombre} (+52 ${contact.whatsapp})?\n\n` +
+            `1: cpu_gamer_adrian_almada (Oferta CPU Gamer)\n` +
+            `2: bienvenida_club_vip (Bienvenida Club VIP)\n\n` +
+            `Escribe 1 o 2:`,
+            '1'
+        );
+
+        if (!choice) return;
+
+        let selectedTemplate = choice === '2' ? 'bienvenida_club_vip' : 'cpu_gamer_adrian_almada';
+        let imageUrl = 'https://publicanavojoa.com/logo%20letras.png';
 
         const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         const formattedPhone = formatPhoneForMeta(contact.whatsapp);
-        const templateText = '👑 ¡Bienvenido al Club VIP de Publica Navojoa! Ya estás registrado para recibir las ofertas semanales.';
+        const contactName = contact.nombre.split(' ')[0] || 'Cliente';
+
+        const templateText = selectedTemplate === 'cpu_gamer_adrian_almada' 
+            ? `🚀 [Plantilla Enviada]: CPU Gamer & Workstation Alta Gama a ${contact.nombre}`
+            : `👑 ¡Bienvenido al Club VIP de Publica Navojoa! Ya estás registrado para recibir las ofertas semanales.`;
 
         saveMessage(contact.whatsapp, { text: templateText, type: 'outgoing', time: timeStr });
         renderMessages(contact.whatsapp);
 
         try {
+            let payload = {
+                messaging_product: 'whatsapp',
+                to: formattedPhone,
+                type: 'template',
+                template: {
+                    name: selectedTemplate,
+                    language: { code: 'es_MX' }
+                }
+            };
+
+            if (selectedTemplate === 'cpu_gamer_adrian_almada') {
+                payload.template.components = [
+                    {
+                        type: 'header',
+                        parameters: [{ type: 'image', image: { link: imageUrl } }]
+                    },
+                    {
+                        type: 'body',
+                        parameters: [{ type: 'text', text: contactName }]
+                    }
+                ];
+            }
+
             let res = await fetch(`https://graph.facebook.com/v20.0/${META_PHONE_ID}/messages`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${META_TOKEN}`,
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({
-                    messaging_product: 'whatsapp',
-                    to: formattedPhone,
-                    type: 'template',
-                    template: {
-                        name: 'bienvenida_club_vip',
-                        language: { code: 'es' }
-                    }
-                })
+                body: JSON.stringify(payload)
             });
             let data = await res.json();
 
             if (data.error) {
+                // Fallback de idioma a 'es'
+                payload.template.language.code = 'es';
                 res = await fetch(`https://graph.facebook.com/v20.0/${META_PHONE_ID}/messages`, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${META_TOKEN}`,
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({
-                        messaging_product: 'whatsapp',
-                        to: formattedPhone,
-                        type: 'template',
-                        template: {
-                            name: 'bienvenida_club_vip',
-                            language: { code: 'es_MX' }
-                        }
-                    })
+                    body: JSON.stringify(payload)
                 });
                 data = await res.json();
             }
@@ -2045,11 +2154,298 @@
             if (data.error) {
                 alert('⚠️ Error Meta al enviar plantilla:\n' + data.error.message);
             } else {
-                alert('✅ Plantilla enviada con éxito a +52 ' + contact.whatsapp);
+                alert(`✅ Plantilla "${selectedTemplate}" enviada con éxito a +52 ${contact.whatsapp}`);
             }
         } catch (err) {
             alert('Plantilla registrada localmente.');
         }
+    }
+
+    // ═════════════════════════════════════════════════════════════════════
+    // MOTOR DE DIFUSIÓN MASIVA POR WHATSAPP CLOUD API (BROADCAST RUNNER)
+    // ═════════════════════════════════════════════════════════════════════
+    let isBroadcastRunning = false;
+
+    function openBroadcastModal(templateName = 'cpu_gamer_adrian_almada', orderId = '') {
+        const modal = document.getElementById('modal-broadcast-wa');
+        if (!modal) return;
+        modal.style.display = 'flex';
+
+        if (templateName) {
+            const select = document.getElementById('bc-template-name');
+            if (select) select.value = templateName;
+        }
+
+        const orderInput = document.getElementById('bc-order-id');
+        if (orderInput) orderInput.value = orderId || '';
+
+        handleBroadcastTemplateChange();
+        updateBroadcastAudienceCount();
+        resetBroadcastConsole();
+    }
+
+    function closeBroadcastModal() {
+        if (isBroadcastRunning) {
+            if (!confirm('Hay un envío masivo en progreso. ¿Deseas detenerlo y cerrar?')) return;
+            isBroadcastRunning = false;
+        }
+        const modal = document.getElementById('modal-broadcast-wa');
+        if (modal) modal.style.display = 'none';
+    }
+
+    function handleBroadcastTemplateChange() {
+        const sel = document.getElementById('bc-template-name')?.value;
+        const customInput = document.getElementById('bc-custom-template-input');
+        const imgBox = document.getElementById('bc-header-image-box');
+
+        if (sel === 'custom') {
+            if (customInput) customInput.style.display = 'block';
+        } else {
+            if (customInput) customInput.style.display = 'none';
+        }
+
+        if (sel === 'cpu_gamer_adrian_almada') {
+            if (imgBox) imgBox.style.display = 'block';
+        } else {
+            if (imgBox) imgBox.style.display = 'none';
+        }
+    }
+
+    function getBroadcastAudience() {
+        const leads = getLeads();
+        const filter = document.getElementById('bc-audience-filter')?.value || 'todos';
+
+        if (filter === 'comprador') {
+            return leads.filter(l => (!l.interes_anunciar || l.interes_anunciar === 'No') && (!l.estado_comercial || l.estado_comercial === 'comprador'));
+        } else if (filter === 'anunciante') {
+            return leads.filter(l => l.interes_anunciar === 'Sí' || (l.estado_comercial && l.estado_comercial !== 'comprador'));
+        }
+        return leads;
+    }
+
+    function updateBroadcastAudienceCount() {
+        const leads = getLeads();
+        const targetLeads = getBroadcastAudience();
+        
+        const countAll = document.getElementById('bc-count-all');
+        const lblTarget = document.getElementById('lbl-bc-target-count');
+        
+        if (countAll) countAll.innerText = leads.length;
+        if (lblTarget) lblTarget.innerText = targetLeads.length;
+    }
+
+    function resetBroadcastConsole() {
+        const pBar = document.getElementById('bc-progress-bar');
+        const pText = document.getElementById('bc-progress-text');
+        const sCount = document.getElementById('bc-success-count');
+        const eCount = document.getElementById('bc-error-count');
+        const badge = document.getElementById('bc-status-badge');
+        const consoleEl = document.getElementById('bc-log-console');
+
+        if (pBar) pBar.style.width = '0%';
+        if (pText) pText.innerText = '0 / 0';
+        if (sCount) sCount.innerText = '0';
+        if (eCount) eCount.innerText = '0';
+        if (badge) {
+            badge.innerText = 'Listo para iniciar';
+            badge.style.background = '#dcfce7';
+            badge.style.color = '#15803d';
+        }
+        if (consoleEl) {
+            consoleEl.innerHTML = `<div style="color: #94a3b8;">Presiona "▶️ Iniciar Envío Masivo" para comenzar la difusión...</div>`;
+        }
+
+        const btnStart = document.getElementById('btn-start-bc');
+        const btnStop = document.getElementById('btn-stop-bc');
+        if (btnStart) {
+            btnStart.style.display = 'block';
+            btnStart.disabled = false;
+        }
+        if (btnStop) btnStop.style.display = 'none';
+    }
+
+    function logBroadcastConsole(msg, type = 'info') {
+        const consoleEl = document.getElementById('bc-log-console');
+        if (!consoleEl) return;
+
+        const time = new Date().toLocaleTimeString();
+        let color = '#f8fafc';
+        if (type === 'success') color = '#86efac';
+        if (type === 'error') color = '#fca5a5';
+        if (type === 'warn') color = '#fde68a';
+
+        const line = document.createElement('div');
+        line.style.color = color;
+        line.innerHTML = `<span style="color:#64748b;">[${time}]</span> ${msg}`;
+        consoleEl.appendChild(line);
+        consoleEl.scrollTop = consoleEl.scrollHeight;
+    }
+
+    async function startMassBroadcast() {
+        const audience = getBroadcastAudience();
+        if (audience.length === 0) return alert('No hay contactos en la audiencia seleccionada.');
+
+        const selTemplate = document.getElementById('bc-template-name')?.value;
+        let templateName = selTemplate;
+        if (selTemplate === 'custom') {
+            templateName = document.getElementById('bc-custom-template-input')?.value.trim();
+        }
+        if (!templateName) return alert('Por favor ingresa o selecciona una plantilla válida.');
+
+        const imageUrl = document.getElementById('bc-header-image-url')?.value.trim() || 'https://publicanavojoa.com/logo%20letras.png';
+        const orderId = document.getElementById('bc-order-id')?.value;
+
+        if (!confirm(`¿Confirmas iniciar el envío masivo de la plantilla "${templateName}" a ${audience.length} contactos de WhatsApp?`)) {
+            return;
+        }
+
+        isBroadcastRunning = true;
+        const btnStart = document.getElementById('btn-start-bc');
+        const btnStop = document.getElementById('btn-stop-bc');
+        const badge = document.getElementById('bc-status-badge');
+        const pBar = document.getElementById('bc-progress-bar');
+        const pText = document.getElementById('bc-progress-text');
+        const sCountEl = document.getElementById('bc-success-count');
+        const eCountEl = document.getElementById('bc-error-count');
+
+        if (btnStart) btnStart.style.display = 'none';
+        if (btnStop) btnStop.style.display = 'block';
+        if (badge) {
+            badge.innerText = '⚡ Difusión en progreso...';
+            badge.style.background = '#fef3c7';
+            badge.style.color = '#b45309';
+        }
+
+        const consoleEl = document.getElementById('bc-log-console');
+        if (consoleEl) consoleEl.innerHTML = '';
+
+        logBroadcastConsole(`Iniciando envío masivo de plantilla "${templateName}" a ${audience.length} contactos...`, 'warn');
+
+        let success = 0;
+        let errors = 0;
+
+        for (let i = 0; i < audience.length; i++) {
+            if (!isBroadcastRunning) {
+                logBroadcastConsole('⚠️ Envío masivo pausado por el usuario.', 'warn');
+                break;
+            }
+
+            const contact = audience[i];
+            const cleanPhone = formatPhoneForMeta(contact.whatsapp);
+            const contactName = (contact.nombre || 'Cliente').split(' ')[0];
+            const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            logBroadcastConsole(`[${i + 1}/${audience.length}] Enviando a ${contact.nombre} (+52 ${contact.whatsapp})...`);
+
+            try {
+                let payload = {
+                    messaging_product: 'whatsapp',
+                    to: cleanPhone,
+                    type: 'template',
+                    template: {
+                        name: templateName,
+                        language: { code: 'es_MX' }
+                    }
+                };
+
+                if (templateName === 'cpu_gamer_adrian_almada') {
+                    payload.template.components = [
+                        {
+                            type: 'header',
+                            parameters: [{ type: 'image', image: { link: imageUrl } }]
+                        },
+                        {
+                            type: 'body',
+                            parameters: [{ type: 'text', text: contactName }]
+                        }
+                    ];
+                }
+
+                let res = await fetch(`https://graph.facebook.com/v20.0/${META_PHONE_ID}/messages`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${META_TOKEN}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+                let data = await res.json();
+
+                if (data.error) {
+                    // Fallback idioma 'es'
+                    payload.template.language.code = 'es';
+                    res = await fetch(`https://graph.facebook.com/v20.0/${META_PHONE_ID}/messages`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${META_TOKEN}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(payload)
+                    });
+                    data = await res.json();
+                }
+
+                if (data.error) {
+                    errors++;
+                    logBroadcastConsole(`❌ Error con +52 ${contact.whatsapp}: ${data.error.message}`, 'error');
+                } else {
+                    success++;
+                    logBroadcastConsole(`✅ Entregado con éxito a ${contact.nombre} (ID: ${data.messages?.[0]?.id || 'OK'})`, 'success');
+
+                    // Registrar en historial de chat
+                    saveMessage(contact.whatsapp, {
+                        text: `🚀 [Envío Masivo]: ${templateName} entregada con éxito.`,
+                        type: 'outgoing',
+                        time: timeStr
+                    });
+                }
+            } catch (err) {
+                errors++;
+                logBroadcastConsole(`❌ Error de red con +52 ${contact.whatsapp}: ${err.message}`, 'error');
+            }
+
+            // Actualizar contadores y barra de progreso
+            const pct = Math.round(((i + 1) / audience.length) * 100);
+            if (pBar) pBar.style.width = pct + '%';
+            if (pText) pText.innerText = `${i + 1} / ${audience.length} (${pct}%)`;
+            if (sCountEl) sCountEl.innerText = success;
+            if (eCountEl) eCountEl.innerText = errors;
+
+            // Pausa de 600ms para evitar saturación de API
+            await new Promise(resolve => setTimeout(resolve, 600));
+        }
+
+        isBroadcastRunning = false;
+        if (btnStart) {
+            btnStart.style.display = 'block';
+            btnStart.innerText = '🔄 Realizar Otro Envío';
+        }
+        if (btnStop) btnStop.style.display = 'none';
+
+        if (badge) {
+            badge.innerText = `✅ Completado (${success} exitosos)`;
+            badge.style.background = '#dcfce7';
+            badge.style.color = '#15803d';
+        }
+
+        logBroadcastConsole(`🏁 Proceso finalizado. Total enviados: ${success} | Errores: ${errors}`, 'success');
+
+        // Si fue desde un pedido, marcar como transmitido
+        if (orderId) {
+            try {
+                await db.collection('anuncios_pedidos').doc(orderId).update({
+                    broadcast_enviado: true,
+                    fecha_broadcast: new Date().toISOString().split('T')[0]
+                });
+            } catch(e) {}
+        }
+
+        alert(`✅ ¡Difusión Masiva Finalizada!\n\n• Enviados con éxito: ${success}\n• Fallidos: ${errors}\n\nLos mensajes quedaron registrados en el historial de cada contacto.`);
+    }
+
+    function stopMassBroadcast() {
+        isBroadcastRunning = false;
+        logBroadcastConsole('⏸️ Deteniendo proceso de difusión...', 'warn');
     }
 
     function configureToken() {
@@ -2946,6 +3342,9 @@
                 <div style="display: flex; gap: 6px; border-top: 1px solid #f1f5f9; padding: 12px 16px; background: #fafafa; flex-wrap: wrap;">
                     <button class="btn btn-green" style="flex: 1; padding: 7px 10px; font-size: 0.78rem; justify-content: center;" onclick="copyOrderToCatalog('${ord.id || ord.order_id}')" title="Copiar este anuncio automáticamente al Catálogo de Ofertas del Bot de WhatsApp">
                         🏷️ Pasar a Catálogo Bot
+                    </button>
+                    <button class="btn" style="background: #16a34a; color: #fff; padding: 7px 10px; font-size: 0.78rem; font-weight: 800; cursor: pointer;" onclick="openBroadcastModal('cpu_gamer_adrian_almada', '${ord.id || ord.order_id}')" title="Disparar difusión masiva de este anuncio a los 57 contactos">
+                        🚀 Difusión WhatsApp
                     </button>
                     <button class="btn" style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a; padding: 7px 10px; font-size: 0.78rem; font-weight: 700; cursor: pointer;" onclick="quickRegisterOrderFinance('${ord.id || ord.order_id}')" title="Registrar venta o comisión de este pedido en Finanzas">
                         💰 Finanzas
