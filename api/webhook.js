@@ -160,12 +160,21 @@ async function getContactFromFirestore(cleanPhone) {
 
 async function getOffersFromFirestore() {
     try {
-        const res = await fetch(`https://firestore.googleapis.com/v1/projects/loquese-app/databases/(default)/documents/offers`);
+        const res = await fetch(`https://firestore.googleapis.com/v1/projects/loquese-app/databases/(default)/documents:runQuery`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                structuredQuery: {
+                    from: [{ collectionId: 'offers' }]
+                }
+            })
+        });
         if (res.ok) {
             const data = await res.json();
-            const docs = data?.documents || [];
             const offers = [];
-            docs.forEach(doc => {
+            data.forEach(item => {
+                const doc = item.document;
+                if (!doc || !doc.fields) return;
                 const f = doc.fields || {};
                 const activo = f.activo?.booleanValue !== undefined ? f.activo.booleanValue : true;
                 if (activo) {
