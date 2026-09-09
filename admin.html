@@ -1453,9 +1453,14 @@
                 <input type="url" id="off-enlace" placeholder="https://www.facebook.com/share/p/...">
             </div>
             <div>
-                <label style="font-size: 0.85rem; font-weight: 700;">Ubicación / Google Maps (Opcional):</label>
-                <input type="url" id="off-maps" placeholder="https://maps.app.goo.gl/... o maps.google.com">
+                <label style="font-size: 0.85rem; font-weight: 700;">Enlace de Instagram (Opcional):</label>
+                <input type="url" id="off-instagram" placeholder="https://www.instagram.com/p/...">
             </div>
+        </div>
+
+        <div style="margin-bottom: 12px;">
+            <label style="font-size: 0.85rem; font-weight: 700;">Ubicación / Google Maps (Opcional):</label>
+            <input type="url" id="off-maps" placeholder="https://maps.app.goo.gl/... o maps.google.com">
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
@@ -2799,6 +2804,7 @@
                 document.getElementById('off-categoria').value = offer.categoria || '';
                 document.getElementById('off-desc').value = offer.descripcion || '';
                 document.getElementById('off-enlace').value = offer.enlace_facebook || '';
+                document.getElementById('off-instagram').value = offer.enlace_instagram || '';
                 document.getElementById('off-maps').value = offer.enlace_maps || '';
                 document.getElementById('off-nombre').value = offer.contacto_nombre || '';
                 document.getElementById('off-tel').value = offer.contacto_telefono || '';
@@ -2830,6 +2836,7 @@
         document.getElementById('off-categoria').value = '';
         document.getElementById('off-desc').value = '';
         document.getElementById('off-enlace').value = '';
+        document.getElementById('off-instagram').value = '';
         document.getElementById('off-maps').value = '';
         document.getElementById('off-nombre').value = '';
         document.getElementById('off-tel').value = '';
@@ -2849,6 +2856,7 @@
         const categoria = document.getElementById('off-categoria').value.trim();
         const descripcion = document.getElementById('off-desc').value.trim();
         const enlace = document.getElementById('off-enlace').value.trim();
+        const instagram = document.getElementById('off-instagram').value.trim();
         const maps = document.getElementById('off-maps').value.trim();
         const nombre = document.getElementById('off-nombre').value.trim();
         const tel = document.getElementById('off-tel').value.trim();
@@ -2888,6 +2896,7 @@
             imagen_url: photoVal || '',
             imagenes_json: photoVal ? JSON.stringify([photoVal]) : '[]',
             enlace_facebook: enlace,
+            enlace_instagram: instagram,
             enlace_maps: maps,
             contacto_nombre: nombre,
             contacto_telefono: tel.replace(/\D/g, ''),
@@ -3067,6 +3076,11 @@
                         ${off.enlace_facebook ? `
                             <a href="${off.enlace_facebook}" target="_blank" style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.8rem; font-weight: 700; color: #1877f2; text-decoration: none; background: #eff6ff; padding: 6px 12px; border-radius: 8px;">
                                 📸 Ver en Facebook ↗
+                            </a>
+                        ` : ''}
+                        ${off.enlace_instagram ? `
+                            <a href="${off.enlace_instagram}" target="_blank" style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.8rem; font-weight: 700; color: #e1306c; text-decoration: none; background: #fdf2f8; padding: 6px 12px; border-radius: 8px;">
+                                📷 Ver en Instagram ↗
                             </a>
                         ` : ''}
                         ${off.enlace_maps ? `

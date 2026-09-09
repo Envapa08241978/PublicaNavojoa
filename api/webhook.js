@@ -206,6 +206,7 @@ async function getOffersFromFirestore() {
                         imagen_url: f.imagen_url?.stringValue || '',
                         imagenes: pList,
                         enlace_facebook: f.enlace_facebook?.stringValue || '',
+                        enlace_instagram: f.enlace_instagram?.stringValue || '',
                         enlace_maps: f.enlace_maps?.stringValue || '',
                         contacto_nombre: f.contacto_nombre?.stringValue || '',
                         contacto_telefono: f.contacto_telefono?.stringValue || '',
@@ -435,6 +436,9 @@ async function sendOffersList(metaTo, rawPhone, finalName, offersList, introHead
         }
         if (off.enlace_facebook) {
             cardMsg += `\n📸 *Ver fotos y detalles en Facebook:*\n👉 ${off.enlace_facebook}\n`;
+        }
+        if (off.enlace_instagram) {
+            cardMsg += `\n📷 *Ver fotos y detalles en Instagram:*\n👉 ${off.enlace_instagram}\n`;
         }
         if (cleanT) {
             cardMsg += `\n📲 *Contacto directo / WhatsApp:*\n👉 wa.me/52${cleanT} (${off.contacto_nombre || 'Contacto'})\n`;

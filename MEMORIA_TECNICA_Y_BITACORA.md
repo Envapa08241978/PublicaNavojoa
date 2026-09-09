@@ -92,6 +92,7 @@ Todos los contactos se indexan de forma única en la colección `/contacts/{clea
 * `descripcion` *(String)*: Ficha descriptiva para WhatsApp.
 * `imagen_url` *(String)*: Imagen optimizada en Base64 (o URL pública) entregada vía `/api/img?offerId=...`.
 * `enlace_facebook` *(String)*: Enlace opcional a la publicación original en Facebook.
+* `enlace_instagram` *(String)*: Enlace opcional al perfil o publicación en Instagram.
 * `enlace_maps` *(String)*: Enlace opcional de Google Maps para cómo llegar al evento o negocio.
 * `contacto_nombre` *(String)*: Nombre del vendedor o encargado.
 * `contacto_telefono` *(String)*: WhatsApp a 10 dígitos para enlace directo `wa.me/52...`.
