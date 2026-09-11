@@ -347,3 +347,43 @@ Todos los contactos se indexan de forma única en la colección `/contacts/{clea
   - Permite escribir cualquier número de WhatsApp (por ejemplo, el teléfono del administrador o del cliente anunciante) y disparar un envío de prueba instantáneo (`sendBroadcastTestMessage`).
   - Muestra confirmación en pantalla con el `Message ID` devuelto por Meta para verificar la recepción visual exacta en el dispositivo móvil antes de lanzar la campaña masiva a toda la base de datos.
 
+---
+
+## 19. SOPORTE MULTICANAL DE REDES SOCIALES EN CATÁLOGO (INSTAGRAM + FACEBOOK + MAPS)
+
+* **Campo de Instagram en Panel `/admin` (Pestaña 3):**
+  - Se implementó el campo interactivo **"Enlace de Instagram (Opcional)"** (`#off-instagram`) dentro del modal `#offer-modal` en [admin.html](file:///c:/Users/ENRIQ/OneDrive/Documents/PROYECTO%20CON%20MONICA/admin.html).
+  - Almacenamiento seguro en Firestore en la propiedad `enlace_instagram` dentro de la colección `/offers/{docId}`.
+  - Botón interactivo de Instagram en tarjetas de oferta: `📷 Ver en Instagram ↗` con paleta visual oficial y redirección en pestaña nueva.
+  - Integración en la función de importación rápida `copyOrderToCatalog` para transferir automáticamente el Instagram capturado en solicitudes de pedidos (`anuncios_pedidos`).
+
+---
+
+## 20. MOTOR DEL BOT DE WHATSAPP: MIGRACIÓN A CONSULTAS ESTRUCTURADAS (`runQuery`)
+
+* **Diagnóstico Técnico de Indexación en Firestore REST API:**
+  - El endpoint estándar `GET /documents/offers` (*listDocuments*) no indexaba de forma consistente documentos con IDs generados a partir de órdenes de pedido (ej. `oferta_ORD-653253`), provocando que el bot de WhatsApp omitiera ofertas recién publicadas.
+* **Solución Definitiva Implementada en `api/webhook.js`:**
+  - Migración a consulta estructurada mediante `POST /documents:runQuery` con selector `collectionId: 'offers'`.
+  - Recuperación garantizada del **100% de los documentos activos** sin omisiones.
+  - Ordenamiento cronológico estricto (`(b.timestamp || 0) - (a.timestamp || 0)`), asegurando que las promociones del día se entreguen automáticamente como la **Publicación #1**.
+  - Inclusión dinámica del enlace de Instagram en el mensaje enviado al usuario:
+    ```text
+    📷 *Ver fotos y detalles en Instagram:*
+    👉 https://instagram.com/...
+    ```
+
+---
+
+## 21. BITÁCORA DE CLIENTES Y CASOS DE ÉXITO EN PRODUCCIÓN
+
+* **Campaña Nikol Vásquez Brows (`AuraBrows_nikolvsq`):**
+  - **Especialista / Negocio:** Nikol Vásquez Brows (Belleza & Spa en Navojoa).
+  - **Contacto WhatsApp:** `+52 642 107 8385`
+  - **Orden de Contratación:** `ORD-653253` (Paquete Plata $1,200 MXN).
+  - **Promoción Mes Patrio (Vigencia 20 de Septiembre 2026):**
+    1. *Set Individual de Pestañas:* Modelos Hawaianas, Egipcias o Set UU (Precio regular $500 ➔ **Precio Promo: $399 MXN**).
+    2. *Combo Dúo Mirada Perfecta:* Set de Pestañas + Laminado de Cejas (Precio regular $750 ➔ **Precio Promo: $600 MXN**).
+  - **Estado en Producción:** Activo como **Publicación #1** en el Catálogo del Bot de WhatsApp y publicado en el Grupo de Facebook.
+
+
