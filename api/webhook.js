@@ -49,12 +49,30 @@ async function saveToFirestore(cleanPhone, senderName, text, type, fileUrl = '',
             messages_json: { stringValue: JSON.stringify(existingMsgs) }
         };
 
-        // Detectar promotor referido en el mensaje (P1 o P2)
+        // Detectar promotor referido en el mensaje o por la sesión reciente de escaneo QR
         const tLower = (text || '').toLowerCase();
-        if (tLower.includes('hola publica navojoa') || tLower.includes('ref: p1') || tLower.includes('(ref: p1)') || tLower.includes('promotor 1')) {
-            bodyFields.promotor = { stringValue: 'Promotor 1' };
-        } else if (tLower.includes('quiero ver las ofertas de navojoa') || tLower.includes('ref: p2') || tLower.includes('(ref: p2)') || tLower.includes('promotor 2')) {
-            bodyFields.promotor = { stringValue: 'Promotor 2' };
+        let detectedPromotor = '';
+        if (tLower.includes('ref: p1') || tLower.includes('(ref: p1)') || tLower.includes('promotor 1')) {
+            detectedPromotor = 'Promotor 1';
+        } else if (tLower.includes('ref: p2') || tLower.includes('(ref: p2)') || tLower.includes('promotor 2')) {
+            detectedPromotor = 'Promotor 2';
+        } else {
+            // Si el contacto aún no tiene promotor asignado en Firestore, consultar el último escaneo reciente
+            try {
+                const lastScanRes = await fetch(`https://firestore.googleapis.com/v1/projects/loquese-app/databases/(default)/documents/stats/last_scan`);
+                if (lastScanRes.ok) {
+                    const lastScanDoc = await lastScanRes.json();
+                    const lastTs = parseInt(lastScanDoc.fields?.timestamp?.integerValue || '0', 10);
+                    // Si el escaneo ocurrió en los últimos 45 minutos
+                    if (Date.now() - lastTs < 2700000) {
+                        detectedPromotor = lastScanDoc.fields?.promotor?.stringValue || '';
+                    }
+                }
+            } catch(e) {}
+        }
+
+        if (detectedPromotor) {
+            bodyFields.promotor = { stringValue: detectedPromotor };
         }
 
         // Preservar el nombre real registrado si ya existe en Firestore (para no sobreescribir con emojis de WhatsApp)
@@ -524,9 +542,9 @@ async function processBotRules(senderPhone, rawPhone, senderName, msgText) {
     // USUARIOS REGISTRADOS: Acceso completo a comandos y funcionalidades
     // ═══════════════════════════════════════════════════════════════════
 
-    // Regla 1: Saludo / Bienvenida / Club VIP
-    if (textLower.includes('club vip') || textLower.includes('unirme') || textLower.includes('hola') || textLower.includes('bienvenid') || textLower.includes('confirmar mi registro') || textLower.includes('terminar mi registro')) {
-        const welcomeText = `${nameSalute} 👋 Qué gusto saludarte de nuevo en *Publica Navojoa*.\n\n👑 Tu Membresía VIP al Catálogo de Ofertas sigue activa${coloniaText}.\n\n📌 Comandos rápidos:\n- Escribe *OFERTAS* para ver todo el catálogo de esta semana.\n- Escribe *CATEGORÍAS* para ver la lista de giros disponibles (comida, ropa, muebles, autos, etc.).\n- Escribe *ANUNCIAR* si deseas promocionar tu negocio.`;
+    // Regla 1: Saludo / Bienvenida / Club VIP / ¿Cómo funciona?
+    if (textLower.includes('cómo funciona') || textLower.includes('como funciona') || textLower.includes('funciona el club') || textLower.includes('club vip') || textLower.includes('unirme') || textLower.includes('hola') || textLower.includes('bienvenid') || textLower.includes('confirmar mi registro') || textLower.includes('terminar mi registro')) {
+        const welcomeText = `${nameSalute} 👋 Qué gusto saludarte en *Publica Navojoa*.\n\n👑 *El Club VIP de Navojoa* es la comunidad privada de difusión (+78,700 miembros) donde recibes en tu celular el Catálogo Semanal de Ofertas, Remates y Promociones en tu colonia${coloniaText}.\n\n📌 Comandos rápidos:\n- Escribe *OFERTAS* para ver todo el catálogo de esta semana.\n- Escribe *CATEGORÍAS* para ver la lista de giros disponibles (comida, ropa, muebles, autos, etc.).\n- Escribe *ANUNCIAR* si deseas promocionar tu negocio.`;
         await sendWhatsAppMessage(metaTo, welcomeText, rawPhone, finalName);
         return;
     }

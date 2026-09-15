@@ -1,6 +1,6 @@
-// Endpoint Serverless para conteo y redirección transparente de Códigos QR
-// https://publicanavojoa.com/qr1 -> +1 a Promotor 1 -> Redirige a wa.me/526421520280
-// https://publicanavojoa.com/qr2 -> +1 a Promotor 2 -> Redirige a wa.me/526421520280
+// Endpoint Serverless para conteo y redirección limpia de Códigos QR
+// https://publicanavojoa.com/qr1 -> +1 a Promotor 1 -> Redirige a wa.me/526421520280 (Limpio para mostrar los 3 botones de Meta)
+// https://publicanavojoa.com/qr2 -> +1 a Promotor 2 -> Redirige a wa.me/526421520280 (Limpio para mostrar los 3 botones de Meta)
 
 const WA_OFFICIAL_URL = "https://wa.me/526421520280";
 const WA_SCHEME_URL = "whatsapp://send?phone=526421520280";
@@ -31,10 +31,10 @@ module.exports = async function handler(req, res) {
     const dateStr = new Date().toLocaleString('es-MX', { timeZone: 'America/Hermosillo' });
     const userAgent = req.headers['user-agent'] || 'Desconocido';
 
-    // 1. Registrar el escaneo en Firebase Firestore en segundo plano
+    // 1. Registrar el escaneo y la última sesión de promotor en Firebase Firestore
     try {
         const scanDocId = `scan_${promoterId}_${now}`;
-        const firestoreUrl = `https://firestore.googleapis.com/v1/projects/loquese-app/databases/(default)/documents/qr_scans/${scanDocId}`;
+        const firestoreScanUrl = `https://firestore.googleapis.com/v1/projects/loquese-app/databases/(default)/documents/qr_scans/${scanDocId}`;
         
         const scanData = {
             fields: {
@@ -47,16 +47,30 @@ module.exports = async function handler(req, res) {
         };
 
         // Guardar el registro de escaneo individual
-        await fetch(firestoreUrl, {
+        await fetch(firestoreScanUrl, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(scanData)
         });
 
+        // Actualizar último escaneo para atribución automática del contacto que presione cualquier botón
+        const lastScanUrl = `https://firestore.googleapis.com/v1/projects/loquese-app/databases/(default)/documents/stats/last_scan`;
+        await fetch(lastScanUrl, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                fields: {
+                    promotor: { stringValue: promoterName },
+                    promotor_id: { stringValue: promoterId },
+                    timestamp: { integerValue: String(now) },
+                    fecha: { stringValue: dateStr }
+                }
+            })
+        });
+
         // Actualizar contador acumulado en stats/qr_metrics
         const metricsUrl = `https://firestore.googleapis.com/v1/projects/loquese-app/databases/(default)/documents/stats/qr_metrics`;
         
-        // Obtener métricas previas
         let curP1 = 0;
         let curP2 = 0;
         try {
@@ -87,15 +101,7 @@ module.exports = async function handler(req, res) {
         console.error('[QR TRACKING ERROR]', err);
     }
 
-    // 2. Definir mensaje natural de saludo para identificar el promotor al enviar WhatsApp
-    const naturalMsg = promoterId === 'P2' 
-        ? '¡Hola! Quiero ver las ofertas de Navojoa 🛍️' 
-        : 'Hola Publica Navojoa 👋';
-    const encodedMsg = encodeURIComponent(naturalMsg);
-    const waOfficialUrl = `https://wa.me/526421520280?text=${encodedMsg}`;
-    const waSchemeUrl = `whatsapp://send?phone=526421520280&text=${encodedMsg}`;
-
-    // 3. Responder con página ligera que abre la app de WhatsApp al instante y redirige
+    // 2. Redirección limpia a WhatsApp (Sin texto para mostrar los 3 botones de inicio de Meta)
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
 
@@ -104,26 +110,26 @@ module.exports = async function handler(req, res) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Conectando con Publica Navojoa...</title>
+    <title>Publica Navojoa - WhatsApp</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #f8fafc; color: #0f172a; text-align: center; padding: 20px; }
-        .spinner { width: 48px; height: 48px; border: 4px solid #e2e8f0; border-top-color: #16a34a; border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 20px; }
+        .spinner { width: 44px; height: 44px; border: 4px solid #e2e8f0; border-top-color: #16a34a; border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 20px; }
         @keyframes spin { to { transform: rotate(360deg); } }
         .btn { display: inline-block; background: #16a34a; color: white; padding: 12px 24px; border-radius: 12px; font-weight: bold; text-decoration: none; margin-top: 16px; font-size: 1rem; }
     </style>
 </head>
 <body>
     <div class="spinner"></div>
-    <h2 style="margin:0 0 8px;">Abriendo WhatsApp...</h2>
-    <p style="color:#64748b; margin:0 0 16px; font-size: 0.95rem;">Te estamos conectando con Publica Navojoa</p>
-    <a href="${waOfficialUrl}" class="btn">Continuar a WhatsApp ➔</a>
+    <h2 style="margin:0 0 8px;">Abriendo Publica Navojoa...</h2>
+    <p style="color:#64748b; margin:0 0 16px; font-size: 0.95rem;">Conectando con el WhatsApp oficial</p>
+    <a href="${WA_OFFICIAL_URL}" class="btn">Abrir Chat ➔</a>
 
     <script>
-        // Intento de apertura de la app nativa de WhatsApp
-        window.location.href = "${waSchemeUrl}";
+        // Intento de apertura directa de la app de WhatsApp
+        window.location.href = "${WA_SCHEME_URL}";
         // Redirección HTTP como respaldo si la app tarda
         setTimeout(function() {
-            window.location.href = "${waOfficialUrl}";
+            window.location.href = "${WA_OFFICIAL_URL}";
         }, 300);
     </script>
 </body>
