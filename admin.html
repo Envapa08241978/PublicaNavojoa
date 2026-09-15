@@ -4823,7 +4823,29 @@
 
     // Observador en tiempo real de escaneos de códigos QR
     window.cachedQrScans = { p1: 0, p2: 0 };
+    async function updateQrStatsDisplay() {
+        try {
+            const res = await fetch('/api/qr?stats=1&_t=' + Date.now());
+            if (res.ok) {
+                const data = await res.json();
+                const s1 = Number(data.scans_p1 || 0);
+                const s2 = Number(data.scans_p2 || 0);
+                window.cachedQrScans = { p1: s1, p2: s2 };
+                const elP1 = document.getElementById('count-promotor-1');
+                const elP2 = document.getElementById('count-promotor-2');
+                if (elP1) elP1.innerText = `${s1}`;
+                if (elP2) elP2.innerText = `${s2}`;
+            }
+        } catch(e) {}
+    }
+
     function listenFirebaseQrMetrics() {
+        // 1. Carga inmediata por REST API
+        updateQrStatsDisplay();
+        // 2. Intervalo de actualización cada 4 segundos
+        setInterval(updateQrStatsDisplay, 4000);
+
+        // 3. Listener en Firestore Firestore SDK
         try {
             db.collection('stats').doc('qr_metrics').onSnapshot(doc => {
                 if (doc.exists) {

@@ -6,6 +6,24 @@ const WA_OFFICIAL_URL = "https://wa.me/526421520280";
 const WA_SCHEME_URL = "whatsapp://send?phone=526421520280";
 
 module.exports = async function handler(req, res) {
+    // Si la petición es para consultar estadísticas desde el CRM admin
+    if (req.query.stats || req.query.get) {
+        const metricsUrl = `https://firestore.googleapis.com/v1/projects/loquese-app/databases/(default)/documents/stats/qr_metrics`;
+        let p1 = 0, p2 = 0, lastTime = '';
+        try {
+            const getRes = await fetch(metricsUrl);
+            if (getRes.ok) {
+                const doc = await getRes.json();
+                p1 = parseInt(doc.fields?.scans_p1?.integerValue || '0', 10);
+                p2 = parseInt(doc.fields?.scans_p2?.integerValue || '0', 10);
+                lastTime = doc.fields?.last_scan_time?.stringValue || '';
+            }
+        } catch(e) {}
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        return res.status(200).json({ scans_p1: p1, scans_p2: p2, last_scan_time: lastTime });
+    }
+
     const promoterParam = (req.query.p || req.query.promotor || '1').toString().trim();
     const promoterId = promoterParam === '2' ? 'P2' : 'P1';
     const promoterName = promoterParam === '2' ? 'Promotor 2' : 'Promotor 1';
