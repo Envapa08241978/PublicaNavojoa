@@ -505,6 +505,13 @@
             cleanPhone = cleanPhone.slice(2);
         }
 
+        const urlParams = new URLSearchParams(window.location.search);
+        const refParam = urlParams.get('ref') || '';
+        let promotorName = '';
+        if (refParam.toUpperCase() === 'P1' || refParam.toLowerCase() === 'promotor1') promotorName = 'Promotor 1';
+        else if (refParam.toUpperCase() === 'P2' || refParam.toLowerCase() === 'promotor2') promotorName = 'Promotor 2';
+        else if (refParam) promotorName = refParam;
+
         const leadData = {
             nombre: nombre,
             whatsapp: cleanPhone,
@@ -515,6 +522,9 @@
             fecha: new Date().toLocaleString(),
             timestamp: Date.now()
         };
+        if (promotorName) {
+            leadData.promotor = promotorName;
+        }
 
         try {
             // 1. Guardar Únicamente en contacts con ID único por Teléfono (Sin Duplicados)

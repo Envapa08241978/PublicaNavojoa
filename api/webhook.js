@@ -49,6 +49,14 @@ async function saveToFirestore(cleanPhone, senderName, text, type, fileUrl = '',
             messages_json: { stringValue: JSON.stringify(existingMsgs) }
         };
 
+        // Detectar promotor referido en el mensaje (P1 o P2)
+        const tLower = (text || '').toLowerCase();
+        if (tLower.includes('ref: p1') || tLower.includes('(ref: p1)') || tLower.includes('promotor 1')) {
+            bodyFields.promotor = { stringValue: 'Promotor 1' };
+        } else if (tLower.includes('ref: p2') || tLower.includes('(ref: p2)') || tLower.includes('promotor 2')) {
+            bodyFields.promotor = { stringValue: 'Promotor 2' };
+        }
+
         // Preservar el nombre real registrado si ya existe en Firestore (para no sobreescribir con emojis de WhatsApp)
         if (!currentNombre || currentNombre === 'Cliente WhatsApp' || currentNombre === 'Cliente VIP' || currentNombre === '??') {
             if (senderName && senderName !== 'Cliente WhatsApp' && senderName !== 'Cliente VIP') {
@@ -498,8 +506,16 @@ async function processBotRules(senderPhone, rawPhone, senderName, msgText) {
             }
         }
 
+        // Detectar si venía de un promotor específico
+        let refQuery = '';
+        if (textLower.includes('ref: p1') || textLower.includes('(ref: p1)') || textLower.includes('p1')) {
+            refQuery = '&ref=P1';
+        } else if (textLower.includes('ref: p2') || textLower.includes('(ref: p2)') || textLower.includes('p2')) {
+            refQuery = '&ref=P2';
+        }
+
         // Cualquier otro mensaje de un usuario no registrado: solo enlace de registro
-        const regText = `👑 *¡Bienvenido al Club VIP de Publica Navojoa!* 🎉\n\nPara desbloquear el *Catálogo Semanal de Ofertas y Remates* y recibir las promociones más exclusivas de tu zona, activa tu membresía gratuita en 15 segundos:\n\n👉 https://publicanavojoa.com/registro?tel=${rawPhone}\n\n📍 *(Tu número ya está cargado, solo selecciona tu colonia y confirma para empezar a recibir las ofertas).*`;
+        const regText = `👑 *¡Bienvenido al Club VIP de Publica Navojoa!* 🎉\n\nPara desbloquear el *Catálogo Semanal de Ofertas y Remates* y recibir las promociones más exclusivas de tu zona, activa tu membresía gratuita en 15 segundos:\n\n👉 https://publicanavojoa.com/registro?tel=${rawPhone}${refQuery}\n\n📍 *(Tu número ya está cargado, solo selecciona tu colonia y confirma para empezar a recibir las ofertas).*`;
         await sendWhatsAppMessage(metaTo, regText, rawPhone, senderName);
         return;
     }

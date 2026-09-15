@@ -8,6 +8,8 @@
     { "source": "/admin", "destination": "/admin.html" },
     { "source": "/formulario", "destination": "/formulario.html" },
     { "source": "/contratar", "destination": "/formulario.html" },
-    { "source": "/privacidad", "destination": "/privacidad.html" }
+    { "source": "/privacidad", "destination": "/privacidad.html" },
+    { "source": "/qr1", "destination": "/api/qr?p=1" },
+    { "source": "/qr2", "destination": "/api/qr?p=2" }
   ]
 }

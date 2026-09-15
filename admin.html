@@ -980,20 +980,30 @@
                 <div class="stat-val" id="total-contacts">0</div>
                 <div class="stat-label">Contactos Totales con Opt-in WhatsApp</div>
             </div>
-            <div class="stat-card">
-                <div class="stat-val gold">78,700</div>
-                <div class="stat-label">Miembros en Grupo de Facebook</div>
+            <div class="stat-card" style="border-left: 4px solid #701a2b;">
+                <div class="stat-val" id="count-promotor-1" style="color: #701a2b;">0</div>
+                <div class="stat-label">📱 Escaneos QR Promotor 1 (/qr1)</div>
+            </div>
+            <div class="stat-card" style="border-left: 4px solid #0f172a;">
+                <div class="stat-val" id="count-promotor-2" style="color: #0f172a;">0</div>
+                <div class="stat-label">📱 Escaneos QR Promotor 2 (/qr2)</div>
             </div>
             <div class="stat-card">
-                <div class="stat-val blue">100%</div>
-                <div class="stat-label">Cumplimiento Políticas Meta API</div>
+                <div class="stat-val gold">78,700</div>
+                <div class="stat-label">Miembros Grupo Facebook</div>
             </div>
         </div>
 
         <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 16px; flex-wrap: wrap;">
             <h2 style="font-size: 1.2rem; font-weight: 800;">Directorio de Contactos Registrados</h2>
-            <div style="display: flex; gap: 10px; align-items: center;">
-                <select id="filter-perfil" onchange="renderCrmTable()" style="padding: 10px 14px; border-radius: 10px; border: 1.5px solid #e2e8f0; font-size: 0.9rem; font-weight: 600; cursor: pointer;">
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                <select id="filter-promotor" onchange="renderCrmTable()" style="padding: 10px 14px; border-radius: 10px; border: 1.5px solid #e2e8f0; font-size: 0.9rem; font-weight: 600; cursor: pointer; background: #ffffff;">
+                    <option value="todos">👥 Todos los orígenes / Promotores</option>
+                    <option value="p1">👤 Solo Promotor 1</option>
+                    <option value="p2">👤 Solo Promotor 2</option>
+                    <option value="organico">🌐 Orgánico / Web</option>
+                </select>
+                <select id="filter-perfil" onchange="renderCrmTable()" style="padding: 10px 14px; border-radius: 10px; border: 1.5px solid #e2e8f0; font-size: 0.9rem; font-weight: 600; cursor: pointer; background: #ffffff;">
                     <option value="todos">Todos los perfiles</option>
                     <option value="anunciante">💼 Solo Anunciantes</option>
                     <option value="comprador">🛍️ Solo Compradores</option>
@@ -1010,9 +1020,9 @@
                         <th>Nombre</th>
                         <th>WhatsApp</th>
                         <th>Colonia / Zona</th>
+                        <th>Promotor / Asesor</th>
                         <th>Perfil</th>
                         <th>Estado Opt-in</th>
-                        <th>Origen</th>
                         <th>Acción</th>
                     </tr>
                 </thead>
@@ -2622,15 +2632,52 @@
         const leads = getLeads();
         const search = document.getElementById('search-input').value.toLowerCase();
         const perfilFilter = document.getElementById('filter-perfil').value;
+        const promotorFilter = document.getElementById('filter-promotor')?.value || 'todos';
         const tbody = document.getElementById('table-body');
 
+        // Contadores por promotor
+        let countP1 = 0;
+        let countP2 = 0;
+        leads.forEach(l => {
+            const prom = (l.promotor || '').toLowerCase();
+            const orig = (l.origen || '').toLowerCase();
+            const lastM = (l.last_msg || '').toLowerCase();
+            if (prom === 'promotor 1' || prom === 'p1' || orig.includes('p1') || lastM.includes('ref: p1')) countP1++;
+            else if (prom === 'promotor 2' || prom === 'p2' || orig.includes('p2') || lastM.includes('ref: p2')) countP2++;
+        });
+
         document.getElementById('total-contacts').innerText = leads.length;
+        const elP1 = document.getElementById('count-promotor-1');
+        const elP2 = document.getElementById('count-promotor-2');
+        if (elP1) elP1.innerText = countP1;
+        if (elP2) elP2.innerText = countP2;
 
         let filtered = leads.filter(l => 
             l.nombre.toLowerCase().includes(search) || 
             l.whatsapp.includes(search) ||
-            l.colonia.toLowerCase().includes(search)
+            (l.colonia && l.colonia.toLowerCase().includes(search))
         );
+
+        // Filtro por Promotor
+        if (promotorFilter === 'p1') {
+            filtered = filtered.filter(l => {
+                const prom = (l.promotor || '').toLowerCase();
+                const lastM = (l.last_msg || '').toLowerCase();
+                return prom === 'promotor 1' || prom === 'p1' || lastM.includes('ref: p1');
+            });
+        } else if (promotorFilter === 'p2') {
+            filtered = filtered.filter(l => {
+                const prom = (l.promotor || '').toLowerCase();
+                const lastM = (l.last_msg || '').toLowerCase();
+                return prom === 'promotor 2' || prom === 'p2' || lastM.includes('ref: p2');
+            });
+        } else if (promotorFilter === 'organico') {
+            filtered = filtered.filter(l => {
+                const prom = (l.promotor || '').toLowerCase();
+                const lastM = (l.last_msg || '').toLowerCase();
+                return !prom && !lastM.includes('ref: p1') && !lastM.includes('ref: p2');
+            });
+        }
 
         // Filtro por perfil (Anunciante / Comprador)
         if (perfilFilter === 'anunciante') {
@@ -2640,19 +2687,32 @@
         }
 
         if (filtered.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color: var(--text-muted); padding: 30px;">No se encontraron contactos.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color: var(--text-muted); padding: 30px;">No se encontraron contactos con los filtros seleccionados.</td></tr>`;
             return;
         }
 
         tbody.innerHTML = filtered.map(item => {
             const currentStatus = item.estado_comercial || (item.interes_anunciar === 'Sí' ? 'prospecto' : 'comprador');
 
+            // Determinar Promotor Asignado
+            let promotorBadge = `<span style="font-size: 0.78rem; color: #64748b;">🌐 Orgánico</span>`;
+            const pLower = (item.promotor || '').toLowerCase();
+            const msgLower = (item.last_msg || '').toLowerCase();
+            if (pLower === 'promotor 1' || pLower === 'p1' || msgLower.includes('ref: p1')) {
+                promotorBadge = `<span style="background: #fdf2f4; color: #701a2b; border: 1px solid #fbcfe8; padding: 3px 8px; border-radius: 8px; font-weight: 800; font-size: 0.78rem;">👤 Promotor 1</span>`;
+            } else if (pLower === 'promotor 2' || pLower === 'p2' || msgLower.includes('ref: p2')) {
+                promotorBadge = `<span style="background: #f1f5f9; color: #0f172a; border: 1px solid #cbd5e1; padding: 3px 8px; border-radius: 8px; font-weight: 800; font-size: 0.78rem;">👤 Promotor 2</span>`;
+            } else if (item.promotor) {
+                promotorBadge = `<span style="background: #fef3c7; color: #92400e; border: 1px solid #fde68a; padding: 3px 8px; border-radius: 8px; font-weight: 700; font-size: 0.78rem;">👤 ${item.promotor}</span>`;
+            }
+
             return `
             <tr>
-                <td style="color: var(--text-muted); font-size: 0.85rem;">${item.fecha}</td>
-                <td style="font-weight: 700; color: var(--text-main);">${item.nombre}</td>
+                <td style="color: var(--text-muted); font-size: 0.85rem;">${item.fecha || '-'}</td>
+                <td style="font-weight: 700; color: var(--text-main);">${item.nombre || 'Cliente'}</td>
                 <td style="font-family: monospace; font-weight: 700; color: var(--accent-green);">${item.whatsapp}</td>
-                <td style="color: #334155;">${item.colonia}</td>
+                <td style="color: #334155;">${item.colonia || 'Navojoa'}</td>
+                <td>${promotorBadge}</td>
                 <td>
                     <select onchange="updateContactStatus('${item.whatsapp}', this.value)" style="padding: 4px 8px; border-radius: 8px; border: 1.5px solid #cbd5e1; font-weight: 700; font-size: 0.78rem; cursor: pointer; background: #ffffff;">
                         <option value="prospecto" ${currentStatus === 'prospecto' ? 'selected' : ''}>💼 Prospecto Anunciante</option>
@@ -2663,7 +2723,6 @@
                     </select>
                 </td>
                 <td><span class="badge-optin">✓ Autorizado</span></td>
-                <td style="color: var(--text-muted);">${item.origen || 'Landing Web'}</td>
                 <td>
                     <div style="display: flex; gap: 6px; align-items: center;">
                         <button class="btn btn-blue" style="padding: 4px 10px; font-size: 0.8rem;" onclick="switchTab('chat'); selectContact('${item.id}');">💬 Chatear</button>
@@ -4750,6 +4809,7 @@
                 listenFirebaseOffers();
                 listenFirebaseOrders();
                 listenFirebaseFinances();
+                listenFirebaseQrMetrics();
             }
         } else {
             // Usuario No Autenticado: Ocultar panel y mostrar login
@@ -4758,6 +4818,25 @@
             showLoginAccount();
         }
     });
+
+    // Observador en tiempo real de escaneos de códigos QR
+    function listenFirebaseQrMetrics() {
+        try {
+            db.collection('stats').doc('qr_metrics').onSnapshot(doc => {
+                if (doc.exists) {
+                    const data = doc.data();
+                    const scansP1 = data.scans_p1 || 0;
+                    const scansP2 = data.scans_p2 || 0;
+                    const elP1 = document.getElementById('count-promotor-1');
+                    const elP2 = document.getElementById('count-promotor-2');
+                    if (elP1) elP1.innerText = `${scansP1}`;
+                    if (elP2) elP2.innerText = `${scansP2}`;
+                }
+            });
+        } catch(e) {
+            console.log('Error listening to QR metrics:', e);
+        }
+    }
 </script>
 
 <!-- Modal Zoom Imagen en Admin -->
