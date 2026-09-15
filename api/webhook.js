@@ -51,9 +51,9 @@ async function saveToFirestore(cleanPhone, senderName, text, type, fileUrl = '',
 
         // Detectar promotor referido en el mensaje (P1 o P2)
         const tLower = (text || '').toLowerCase();
-        if (tLower.includes('ref: p1') || tLower.includes('(ref: p1)') || tLower.includes('promotor 1')) {
+        if (tLower.includes('hola publica navojoa') || tLower.includes('ref: p1') || tLower.includes('(ref: p1)') || tLower.includes('promotor 1')) {
             bodyFields.promotor = { stringValue: 'Promotor 1' };
-        } else if (tLower.includes('ref: p2') || tLower.includes('(ref: p2)') || tLower.includes('promotor 2')) {
+        } else if (tLower.includes('quiero ver las ofertas de navojoa') || tLower.includes('ref: p2') || tLower.includes('(ref: p2)') || tLower.includes('promotor 2')) {
             bodyFields.promotor = { stringValue: 'Promotor 2' };
         }
 

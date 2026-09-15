@@ -2649,8 +2649,10 @@
         document.getElementById('total-contacts').innerText = leads.length;
         const elP1 = document.getElementById('count-promotor-1');
         const elP2 = document.getElementById('count-promotor-2');
-        if (elP1) elP1.innerText = countP1;
-        if (elP2) elP2.innerText = countP2;
+        const scans1 = window.cachedQrScans ? window.cachedQrScans.p1 : 0;
+        const scans2 = window.cachedQrScans ? window.cachedQrScans.p2 : 0;
+        if (elP1) elP1.innerText = `${scans1}`;
+        if (elP2) elP2.innerText = `${scans2}`;
 
         let filtered = leads.filter(l => 
             l.nombre.toLowerCase().includes(search) || 
@@ -4820,13 +4822,15 @@
     });
 
     // Observador en tiempo real de escaneos de códigos QR
+    window.cachedQrScans = { p1: 0, p2: 0 };
     function listenFirebaseQrMetrics() {
         try {
             db.collection('stats').doc('qr_metrics').onSnapshot(doc => {
                 if (doc.exists) {
                     const data = doc.data();
-                    const scansP1 = data.scans_p1 || 0;
-                    const scansP2 = data.scans_p2 || 0;
+                    const scansP1 = Number(data.scans_p1 || 0);
+                    const scansP2 = Number(data.scans_p2 || 0);
+                    window.cachedQrScans = { p1: scansP1, p2: scansP2 };
                     const elP1 = document.getElementById('count-promotor-1');
                     const elP2 = document.getElementById('count-promotor-2');
                     if (elP1) elP1.innerText = `${scansP1}`;

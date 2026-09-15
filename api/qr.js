@@ -69,7 +69,15 @@ module.exports = async function handler(req, res) {
         console.error('[QR TRACKING ERROR]', err);
     }
 
-    // 2. Responder con página ligera que abre la app de WhatsApp al instante y redirige
+    // 2. Definir mensaje natural de saludo para identificar el promotor al enviar WhatsApp
+    const naturalMsg = promoterId === 'P2' 
+        ? '¡Hola! Quiero ver las ofertas de Navojoa 🛍️' 
+        : 'Hola Publica Navojoa 👋';
+    const encodedMsg = encodeURIComponent(naturalMsg);
+    const waOfficialUrl = `https://wa.me/526421520280?text=${encodedMsg}`;
+    const waSchemeUrl = `whatsapp://send?phone=526421520280&text=${encodedMsg}`;
+
+    // 3. Responder con página ligera que abre la app de WhatsApp al instante y redirige
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
 
@@ -90,14 +98,14 @@ module.exports = async function handler(req, res) {
     <div class="spinner"></div>
     <h2 style="margin:0 0 8px;">Abriendo WhatsApp...</h2>
     <p style="color:#64748b; margin:0 0 16px; font-size: 0.95rem;">Te estamos conectando con Publica Navojoa</p>
-    <a href="${WA_OFFICIAL_URL}" class="btn">Continuar a WhatsApp ➔</a>
+    <a href="${waOfficialUrl}" class="btn">Continuar a WhatsApp ➔</a>
 
     <script>
         // Intento de apertura de la app nativa de WhatsApp
-        window.location.href = "${WA_SCHEME_URL}";
+        window.location.href = "${waSchemeUrl}";
         // Redirección HTTP como respaldo si la app tarda
         setTimeout(function() {
-            window.location.href = "${WA_OFFICIAL_URL}";
+            window.location.href = "${waOfficialUrl}";
         }, 300);
     </script>
 </body>
