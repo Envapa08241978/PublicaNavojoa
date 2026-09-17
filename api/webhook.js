@@ -1,9 +1,83 @@
 const VERIFY_TOKEN = process.env.META_VERIFY_TOKEN || 'publica_navojoa_token_2026';
 const PHONE_ID = process.env.META_PHONE_ID || '1280742211792981';
 const ACCESS_TOKEN = process.env.META_ACCESS_TOKEN || 'EAAUPiVpET1YBST456Cx6ZAuNEXN8iEghj5W3msjAvZC4q8unGAcJrpeOdMBNNokantyZBcAYJS64NEx7XAV9tneN0MY6s3K2KphrgvJLzeVvpWZAvXXhDxxdMsUyQZBBaYzzDfNrcdZCFWNyaCvZBvQpyZB7wdp0m33Ytwy0uwZAN0W57js1ag6ZBAtZCNL4p2A4nRLTAZDZD';
+const FIRESTORE_BASE = 'https://firestore.googleapis.com/v1/projects/loquese-app/databases/(default)/documents';
+
+// ═══════════════════════════════════════════════════════════════════════════
+// DEDUPLICACIÓN PERSISTENTE EN FIRESTORE (funciona aunque Vercel haga cold start)
+// Colección: processed_msgs/{hash del msgId} → { msgId, ts }
+// ═══════════════════════════════════════════════════════════════════════════
+function hashMsgId(msgId) {
+    // Crear un ID seguro para Firestore: solo letras y números
+    let hash = 0;
+    for (let i = 0; i < msgId.length; i++) {
+        const char = msgId.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash; // Convert to 32bit integer
+    }
+    return 'msg_' + Math.abs(hash).toString(36) + '_' + msgId.length;
+}
+
+async function isDuplicateMessage(msgId) {
+    if (!msgId) return false;
+    const safeId = hashMsgId(msgId);
+    const docUrl = `${FIRESTORE_BASE}/processed_msgs/${safeId}`;
+    try {
+        const res = await fetch(docUrl);
+        if (res.ok) {
+            // Ya existe → es duplicado
+            console.log(`[DEDUP] Documento ${safeId} ya existe → DUPLICADO`);
+            return true;
+        }
+        // No existe (404) → marcarlo como procesado
+        console.log(`[DEDUP] Documento ${safeId} no existe → Registrando como nuevo`);
+        await fetch(docUrl + '?updateMask.fieldPaths=ts&updateMask.fieldPaths=mid', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fields: { 
+                ts: { integerValue: String(Date.now()) },
+                mid: { stringValue: msgId }
+            }})
+        });
+        return false;
+    } catch (e) {
+        console.error('[DEDUP ERR]', e);
+        return false; // En caso de error, procesar para no perder mensajes legítimos
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// COOLDOWN POR TELÉFONO PERSISTENTE EN FIRESTORE
+// Colección: cooldowns/{phone} → { ts }
+// ═══════════════════════════════════════════════════════════════════════════
+async function isCatalogOnCooldown(cleanPhone) {
+    const COOLDOWN_MS = 10000; // 10 segundos de cooldown
+    const docUrl = `${FIRESTORE_BASE}/cooldowns/${cleanPhone}`;
+    const now = Date.now();
+    try {
+        const res = await fetch(docUrl);
+        if (res.ok) {
+            const doc = await res.json();
+            const lastTs = parseInt(doc?.fields?.ts?.integerValue || '0', 10);
+            if (now - lastTs < COOLDOWN_MS) {
+                return true; // Aún en cooldown
+            }
+        }
+        // Actualizar timestamp del cooldown
+        await fetch(docUrl + '?updateMask.fieldPaths=ts', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fields: { ts: { integerValue: String(now) } } })
+        });
+        return false;
+    } catch (e) {
+        console.error('[COOLDOWN ERR]', e);
+        return false;
+    }
+}
 
 async function saveToFirestore(cleanPhone, senderName, text, type, fileUrl = '', fileType = '', fileName = '') {
-    const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const timeStr = new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Hermosillo' });
     try {
         const docUrl = `https://firestore.googleapis.com/v1/projects/loquese-app/databases/(default)/documents/contacts/${cleanPhone}`;
         let existingMsgs = [];
@@ -20,10 +94,11 @@ async function saveToFirestore(cleanPhone, senderName, text, type, fileUrl = '',
             }
         } catch(e) {}
 
-        // Prevenir duplicados (si el ultimo mensaje es identico en < 2 segundos)
+        // Prevenir duplicados (si el ultimo mensaje es identico en < 30 segundos)
         if (existingMsgs.length > 0) {
             const lastM = existingMsgs[existingMsgs.length - 1];
-            if (lastM.text === text && lastM.type === type && (Date.now() - (lastM.timestamp || 0) < 2000)) {
+            if (lastM.text === text && lastM.type === type && (Date.now() - (lastM.timestamp || 0) < 30000)) {
+                console.log(`[SAVE DEDUP] Mensaje idéntico ignorado para ${cleanPhone}: "${text}"`);
                 return;
             }
         }
@@ -39,7 +114,7 @@ async function saveToFirestore(cleanPhone, senderName, text, type, fileUrl = '',
         if (fileName) newMsg.fileName = fileName;
 
         existingMsgs.push(newMsg);
-        if (existingMsgs.length > 50) existingMsgs = existingMsgs.slice(-50);
+        if (existingMsgs.length > 100) existingMsgs = existingMsgs.slice(-100);
 
         const bodyFields = {
             whatsapp: { stringValue: cleanPhone },
@@ -49,31 +124,7 @@ async function saveToFirestore(cleanPhone, senderName, text, type, fileUrl = '',
             messages_json: { stringValue: JSON.stringify(existingMsgs) }
         };
 
-        // Detectar promotor referido en el mensaje o por la sesión reciente de escaneo QR
-        const tLower = (text || '').toLowerCase();
-        let detectedPromotor = '';
-        if (tLower.includes('ref: p1') || tLower.includes('(ref: p1)') || tLower.includes('promotor 1')) {
-            detectedPromotor = 'Promotor 1';
-        } else if (tLower.includes('ref: p2') || tLower.includes('(ref: p2)') || tLower.includes('promotor 2')) {
-            detectedPromotor = 'Promotor 2';
-        } else {
-            // Si el contacto aún no tiene promotor asignado en Firestore, consultar el último escaneo reciente
-            try {
-                const lastScanRes = await fetch(`https://firestore.googleapis.com/v1/projects/loquese-app/databases/(default)/documents/stats/last_scan`);
-                if (lastScanRes.ok) {
-                    const lastScanDoc = await lastScanRes.json();
-                    const lastTs = parseInt(lastScanDoc.fields?.timestamp?.integerValue || '0', 10);
-                    // Si el escaneo ocurrió en los últimos 45 minutos
-                    if (Date.now() - lastTs < 2700000) {
-                        detectedPromotor = lastScanDoc.fields?.promotor?.stringValue || '';
-                    }
-                }
-            } catch(e) {}
-        }
 
-        if (detectedPromotor) {
-            bodyFields.promotor = { stringValue: detectedPromotor };
-        }
 
         // Preservar el nombre real registrado si ya existe en Firestore (para no sobreescribir con emojis de WhatsApp)
         if (!currentNombre || currentNombre === 'Cliente WhatsApp' || currentNombre === 'Cliente VIP' || currentNombre === '??') {
@@ -448,47 +499,75 @@ function filterOffersByCategory(offers, categoryObj) {
     });
 }
 
+async function sendSingleOffer(metaTo, rawPhone, finalName, off, idxNumber = 1) {
+    const cleanT = off.contacto_telefono ? off.contacto_telefono.replace(/\D/g, '') : '';
+    
+    // Construir texto de la oferta
+    let cardMsg = `👑 *Publicación #${idxNumber}: ${off.titulo}*\n`;
+    if (off.categoria) cardMsg += `🏷️ *Categoría:* ${off.categoria}\n`;
+    cardMsg += `\n📝 ${off.descripcion}\n`;
+
+    if (off.enlace_maps) {
+        cardMsg += `\n📍 *Cómo llegar (Google Maps):*\n👉 ${off.enlace_maps}\n`;
+    }
+    if (off.enlace_facebook) {
+        cardMsg += `\n📸 *Ver fotos y detalles en Facebook:*\n👉 ${off.enlace_facebook}\n`;
+    }
+    if (off.enlace_instagram) {
+        cardMsg += `\n📷 *Ver fotos y detalles en Instagram:*\n👉 ${off.enlace_instagram}\n`;
+    }
+    if (cleanT) {
+        cardMsg += `\n📲 *Contacto directo / WhatsApp:*\n👉 wa.me/52${cleanT} (${off.contacto_nombre || 'Contacto'})\n`;
+    }
+
+    cardMsg += `\n💡 _Escribe *OFERTAS* para volver al menú de promociones._`;
+
+    // Si tiene foto, enviarla con el texto como caption. Si no, enviar texto solo
+    const hasPhoto = off.imagen_url || (off.imagenes && off.imagenes.length > 0);
+    if (hasPhoto) {
+        const imgUrl = (off.imagen_url && off.imagen_url.startsWith('http')) 
+            ? off.imagen_url 
+            : `https://publicanavojoa.com/api/img?offerId=${off.id}&index=0`;
+        await sendWhatsAppImage(metaTo, imgUrl, cardMsg, rawPhone, finalName);
+    } else {
+        await sendWhatsAppMessage(metaTo, cardMsg, rawPhone, finalName);
+    }
+}
+
+async function sendOffersCatalogSummary(metaTo, rawPhone, finalName, offersList, titleHeader = '') {
+    if (offersList.length === 0) return;
+
+    let summaryText = titleHeader || `🛍️ *Catálogo Semanal de Ofertas — Publica Navojoa* 🛍️\n\n${finalName ? `¡Hola ${finalName.split(' ')[0]}!` : '¡Hola!'} Aquí tienes las *${offersList.length}* promociones y eventos activos esta semana en Navojoa:\n`;
+
+    for (let idx = 0; idx < offersList.length; idx++) {
+        const off = offersList[idx];
+        const cleanT = off.contacto_telefono ? off.contacto_telefono.replace(/\D/g, '') : '';
+        const numEmoji = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟'][idx] || `*#${idx + 1}*`;
+        
+        summaryText += `\n${numEmoji} *${off.titulo}*`;
+        if (off.categoria) summaryText += `\n   🏷️ _${off.categoria}_`;
+        if (cleanT) summaryText += `\n   📲 wa.me/52${cleanT}`;
+        summaryText += `\n`;
+    }
+
+    summaryText += `\n💬 *Responde con el número de la oferta (ej. 1, 2, 3...) para enviarte la foto y los detalles completos.*`;
+    summaryText += `\n\n🔍 *¿Buscas algo específico?* Escribe directamente lo que necesitas (ej: _evento_, _DJ_, _ferretería_, _comida_, _ropa_) y te mostraremos solo las ofertas de esa categoría.`;
+    await sendWhatsAppMessage(metaTo, summaryText, rawPhone, finalName);
+}
+
 async function sendOffersList(metaTo, rawPhone, finalName, offersList, introHeader) {
     if (offersList.length === 0) return;
 
-    // Mensaje inicial de cabecera
-    await sendWhatsAppMessage(metaTo, introHeader, rawPhone, finalName);
-
-    // Envío de cada oferta de una por una con intervalo de 2 segundos
-    for (let idx = 0; idx < offersList.length; idx++) {
-        await new Promise(r => setTimeout(r, 2000)); // pausa de 2 segundos exacta entre ofertas
-
-        const off = offersList[idx];
-        const cleanT = off.contacto_telefono ? off.contacto_telefono.replace(/\D/g, '') : '';
-        
-        // Construir texto de la oferta
-        let cardMsg = `👑 *Publicación #${idx + 1}: ${off.titulo}*\n`;
-        if (off.categoria) cardMsg += `🏷️ *Categoría:* ${off.categoria}\n`;
-        cardMsg += `\n📝 ${off.descripcion}\n`;
-
-        if (off.enlace_maps) {
-            cardMsg += `\n📍 *Cómo llegar (Google Maps):*\n👉 ${off.enlace_maps}\n`;
+    // Si son pocas ofertas (1 o 2), enviarlas individuales directamente
+    if (offersList.length <= 2) {
+        await sendWhatsAppMessage(metaTo, introHeader, rawPhone, finalName);
+        for (let idx = 0; idx < offersList.length; idx++) {
+            await new Promise(r => setTimeout(r, 1000));
+            await sendSingleOffer(metaTo, rawPhone, finalName, offersList[idx], idx + 1);
         }
-        if (off.enlace_facebook) {
-            cardMsg += `\n📸 *Ver fotos y detalles en Facebook:*\n👉 ${off.enlace_facebook}\n`;
-        }
-        if (off.enlace_instagram) {
-            cardMsg += `\n📷 *Ver fotos y detalles en Instagram:*\n👉 ${off.enlace_instagram}\n`;
-        }
-        if (cleanT) {
-            cardMsg += `\n📲 *Contacto directo / WhatsApp:*\n👉 wa.me/52${cleanT} (${off.contacto_nombre || 'Contacto'})\n`;
-        }
-
-        // Si tiene foto, enviarla con el texto como caption. Si no, enviar texto solo
-        const hasPhoto = off.imagen_url || (off.imagenes && off.imagenes.length > 0);
-        if (hasPhoto) {
-            const imgUrl = (off.imagen_url && off.imagen_url.startsWith('http')) 
-                ? off.imagen_url 
-                : `https://publicanavojoa.com/api/img?offerId=${off.id}&index=0`;
-            await sendWhatsAppImage(metaTo, imgUrl, cardMsg, rawPhone, finalName);
-        } else {
-            await sendWhatsAppMessage(metaTo, cardMsg, rawPhone, finalName);
-        }
+    } else {
+        // Si son 3 o más ofertas, enviar el resumen interactivo para no saturar al usuario
+        await sendOffersCatalogSummary(metaTo, rawPhone, finalName, offersList, introHeader);
     }
 }
 
@@ -524,16 +603,8 @@ async function processBotRules(senderPhone, rawPhone, senderName, msgText) {
             }
         }
 
-        // Detectar si venía de un promotor específico
-        let refQuery = '';
-        if (textLower.includes('ref: p1') || textLower.includes('(ref: p1)') || textLower.includes('p1')) {
-            refQuery = '&ref=P1';
-        } else if (textLower.includes('ref: p2') || textLower.includes('(ref: p2)') || textLower.includes('p2')) {
-            refQuery = '&ref=P2';
-        }
-
         // Cualquier otro mensaje de un usuario no registrado: solo enlace de registro
-        const regText = `👑 *¡Bienvenido al Club VIP de Publica Navojoa!* 🎉\n\nPara desbloquear el *Catálogo Semanal de Ofertas y Remates* y recibir las promociones más exclusivas de tu zona, activa tu membresía gratuita en 15 segundos:\n\n👉 https://publicanavojoa.com/registro?tel=${rawPhone}${refQuery}\n\n📍 *(Tu número ya está cargado, solo selecciona tu colonia y confirma para empezar a recibir las ofertas).*`;
+        const regText = `👑 *¡Bienvenido al Club VIP de Publica Navojoa!* 🎉\n\nPara desbloquear el *Catálogo Semanal de Ofertas y Remates* y recibir las promociones más exclusivas de tu zona, activa tu membresía gratuita en 15 segundos:\n\n👉 https://publicanavojoa.com/registro?tel=${rawPhone}\n\n📍 *(Tu número ya está cargado, solo selecciona tu colonia y confirma para empezar a recibir las ofertas).*`;
         await sendWhatsAppMessage(metaTo, regText, rawPhone, senderName);
         return;
     }
@@ -576,8 +647,24 @@ async function processBotRules(senderPhone, rawPhone, senderName, msgText) {
         return;
     }
 
-    // Regla 4: Catálogo Dinámico General de Ofertas (Envío secuencial cronológico más reciente primero)
+    // Regla 3.5: Consulta de Oferta Individual por Número (ej. 1, 2, #3, ver 1, oferta 2)
+    const numberMatch = textLower.match(/^(?:ver\s*|oferta\s*|#\s*)?(\d{1,2})$/);
+    if (numberMatch) {
+        const offerIdx = parseInt(numberMatch[1], 10) - 1;
+        const activeOffers = await getOffersFromFirestore();
+        if (offerIdx >= 0 && offerIdx < activeOffers.length) {
+            await sendSingleOffer(metaTo, rawPhone, finalName, activeOffers[offerIdx], offerIdx + 1);
+            return;
+        }
+    }
+
+    // Regla 4: Catálogo Dinámico General de Ofertas (Resumen interactivo limpio sin spam de 8 mensajes)
     if (textLower.includes('catálogo') || textLower.includes('catalogo') || textLower.includes('oferta') || textLower.includes('remate')) {
+        if (await isCatalogOnCooldown(rawPhone)) {
+            console.log(`[COOLDOWN] Catálogo ignorado por cooldown para ${rawPhone}`);
+            return;
+        }
+
         const activeOffers = await getOffersFromFirestore();
 
         if (activeOffers.length === 0) {
@@ -586,8 +673,8 @@ async function processBotRules(senderPhone, rawPhone, senderName, msgText) {
             return;
         }
 
-        const introMsg = `🛍️ *Catálogo de Ofertas y Eventos — Publica Navojoa* 🛍️\n\n${nameSalute} Aquí tienes las *${activeOffers.length}* promociones y eventos destacados activos esta semana (mostrando las más recientes primero).\n\n_Te enviamos cada una a continuación 👇_`;
-        await sendOffersList(metaTo, rawPhone, finalName, activeOffers, introMsg);
+        const introMsg = `🛍️ *Catálogo Semanal de Ofertas — Publica Navojoa* 🛍️\n\n${nameSalute} Aquí tienes las *${activeOffers.length}* promociones activas esta semana en Navojoa:\n`;
+        await sendOffersCatalogSummary(metaTo, rawPhone, finalName, activeOffers, introMsg);
         return;
     }
 
@@ -636,61 +723,84 @@ module.exports = async function handler(req, res) {
 
     if (req.method === 'POST') {
         const data = req.body;
-        console.log('[CLOUD WEBHOOK] Evento recibido de Meta:', JSON.stringify(data));
 
+        // ═══════════════════════════════════════════════════════════════
+        // PASO 1: Extraer el message ID lo más rápido posible
+        // ═══════════════════════════════════════════════════════════════
+        const entry = data?.entry?.[0];
+        const changes = entry?.changes?.[0];
+        const value = changes?.value;
+        const messages = value?.messages;
+
+        // Si no hay mensajes (status updates, delivery receipts, etc.), responder y salir
+        if (!messages || messages.length === 0) {
+            return res.status(200).json({ status: 'no_messages' });
+        }
+
+        const msg = messages[0];
+        const msgId = msg?.id || '';
+
+        // ═══════════════════════════════════════════════════════════════
+        // PASO 2: DEDUPLICACIÓN — Verificar en Firestore ANTES de todo
+        // Si Meta reintenta este webhook (cold start, timeout, etc.),
+        // el message ID ya estará guardado y se descarta al instante.
+        // ═══════════════════════════════════════════════════════════════
+        if (msgId) {
+            const isDuplicate = await isDuplicateMessage(msgId);
+            if (isDuplicate) {
+                console.log(`[DUPLICATE BLOCKED] msg.id=${msgId} ya fue procesado. Ignorando reintento.`);
+                return res.status(200).json({ status: 'duplicate_blocked' });
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // PASO 3: Procesar el mensaje (ya confirmado como único)
+        // ═══════════════════════════════════════════════════════════════
         try {
-            const entry = data?.entry?.[0];
-            const changes = entry?.changes?.[0];
-            const value = changes?.value;
-            const messages = value?.messages;
+            const contacts = value?.contacts?.[0];
+            const senderPhone = msg?.from || '';
+            let cleanPhone = senderPhone;
 
-            if (messages && messages.length > 0) {
-                const msg = messages[0];
-                const contacts = value?.contacts?.[0];
-                const senderPhone = msg?.from || '';
-                let cleanPhone = senderPhone;
+            if (cleanPhone.startsWith('521') && cleanPhone.length === 13) {
+                cleanPhone = cleanPhone.slice(3);
+            } else if (cleanPhone.startsWith('52') && cleanPhone.length === 12) {
+                cleanPhone = cleanPhone.slice(2);
+            }
 
-                if (cleanPhone.startsWith('521') && cleanPhone.length === 13) {
-                    cleanPhone = cleanPhone.slice(3);
-                } else if (cleanPhone.startsWith('52') && cleanPhone.length === 12) {
-                    cleanPhone = cleanPhone.slice(2);
+            const senderName = contacts?.profile?.name || 'Cliente WhatsApp';
+            let msgText = '';
+            let fileUrl = '';
+            let fileType = '';
+            let fileName = '';
+
+            if (msg.type === 'text') {
+                msgText = msg.text?.body || '';
+            } else if (msg.type === 'image') {
+                msgText = msg.image?.caption || '🖼️ Imagen recibida';
+                fileType = 'image/jpeg';
+                fileName = 'Foto WhatsApp';
+                if (msg.image?.id) fileUrl = await getMetaMediaUrl(msg.image.id);
+            } else if (msg.type === 'document') {
+                fileName = msg.document?.filename || 'Documento PDF';
+                msgText = msg.document?.caption || `📄 PDF: ${fileName}`;
+                fileType = 'application/pdf';
+                if (msg.document?.id) fileUrl = await getMetaMediaUrl(msg.document.id);
+            } else if (msg.type === 'button') {
+                msgText = msg.button?.text || '';
+            } else if (msg.type === 'interactive') {
+                const interactive = msg.interactive;
+                if (interactive?.type === 'button_reply') {
+                    msgText = interactive.button_reply?.title || '';
+                } else if (interactive?.type === 'list_reply') {
+                    msgText = interactive.list_reply?.title || '';
                 }
+            }
 
-                const senderName = contacts?.profile?.name || 'Cliente WhatsApp';
-                let msgText = '';
-                let fileUrl = '';
-                let fileType = '';
-                let fileName = '';
-
-                if (msg.type === 'text') {
-                    msgText = msg.text?.body || '';
-                } else if (msg.type === 'image') {
-                    msgText = msg.image?.caption || '🖼️ Imagen recibida';
-                    fileType = 'image/jpeg';
-                    fileName = 'Foto WhatsApp';
-                    if (msg.image?.id) fileUrl = await getMetaMediaUrl(msg.image.id);
-                } else if (msg.type === 'document') {
-                    fileName = msg.document?.filename || 'Documento PDF';
-                    msgText = msg.document?.caption || `📄 PDF: ${fileName}`;
-                    fileType = 'application/pdf';
-                    if (msg.document?.id) fileUrl = await getMetaMediaUrl(msg.document.id);
-                } else if (msg.type === 'button') {
-                    msgText = msg.button?.text || '';
-                } else if (msg.type === 'interactive') {
-                    const interactive = msg.interactive;
-                    if (interactive?.type === 'button_reply') {
-                        msgText = interactive.button_reply?.title || '';
-                    } else if (interactive?.type === 'list_reply') {
-                        msgText = interactive.list_reply?.title || '';
-                    }
-                }
-
-                if (cleanPhone) {
-                    await saveToFirestore(cleanPhone, senderName, msgText, 'incoming', fileUrl, fileType, fileName);
-                    if (msgText) {
-                        console.log(`[MENSAJE EN NUBE] De ${senderName} (${cleanPhone}): ${msgText}`);
-                        await processBotRules(senderPhone, cleanPhone, senderName, msgText);
-                    }
+            if (cleanPhone) {
+                await saveToFirestore(cleanPhone, senderName, msgText, 'incoming', fileUrl, fileType, fileName);
+                if (msgText) {
+                    console.log(`[MENSAJE EN NUBE] De ${senderName} (${cleanPhone}): ${msgText}`);
+                    await processBotRules(senderPhone, cleanPhone, senderName, msgText);
                 }
             }
         } catch (err) {
@@ -702,3 +812,4 @@ module.exports = async function handler(req, res) {
 
     return res.status(405).send('Method Not Allowed');
 };
+

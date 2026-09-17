@@ -53,7 +53,7 @@ module.exports = async function handler(req, res) {
     if (cleanPhone.startsWith('521') && cleanPhone.length === 13) cleanPhone = cleanPhone.slice(3);
 
     let metaTo = cleanPhone.length === 10 ? '52' + cleanPhone : cleanPhone;
-    const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const timeStr = new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Hermosillo' });
 
     let displayText = text || '';
     if (!displayText) {
