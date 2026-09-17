@@ -386,4 +386,69 @@ Todos los contactos se indexan de forma única en la colección `/contacts/{clea
     2. *Combo Dúo Mirada Perfecta:* Set de Pestañas + Laminado de Cejas (Precio regular $750 ➔ **Precio Promo: $600 MXN**).
   - **Estado en Producción:** Activo como **Publicación #1** en el Catálogo del Bot de WhatsApp y publicado en el Grupo de Facebook.
 
+---
+
+## 22. CAMPAÑA DJ SHAWN 23 (PAQUETE PLATA - EVENTOS & SONIDO)
+
+* **Especialista / Negocio:** DJ Shawn 23 (Eventos, Fiestas & Sonido en Navojoa).
+* **Contacto WhatsApp:** `+52 642 152 3476`
+* **Vigencia Oficial:** Válido hasta el **15 de Octubre 2026**.
+* **Promoción Oficial:**
+  - *20% OFF en Paquete Básico para Eventos.*
+  - Servicio profesional de audio e iluminación para XV años, bodas, graduaciones, reuniones privadas y eventos empresariales.
+* **Estado en Producción:** Integrado en Firestore (`offers`), vinculado en Facebook y disponible en el Bot de WhatsApp al escribir *"DJ"*, *"Evento"*, *"Música"*, *"Sonido"* o *"Ofertas"*.
+
+---
+
+## 23. MOTOR DEL BOT: ENTREGA DE FOTOGRAFÍAS A 3 SEGUNDOS Y MENSAJE DE CIERRE
+
+* **Entrega Secuencial con Fotografías:**
+  - Cuando un usuario solicita el catálogo (*"ofertas"*, *"catalogo"*, *"remates"*, botón *"Ver Catálogo de Ofertas de la Semana"*):
+    1. Se envía un mensaje de bienvenida/introducción.
+    2. Se envía cada oferta activa con su **fotografía oficial en alta resolución** y su ficha técnica descriptiva completa (título, categoría, detalles, Maps, Facebook, Instagram y enlace a WhatsApp).
+    3. Se aplica un **intervalo de 3 segundos** (`await new Promise(r => setTimeout(r, 3000))`) entre cada imagen para garantizar una entrega ordenada y evitar bloqueos o saturación visual en el dispositivo móvil.
+* **Mensaje Orientador Final:**
+  - Al terminar de enviar la última oferta, el bot envía un mensaje orientador de búsqueda:
+    ```text
+    *¿Buscas algo específico?* Escribe directamente lo que necesitas (ej: _evento_, _DJ_, _ferretería_, _comida_, _ropa_) y te mostraremos solo las ofertas de esa categoría.
+    ```
+
+---
+
+## 24. MOTOR DE BÚQUEDA INTELIGENTE DUAL (TAXONOMÍA + BÚQUEDA DIRECTA)
+
+* **Búsqueda por Términos Cortos (>= 2 caracteres):**
+  - Se optimizó la función `findCategoryByQuery` y `searchOffers` para aceptar términos de 2 letras (ej. *"DJ"*, *"PC"*, *"TV"*), resolviendo el problema donde búsquedas como *"dj"* caían en la respuesta general.
+* **Algoritmo de Búsqueda Dual:**
+  1. **Taxonomía Semántica:** Mapeo de sinónimos hacia 10 categorías comerciales (Comida, Ropa, Muebles, Belleza, Salud, Autos, Bienes Raíces, Eventos, Tecnología, Servicios).
+  2. **Búsqueda Directa en Fichas:** Coincidencia en tiempo real sobre los campos `titulo`, `descripcion` y `categoria` de todas las ofertas registradas en Firestore.
+* **Respuesta Dinámica:**
+  - Si el usuario escribe *"DJ"*, el motor encuentra inmediatamente a **DJ Shawn 23**, envía su imagen y ficha técnica, y remata con el mensaje orientador.
+
+---
+
+## 25. DEDUPLICACIÓN PERSISTENTE Y PREVENCIÓN DE DOBLE ENVÍO (META WEBHOOK)
+
+* **Colección de Deduplicación en Firestore (`/processed_msgs/{safeId}`):**
+  - Los reintentos automáticos de Meta Cloud API son interceptados antes de cualquier procesamiento.
+  - Se genera un hash seguro del `msg.id` (evitando caracteres especiales como `=` o `.`) y se verifica su existencia en Firestore. Si ya fue procesado, se descarta al instante con código HTTP 200 (`duplicate_blocked`).
+* **Corrección de Cooldown Asíncrono:**
+  - Se corrigió la invocación de `isCatalogOnCooldown` añadiendo `await`, garantizando que las promesas no evalúen erróneamente en `true` y el bot siempre responda en el primer intento.
+
+---
+
+## 26. ELIMINACIÓN DE RASTREO POR PROMOTORES (P1 / P2)
+
+* **Depuración en Panel de Administración (`admin.html`):**
+  - Por decisión operativa, se removió todo el módulo de métricas de Promotor 1 y Promotor 2.
+  - Se eliminaron las tarjetas de estadísticas del dashboard, el selector de filtros, la columna de promotor en la tabla CRM de contactos y los listeners de escaneos QR en tiempo real.
+
+---
+
+## 27. ESTANDARIZACIÓN DE ZONA HORARIA A NAVOJOA, SONORA (`America/Hermosillo`)
+
+* **Configuración Global (UTC-7 sin horario de verano):**
+  - **Backend (`api/webhook.js`, `api/send-message.js`, `api/qr.js`):** Generan timestamps y textos con `timeZone: 'America/Hermosillo'`.
+  - **Frontend (`admin.html`):** El panel de chat formatea dinámicamente los timestamps de cada mensaje usando `America/Hermosillo` (`es-MX`), garantizando que las marcas de hora en las burbujas de conversación reflejen con 100% de precisión la hora local de Navojoa, Sonora.
+
 
