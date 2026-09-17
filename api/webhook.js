@@ -461,9 +461,9 @@ function normalizeText(str) {
 
 function findCategoryByQuery(queryText) {
     const normQuery = normalizeText(queryText);
-    if (!normQuery || normQuery.length < 3) return null;
+    if (!normQuery || normQuery.length < 2) return null;
 
-    const words = normQuery.split(' ');
+    const words = normQuery.split(' ').filter(w => w.length >= 2);
 
     for (const cat of CATEGORIES_TAXONOMY) {
         for (const kw of cat.keywords) {
@@ -471,7 +471,7 @@ function findCategoryByQuery(queryText) {
             if (normKw.includes(' ')) {
                 if (normQuery.includes(normKw)) return cat;
             } else {
-                if (words.includes(normKw)) return cat;
+                if (words.includes(normKw) || normQuery === normKw) return cat;
             }
         }
     }
@@ -499,6 +499,40 @@ function filterOffersByCategory(offers, categoryObj) {
     });
 }
 
+function searchOffers(allOffers, queryText) {
+    const normQuery = normalizeText(queryText);
+    if (!normQuery || normQuery.length < 2) return [];
+
+    const matchedCat = findCategoryByQuery(queryText);
+    const queryWords = normQuery.split(' ').filter(w => w.length >= 2);
+
+    const matchesMap = new Map();
+
+    // 1. Si coincide con una categoría de la taxonomía
+    if (matchedCat) {
+        const catOffers = filterOffersByCategory(allOffers, matchedCat);
+        catOffers.forEach(o => matchesMap.set(o.id, o));
+    }
+
+    // 2. Coincidencia directa por palabras clave en título, descripción o categoría de la oferta
+    for (const off of allOffers) {
+        if (matchesMap.has(off.id)) continue;
+        const offCat = normalizeText(off.categoria || '');
+        const offTit = normalizeText(off.titulo || '');
+        const offDesc = normalizeText(off.descripcion || '');
+
+        const hasMatch = queryWords.some(w => {
+            return offCat.includes(w) || offTit.includes(w) || offDesc.includes(w);
+        });
+
+        if (hasMatch) {
+            matchesMap.set(off.id, off);
+        }
+    }
+
+    return Array.from(matchesMap.values());
+}
+
 async function sendSingleOffer(metaTo, rawPhone, finalName, off, idxNumber = 1) {
     const cleanT = off.contacto_telefono ? off.contacto_telefono.replace(/\D/g, '') : '';
     
@@ -520,8 +554,6 @@ async function sendSingleOffer(metaTo, rawPhone, finalName, off, idxNumber = 1) 
         cardMsg += `\n📲 *Contacto directo / WhatsApp:*\n👉 wa.me/52${cleanT} (${off.contacto_nombre || 'Contacto'})\n`;
     }
 
-    cardMsg += `\n💡 _Escribe *OFERTAS* para volver al menú de promociones._`;
-
     // Si tiene foto, enviarla con el texto como caption. Si no, enviar texto solo
     const hasPhoto = off.imagen_url || (off.imagenes && off.imagenes.length > 0);
     if (hasPhoto) {
@@ -534,41 +566,26 @@ async function sendSingleOffer(metaTo, rawPhone, finalName, off, idxNumber = 1) 
     }
 }
 
-async function sendOffersCatalogSummary(metaTo, rawPhone, finalName, offersList, titleHeader = '') {
-    if (offersList.length === 0) return;
+async function sendOffersList(metaTo, rawPhone, finalName, offersList, introHeader = '') {
+    if (!offersList || offersList.length === 0) return;
 
-    let summaryText = titleHeader || `🛍️ *Catálogo Semanal de Ofertas — Publica Navojoa* 🛍️\n\n${finalName ? `¡Hola ${finalName.split(' ')[0]}!` : '¡Hola!'} Aquí tienes las *${offersList.length}* promociones y eventos activos esta semana en Navojoa:\n`;
+    if (introHeader) {
+        await sendWhatsAppMessage(metaTo, introHeader, rawPhone, finalName);
+        await new Promise(r => setTimeout(r, 1500));
+    }
 
     for (let idx = 0; idx < offersList.length; idx++) {
-        const off = offersList[idx];
-        const cleanT = off.contacto_telefono ? off.contacto_telefono.replace(/\D/g, '') : '';
-        const numEmoji = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟'][idx] || `*#${idx + 1}*`;
-        
-        summaryText += `\n${numEmoji} *${off.titulo}*`;
-        if (off.categoria) summaryText += `\n   🏷️ _${off.categoria}_`;
-        if (cleanT) summaryText += `\n   📲 wa.me/52${cleanT}`;
-        summaryText += `\n`;
-    }
-
-    summaryText += `\n💬 *Responde con el número de la oferta (ej. 1, 2, 3...) para enviarte la foto y los detalles completos.*`;
-    summaryText += `\n\n🔍 *¿Buscas algo específico?* Escribe directamente lo que necesitas (ej: _evento_, _DJ_, _ferretería_, _comida_, _ropa_) y te mostraremos solo las ofertas de esa categoría.`;
-    await sendWhatsAppMessage(metaTo, summaryText, rawPhone, finalName);
-}
-
-async function sendOffersList(metaTo, rawPhone, finalName, offersList, introHeader) {
-    if (offersList.length === 0) return;
-
-    // Si son pocas ofertas (1 o 2), enviarlas individuales directamente
-    if (offersList.length <= 2) {
-        await sendWhatsAppMessage(metaTo, introHeader, rawPhone, finalName);
-        for (let idx = 0; idx < offersList.length; idx++) {
-            await new Promise(r => setTimeout(r, 1000));
-            await sendSingleOffer(metaTo, rawPhone, finalName, offersList[idx], idx + 1);
+        if (idx > 0) {
+            // Intervalo de 3 segundos entre cada imagen/publicidad
+            await new Promise(r => setTimeout(r, 3000));
         }
-    } else {
-        // Si son 3 o más ofertas, enviar el resumen interactivo para no saturar al usuario
-        await sendOffersCatalogSummary(metaTo, rawPhone, finalName, offersList, introHeader);
+        await sendSingleOffer(metaTo, rawPhone, finalName, offersList[idx], idx + 1);
     }
+
+    // Mensaje final orientador de búsqueda tras terminar de enviar todas las publicaciones
+    await new Promise(r => setTimeout(r, 3000));
+    const tipMsg = `*¿Buscas algo específico?* Escribe directamente lo que necesitas (ej: _evento_, _DJ_, _ferretería_, _comida_, _ropa_) y te mostraremos solo las ofertas de esa categoría.`;
+    await sendWhatsAppMessage(metaTo, tipMsg, rawPhone, finalName);
 }
 
 async function processBotRules(senderPhone, rawPhone, senderName, msgText) {
@@ -620,46 +637,30 @@ async function processBotRules(senderPhone, rawPhone, senderName, msgText) {
         return;
     }
 
-    // Regla 2: Menú de Categorías (cuando escriben 'categorias', 'categoria', 'giros', 'rubros', 'buscar', 'menu')
+    // Regla 2: Menú de Categorías (cuando escriben 'categorias', 'categoria', 'giros', 'rubros', 'menu')
     const isCategoryMenu = ['categorias', 'categoria', 'giros', 'giro', 'rubros', 'rubro', 'menu', 'secciones', 'que venden', 'que hay'].some(w => textNorm === w || textNorm === `ver ${w}` || textNorm === `mostrar ${w}` || textNorm.startsWith('buscar'));
     if (isCategoryMenu && !textNorm.includes('oferta') && !textNorm.includes('anunciar')) {
-        const menuCategorias = `🏷️ *Categorías Disponibles en Publica Navojoa* 🛍️\n\n${nameSalute} Puedes buscar ofertas exclusivas escribiendo directamente la categoría o producto que necesitas:\n\n1️⃣ 🍔 *COMIDA* (Restaurantes, Tacos, Sushi, Mariscos)\n2️⃣ 👗 *ROPA* (Moda, Calzado, Boutiques, Accesorios)\n3️⃣ 🛋️ *MUEBLES* (Hogar, Salas, Comedores, Decoración)\n4️⃣ ✂️ *BELLEZA* (Barberías, Uñas, Spa, Estéticas)\n5️⃣ 🩺 *SALUD* (Médicos, Dentistas, Clínicas, Farmacias)\n6️⃣ 🚗 *AUTOS* (Talleres, Refacciones, Car Wash, Mecánicos)\n7️⃣ 🏡 *CASAS* (Bienes Raíces, Renta, Terrenos, Locales)\n8️⃣ 🎉 *FIESTAS* (Eventos, Música, Grupos, Inflables)\n9️⃣ 📱 *CELULARES* (Tecnología, Laptops, Reparaciones)\n🔟 💼 *SERVICIOS* (Abogados, Contadores, Refrigeración, Oficios)\n\n💡 *Tip:* Escribe directamente lo que buscas (ejemplo: *tacos*, *mueblería*, *dentista*, *rentas*, *ropa*) y te enviaremos las ofertas de esa categoría al instante.`;
+        const menuCategorias = `🏷️ *Categorías Disponibles en Publica Navojoa* 🛍️\n\n${nameSalute} Puedes buscar ofertas exclusivas escribiendo directamente la categoría o producto que necesitas:\n\n1️⃣ 🍔 *COMIDA* (Restaurantes, Tacos, Sushi, Mariscos)\n2️⃣ 👗 *ROPA* (Moda, Calzado, Boutiques, Accesorios)\n3️⃣ 🛋️ *MUEBLES* (Hogar, Salas, Comedores, Decoración)\n4️⃣ ✂️ *BELLEZA* (Barberías, Uñas, Spa, Estéticas)\n5️⃣ 🩺 *SALUD* (Médicos, Dentistas, Clínicas, Farmacias)\n6️⃣ 🚗 *AUTOS* (Talleres, Refacciones, Car Wash, Mecánicos)\n7️⃣ 🏡 *CASAS* (Bienes Raíces, Renta, Terrenos, Locales)\n8️⃣ 🎉 *FIESTAS* (Eventos, Música, Grupos, DJ, Inflables)\n9️⃣ 📱 *CELULARES* (Tecnología, Laptops, Reparaciones)\n🔟 💼 *SERVICIOS* (Abogados, Contadores, Refrigeración, Oficios)\n\n💡 *Tip:* Escribe directamente lo que buscas (ejemplo: *DJ*, *tacos*, *mueblería*, *dentista*, *rentas*, *ropa*) y te enviaremos las ofertas de esa categoría al instante.`;
         await sendWhatsAppMessage(metaTo, menuCategorias, rawPhone, finalName);
         return;
     }
 
-    // Regla 3: Búsqueda Inteligente por Categoría Específica y Sinónimos
-    const matchedCategory = findCategoryByQuery(msgText);
-    const isGeneralCatalogWord = textNorm === 'ofertas' || textNorm === 'oferta' || textNorm === 'catalogo' || textNorm === 'remates' || textNorm === 'remate' || textNorm === 'ver catalogo' || textNorm === 'ver ofertas';
+    // Regla 3: Búsqueda Inteligente por Categoría Específica, DJ, Eventos, Negocios y Palabras Clave
+    const isGeneralCatalogWord = textNorm === 'ofertas' || textNorm === 'oferta' || textNorm === 'catalogo' || textNorm === 'remates' || textNorm === 'remate' || textNorm === 'ver catalogo' || textNorm === 'ver ofertas' || textLower.includes('ver catálogo de ofertas de la semana');
 
-    if (matchedCategory && !isGeneralCatalogWord) {
+    if (!isGeneralCatalogWord && textNorm.length >= 2) {
         const allActiveOffers = await getOffersFromFirestore();
-        const categoryOffers = filterOffersByCategory(allActiveOffers, matchedCategory);
+        const searchResults = searchOffers(allActiveOffers, msgText);
 
-        if (categoryOffers.length === 0) {
-            const respuestaVaciaCat = `🏷️ *Categoría: ${matchedCategory.nombre}*\n\n${nameSalute} Por el momento no tenemos ofertas vigentes en esta categoría específica.\n\n✨ Escribe *OFERTAS* para ver todo el catálogo semanal o *CATEGORÍAS* para consultar otros giros comerciales.`;
-            await sendWhatsAppMessage(metaTo, respuestaVaciaCat, rawPhone, finalName);
-            return;
-        }
-
-        const introCatMsg = `🏷️ *Categoría: ${matchedCategory.nombre}* 🛍️\n\n${nameSalute} Encontramos *${categoryOffers.length}* promociones activas para ti en este rubro.\n\n_Te enviamos cada una a continuación 👇_`;
-        await sendOffersList(metaTo, rawPhone, finalName, categoryOffers, introCatMsg);
-        return;
-    }
-
-    // Regla 3.5: Consulta de Oferta Individual por Número (ej. 1, 2, #3, ver 1, oferta 2)
-    const numberMatch = textLower.match(/^(?:ver\s*|oferta\s*|#\s*)?(\d{1,2})$/);
-    if (numberMatch) {
-        const offerIdx = parseInt(numberMatch[1], 10) - 1;
-        const activeOffers = await getOffersFromFirestore();
-        if (offerIdx >= 0 && offerIdx < activeOffers.length) {
-            await sendSingleOffer(metaTo, rawPhone, finalName, activeOffers[offerIdx], offerIdx + 1);
+        if (searchResults.length > 0) {
+            const introSearchMsg = `🏷️ *Búsqueda:* _${msgText.trim()}_ 🛍️\n\n${nameSalute} Encontramos *${searchResults.length}* ${searchResults.length === 1 ? 'promoción activa' : 'promociones activas'} para ti:\n\n_Te ${searchResults.length === 1 ? 'la enviamos' : 'las enviamos'} a continuación con todos los detalles 👇_`;
+            await sendOffersList(metaTo, rawPhone, finalName, searchResults, introSearchMsg);
             return;
         }
     }
 
-    // Regla 4: Catálogo Dinámico General de Ofertas (Resumen interactivo limpio sin spam de 8 mensajes)
-    if (textLower.includes('catálogo') || textLower.includes('catalogo') || textLower.includes('oferta') || textLower.includes('remate')) {
+    // Regla 4: Catálogo Completo General de Ofertas (Envío de cada publicidad con fotos cada 3 segundos)
+    if (isGeneralCatalogWord || textLower.includes('catálogo') || textLower.includes('catalogo') || textLower.includes('oferta') || textLower.includes('remate')) {
         if (await isCatalogOnCooldown(rawPhone)) {
             console.log(`[COOLDOWN] Catálogo ignorado por cooldown para ${rawPhone}`);
             return;
@@ -673,8 +674,8 @@ async function processBotRules(senderPhone, rawPhone, senderName, msgText) {
             return;
         }
 
-        const introMsg = `🛍️ *Catálogo Semanal de Ofertas — Publica Navojoa* 🛍️\n\n${nameSalute} Aquí tienes las *${activeOffers.length}* promociones activas esta semana en Navojoa:\n`;
-        await sendOffersCatalogSummary(metaTo, rawPhone, finalName, activeOffers, introMsg);
+        const introMsg = `🛍️ *Catálogo Semanal de Ofertas — Publica Navojoa* 🛍️\n\n${nameSalute} Aquí tienes las *${activeOffers.length}* promociones y eventos activos esta semana en Navojoa:\n\n_Te enviamos cada una a continuación con sus imágenes y detalles 👇_`;
+        await sendOffersList(metaTo, rawPhone, finalName, activeOffers, introMsg);
         return;
     }
 
@@ -702,8 +703,8 @@ async function processBotRules(senderPhone, rawPhone, senderName, msgText) {
         return;
     }
 
-    // Regla 8: Respuesta por defecto (Mensajes libres)
-    const respuestaDefault = `¡Hola ${firstName || ''}! 👋 Recibimos tu mensaje en *Publica Navojoa*.\n\nUn asesor de nuestro equipo te responderá aquí mismo a la brevedad.\n\n💡 *Comandos disponibles:*\n- Escribe *OFERTAS* para ver el catálogo semanal.\n- Escribe *CATEGORÍAS* para buscar por giros (comida, ropa, muebles, etc.).\n- Escribe *ANUNCIAR* si deseas promocionar tu negocio.`;
+    // Regla 8: Respuesta por defecto (Mensajes libres sin coincidencia)
+    const respuestaDefault = `¡Hola ${firstName || ''}! 👋 Recibimos tu mensaje en *Publica Navojoa*.\n\nUn asesor de nuestro equipo te responderá aquí mismo a la brevedad.\n\n💡 *Comandos disponibles:*\n- Escribe *OFERTAS* para ver el catálogo semanal completo con fotos.\n- Escribe directamente lo que buscas (ej: *DJ*, *evento*, *comida*, *ropa*, *ferretería*) para ver ofertas de ese giro.\n- Escribe *ANUNCIAR* si deseas promocionar tu negocio.`;
     await sendWhatsAppMessage(metaTo, respuestaDefault, rawPhone, finalName);
 }
 
