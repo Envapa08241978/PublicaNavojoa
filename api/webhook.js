@@ -308,20 +308,24 @@ async function getOffersFromFirestore() {
 // ═════════════════════════════════════════════════════════════════════
 // TAXONOMÍA DE CATEGORÍAS & SINÓNIMOS PARA BÚSQUEDA INTELIGENTE
 // ═════════════════════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════════════════════
+// TAXONOMÍA DE CATEGORÍAS & SINÓNIMOS PARA BÚSQUEDA INTELIGENTE
+// ═════════════════════════════════════════════════════════════════════
 const CATEGORIES_TAXONOMY = [
     {
         id: 'restaurantes',
         nombre: '🍔 Comida, Restaurantes & Gastronomía',
         shortName: 'Comida & Restaurantes',
         keywords: [
-            'comida', 'restaurante', 'restaurantes', 'gastronomia', 'comer', 'cenar', 'desayuno', 'desayunos', 
-            'almuerzo', 'almuerzos', 'cena', 'cenas', 'taco', 'tacos', 'taqueria', 'taquería', 'hamburguesa', 
-            'hamburguesas', 'burger', 'burgers', 'pizza', 'pizzas', 'pizzeria', 'pizzería', 'marisco', 'mariscos', 
-            'marisqueria', 'marisquería', 'sushi', 'hotdog', 'hotdogs', 'dogo', 'dogos', 'carne asada', 'asador', 
-            'postre', 'postres', 'pastel', 'pasteles', 'pasteleria', 'pastelería', 'reposteria', 'repostería', 
-            'cafe', 'café', 'cafes', 'cafeteria', 'cafetería', 'bar', 'antojito', 'antojitos', 'snack', 'snacks', 
-            'alita', 'alitas', 'boneless', 'fondita', 'birria', 'menudo', 'desayunar', 'lonche', 'alimentos', 
-            'carnitas', 'pollos', 'pollo asado', 'tortas', 'mariscos navojoa', 'cenaduria'
+            'comida', 'restaurante', 'restaurantes', 'gastronomia', 'gastronomía', 'comer', 'cenar', 
+            'desayuno', 'desayunos', 'almuerzo', 'almuerzos', 'cena', 'cenas', 'taco', 'tacos', 'taqueria', 
+            'taquería', 'hamburguesa', 'hamburguesas', 'burger', 'burgers', 'pizza', 'pizzas', 'pizzeria', 
+            'pizzería', 'marisco', 'mariscos', 'marisqueria', 'marisquería', 'sushi', 'hotdog', 'hotdogs', 
+            'dogo', 'dogos', 'carne asada', 'asador', 'postre', 'postres', 'pastel', 'pasteles', 'pasteleria', 
+            'pastelería', 'reposteria', 'repostería', 'cafe', 'café', 'cafes', 'cafeteria', 'cafetería', 
+            'bar', 'antojito', 'antojitos', 'snack', 'snacks', 'alita', 'alitas', 'boneless', 'fondita', 
+            'birria', 'menudo', 'desayunar', 'lonche', 'alimentos', 'carnitas', 'pollos', 'pollo asado', 
+            'tortas', 'cenaduria', 'cenaduría'
         ]
     },
     {
@@ -332,9 +336,9 @@ const CATEGORIES_TAXONOMY = [
             'ropa', 'calzado', 'moda', 'zapato', 'zapatos', 'zapateria', 'zapatería', 'tenis', 'vestido', 
             'vestidos', 'pantalon', 'pantalón', 'pantalones', 'camisa', 'camisas', 'blusa', 'blusas', 'boutique', 
             'closet', 'accesorios', 'bolsa', 'bolsas', 'joyeria', 'joyería', 'joyas', 'joya', 'reloj', 'relojes', 
-            'gorra', 'gorras', 'falda', 'faldas', 'traje', 'trajes', 'lentes', 'bebe', 'bebé', 'bebes', 
-            'ropa de bebe', 'infantil', 'tienda de ropa', 'jeans', 'playeras', 'playera', 'sandalias', 'tacones', 
-            'ropa interior', 'lenceria', 'perfumes', 'perfume', 'outfit'
+            'gorra', 'gorras', 'falda', 'faldas', 'traje', 'trajes', 'bebe', 'bebé', 'bebes', 'infantil', 
+            'tienda de ropa', 'jeans', 'playeras', 'playera', 'sandalias', 'tacones', 'ropa interior', 
+            'lenceria', 'lencería', 'perfumes', 'perfume', 'outfit'
         ]
     },
     {
@@ -342,13 +346,13 @@ const CATEGORIES_TAXONOMY = [
         nombre: '🛋️ Muebles, Hogar & Decoración',
         shortName: 'Muebles & Hogar',
         keywords: [
-            'mueble', 'muebles', 'muebleria', 'mueblería', 'hogar', 'decoracion', 'decoración', 'casa', 'sala', 
+            'mueble', 'muebles', 'muebleria', 'mueblería', 'hogar', 'decoracion', 'decoración', 'sala', 
             'salas', 'comedor', 'comedores', 'recamara', 'recámaras', 'recamaras', 'colchon', 'colchón', 
-            'colchones', 'cocina', 'cocinas', 'carpinteria', 'carpintería', 'cortina', 'cortinas', 'persiana', 
-            'persianas', 'lampara', 'lámparas', 'lamparas', 'jardineria', 'jardinería', 'jardin', 'jardín', 
-            'ferreteria', 'ferretería', 'herramientas', 'pintura', 'electrodomesticos', 'electrodomésticos', 
-            'linea blanca', 'refrigerador', 'refrigeradores', 'estufa', 'estufas', 'lavadora', 'lavadoras', 
-            'almohada', 'almohadas', 'sabanas', 'sillon', 'sillones', 'closets', 'muebleria navojoa', 'tapiceria'
+            'colchones', 'cocina', 'cocinas', 'cocinas modernas', 'persiana', 'persianas', 'persianas sheer', 
+            'persianas zebra', 'cortina', 'cortinas', 'lampara', 'lámparas', 'lamparas', 'electrodomesticos', 
+            'electrodomésticos', 'linea blanca', 'línea blanca', 'refrigerador', 'refrigeradores', 'estufa', 
+            'estufas', 'lavadora', 'lavadoras', 'almohada', 'almohadas', 'sabanas', 'sillon', 'sillones', 
+            'tapiceria', 'tapicería', 'jacott'
         ]
     },
     {
@@ -357,11 +361,11 @@ const CATEGORIES_TAXONOMY = [
         shortName: 'Belleza & Barberías',
         keywords: [
             'belleza', 'barberia', 'barbería', 'barbero', 'barber', 'barbershop', 'spa', 'estetica', 'estética', 
-            'salon de belleza', 'salón de belleza', 'unas', 'uñas', 'acrilicas', 'pestanas', 'pestañas', 'ceja', 
-            'cejas', 'corte de pelo', 'corte de cabello', 'corte', 'tinte', 'tintes', 'peinado', 'peinados', 
-            'maquillaje', 'makeup', 'masaje', 'masajes', 'facial', 'faciales', 'depilacion', 'depilación', 
-            'skincare', 'cuidado personal', 'cosmeticos', 'manicure', 'pedicure', 'microblading', 'alisado', 
-            'keratina', 'barba'
+            'salon de belleza', 'salón de belleza', 'unas', 'uñas', 'acrilicas', 'acrílicas', 'pestanas', 
+            'pestañas', 'ceja', 'cejas', 'corte de pelo', 'corte de cabello', 'tinte', 'tintes', 'peinado', 
+            'peinados', 'maquillaje', 'makeup', 'masaje', 'masajes', 'facial', 'faciales', 'depilacion', 
+            'depilación', 'skincare', 'cuidado personal', 'cosmeticos', 'cosméticos', 'manicure', 'pedicure', 
+            'microblading', 'alisado', 'keratina', 'barba', 'aurabrows', 'nikol vasquez', 'cejas y pestañas'
         ]
     },
     {
@@ -372,10 +376,11 @@ const CATEGORIES_TAXONOMY = [
             'salud', 'medico', 'médico', 'medicos', 'médicos', 'doctor', 'doctores', 'doctora', 'doctoras', 
             'clinica', 'clínica', 'consultorio', 'hospital', 'farmacia', 'farmacias', 'medicamento', 
             'medicamentos', 'dentista', 'dentistas', 'dental', 'dientes', 'odontologo', 'odontólogo', 
-            'odontologia', 'optica', 'óptica', 'oftalmologo', 'lentes', 'psicologo', 'psicólogo', 'psicologia', 
-            'nutriologo', 'nutriólogo', 'nutricion', 'laboratorio', 'analisis', 'análisis', 'pediatra', 
-            'ginecologo', 'ginecólogo', 'ginecologia', 'fisioterapia', 'rehabilitacion', 'terapia', 'medicina', 
-            'cardiologo', 'traumatologo', 'ultrasonido', 'rayos x'
+            'odontologia', 'odontología', 'optica', 'óptica', 'oftalmologo', 'oftalmólogo', 'psicologo', 
+            'psicólogo', 'psicologia', 'nutriologo', 'nutriólogo', 'nutricion', 'nutrición', 'laboratorio', 
+            'analisis clinicos', 'análisis clínicos', 'pediatra', 'ginecologo', 'ginecólogo', 'ginecologia', 
+            'fisioterapia', 'rehabilitacion', 'rehabilitación', 'terapia', 'medicina', 'cardiologo', 
+            'traumatologo', 'ultrasonido', 'rayos x', 'divina salud'
         ]
     },
     {
@@ -384,35 +389,37 @@ const CATEGORIES_TAXONOMY = [
         shortName: 'Autos & Talleres',
         keywords: [
             'auto', 'autos', 'carro', 'carros', 'coche', 'coches', 'vehiculo', 'vehículos', 'vehiculos', 
-            'taller', 'talleres', 'mecanico', 'mecánico', 'mecanicos', 'refacciones', 'refaccionaria', 'llanta', 
-            'llantas', 'vulcanizadora', 'car wash', 'autolavado', 'lavado de autos', 'aceite', 'cambio de aceite', 
-            'frenos', 'suspension', 'suspensión', 'laminado', 'pintura automotriz', 'bateria', 'batería', 
-            'baterias', 'acumuladores', 'moto', 'motos', 'motocicleta', 'motocicletas', 'parabrisas', 
-            'polarizado', 'transmisiones', 'afinacion'
+            'taller', 'talleres', 'mecanico', 'mecánico', 'mecanicos', 'mecánicos', 'refacciones', 
+            'refaccionaria', 'llanta', 'llantas', 'vulcanizadora', 'car wash', 'autolavado', 'lavado de autos', 
+            'lavado de carros', 'lavado a domicilio', 'cambio de aceite', 'frenos', 'suspension', 'suspensión', 
+            'laminado automotriz', 'hojalateria', 'laminado y pintura', 'pintura automotriz', 'bateria', 
+            'batería', 'baterias', 'acumuladores', 'moto', 'motos', 'motocicleta', 'motocicletas', 
+            'parabrisas', 'polarizado', 'transmisiones', 'afinacion', 'afinación'
         ]
     },
     {
         id: 'inmobiliaria',
-        nombre: '🏡 Bienes Raíces, Renta y Venta de Casas/Terrenos',
-        shortName: 'Bienes Raíces & Terrenos',
+        nombre: '🏡 Bienes Raíces, Renta y Hospedaje',
+        shortName: 'Bienes Raíces & Hospedaje',
         keywords: [
-            'bienes raices', 'bienes raíces', 'inmobiliaria', 'casa', 'casas', 'terreno', 'terrenos', 'lote', 
-            'lotes', 'renta', 'rentar', 'rentas', 'se renta', 'se vende', 'venta de casas', 'departamento', 
-            'departamentos', 'depa', 'depas', 'local', 'locales', 'local comercial', 'bodega', 'bodegas', 
-            'rancho', 'ranchos', 'propiedad', 'propiedades', 'inmueble', 'inmuebles', 'arrendamiento', 
-            'traspaso', 'fraccionamiento'
+            'bienes raices', 'bienes raíces', 'inmobiliaria', 'casa en renta', 'casa en venta', 'casas en renta', 
+            'terreno', 'terrenos', 'lote', 'lotes', 'hospedaje', 'hospedajes', 'cabana', 'cabaña', 'cabañas', 
+            'ranchito de alamos', 'alamos sonora', 'alamos', 'departamento', 'departamentos', 'depa', 'depas', 
+            'local comercial', 'bodega', 'bodegas', 'rancho', 'ranchos', 'propiedad', 'propiedades', 
+            'inmueble', 'inmuebles', 'arrendamiento', 'traspaso', 'fraccionamiento'
         ]
     },
     {
         id: 'eventos',
-        nombre: '🎉 Eventos, Fiestas, Grupos & Banquetes',
-        shortName: 'Eventos & Fiestas',
+        nombre: '🎉 Eventos, Fiestas, Grupos & Sonido',
+        shortName: 'Eventos & Sonido',
         keywords: [
             'evento', 'eventos', 'fiesta', 'fiestas', 'sonido', 'musica', 'música', 'grupo musical', 'banda', 
-            'norteno', 'norteño', 'mariachi', 'dj', 'salon de fiestas', 'salon de eventos', 'salón de eventos', 
-            'quinceanera', 'quinceañera', 'boda', 'bodas', 'cumpleanos', 'cumpleaños', 'banquete', 'banquetes', 
-            'mesas y sillas', 'manteleria', 'brincolin', 'brincolines', 'inflable', 'inflables', 'fotografia', 
-            'fotografía', 'video', 'pinata', 'piñata', 'decoracion de fiestas', 'animacion', 'sonido disco', 'toldos'
+            'norteno', 'norteño', 'mariachi', 'dj', 'dj shawn', 'audio', 'audio profesional', 'iluminacion para eventos', 
+            'luces', 'salon de fiestas', 'salon de eventos', 'salón de eventos', 'quinceanera', 'quinceañera', 'boda', 
+            'bodas', 'cumpleanos', 'cumpleaños', 'banquete', 'banquetes', 'mesas y sillas', 'manteleria', 
+            'mantelería', 'brincolin', 'brincolines', 'inflable', 'inflables', 'sonido disco', 'toldos', 
+            'animacion de fiestas'
         ]
     },
     {
@@ -421,23 +428,27 @@ const CATEGORIES_TAXONOMY = [
         shortName: 'Celulares & Tecnología',
         keywords: [
             'celular', 'celulares', 'telefono', 'teléfono', 'telefonos', 'smartphone', 'smartphones', 
-            'computacion', 'computación', 'computadora', 'computadoras', 'laptop', 'laptops', 'pc', 'tablet', 
-            'tablets', 'electronica', 'electrónica', 'reparacion de celulares', 'accesorios de celular', 
-            'pantalla', 'pantallas', 'funda', 'fundas', 'cargador', 'cargadores', 'tecnologia', 'tecnología', 
-            'videojuegos', 'consola', 'consolas', 'audifonos', 'impresoras', 'camaras de seguridad', 'iphone', 'samsung'
+            'computacion', 'computación', 'computadora', 'computadoras', 'laptop', 'laptops', 'pc', 'gamer', 
+            'gaming', 'cpu gamer', 'cpu', 'pcrepair', 'tablet', 'tablets', 'electronica', 'electrónica', 
+            'reparacion de celulares', 'accesorios de celular', 'pantalla', 'pantallas', 'funda', 'fundas', 
+            'cargador', 'cargadores', 'tecnologia', 'tecnología', 'videojuegos', 'consola', 'consolas', 
+            'audifonos', 'audífonos', 'impresoras', 'camaras de seguridad', 'iphone', 'samsung', 'ryzen', 
+            'geforce', 'rtx'
         ]
     },
     {
         id: 'servicios',
-        nombre: '💼 Servicios Profesionales, Técnicos & Oficios',
-        shortName: 'Servicios Profesionales',
+        nombre: '💼 Servicios Profesionales, Mantenimiento & Limpieza',
+        shortName: 'Servicios & Mantenimiento',
         keywords: [
-            'servicios', 'servicio', 'abogado', 'abogados', 'contador', 'contadores', 'arquitecto', 
-            'arquitectos', 'ingeniero', 'electricista', 'plomero', 'plomeria', 'plomería', 'aire acondicionado', 
-            'refrigeracion', 'refrigeración', 'minisplit', 'climas', 'carpintero', 'herrero', 'herreria', 
+            'servicios', 'servicio', 'mantenimiento', 'limpieza', 'limpieza profunda', 'grupo altua', 'altua', 
+            'jardineria', 'jardinería', 'poda', 'jardin', 'jardín', 'electricista', 'electricidad', 'plomero', 
+            'plomeria', 'plomería', 'pintor', 'pintura de casas', 'carpintero', 'carpinteria', 'carpintería', 
+            'aire acondicionado', 'refrigeracion', 'refrigeración', 'minisplit', 'climas', 'herrero', 'herreria', 
             'herrería', 'cerrajero', 'cerrajeria', 'cerrajería', 'fumigacion', 'fumigación', 'fumigador', 
-            'limpieza', 'diseno', 'diseño', 'imprenta', 'publicidad', 'rotulacion', 'mantenimiento', 
-            'soldadura', 'mudanzas', 'fletes', 'seguros', 'tramites'
+            'diseno grafico', 'diseno publicitario', 'imprenta', 'publicidad', 'rotulacion', 'rotulación', 
+            'soldadura', 'mudanzas', 'fletes', 'abogado', 'abogados', 'contador', 'contadores', 'arquitecto', 
+            'ingeniero'
         ]
     }
 ];
@@ -453,78 +464,120 @@ function normalizeText(str) {
         .trim();
 }
 
+function matchKeywordInText(normKeyword, normText) {
+    if (!normKeyword || !normText) return false;
+    const escaped = normKeyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return new RegExp(`(^|\\s)${escaped}(\\s|$)`).test(normText);
+}
+
 function findCategoryByQuery(queryText) {
     const normQuery = normalizeText(queryText);
     if (!normQuery || normQuery.length < 2) return null;
 
-    const words = normQuery.split(' ').filter(w => w.length >= 2);
-
     for (const cat of CATEGORIES_TAXONOMY) {
         for (const kw of cat.keywords) {
             const normKw = normalizeText(kw);
-            if (normKw.includes(' ')) {
-                if (normQuery.includes(normKw)) return cat;
-            } else {
-                if (words.includes(normKw) || normQuery === normKw) return cat;
+            if (matchKeywordInText(normKw, normQuery) || normQuery === normKw) {
+                return cat;
             }
         }
     }
     return null;
 }
 
-function filterOffersByCategory(offers, categoryObj) {
-    const catKeywords = categoryObj.keywords.map(k => normalizeText(k));
-    const catShort = normalizeText(categoryObj.shortName);
-    const catId = normalizeText(categoryObj.id);
-
-    return offers.filter(off => {
-        const offCat = normalizeText(off.categoria || '');
-        const offTit = normalizeText(off.titulo || '');
-        const offDesc = normalizeText(off.descripcion || '');
-
-        // 1. Coincidencia directa en el campo categoría
-        if (offCat.includes(catId) || offCat.includes(catShort)) return true;
-        if (catKeywords.some(kw => offCat.includes(kw))) return true;
-
-        // 2. Coincidencia de palabras clave en título o descripción
-        if (catKeywords.some(kw => offTit.includes(kw) || offDesc.includes(kw))) return true;
-
-        return false;
-    });
-}
-
 function searchOffers(allOffers, queryText) {
     const normQuery = normalizeText(queryText);
     if (!normQuery || normQuery.length < 2) return [];
 
-    const matchedCat = findCategoryByQuery(queryText);
     const queryWords = normQuery.split(' ').filter(w => w.length >= 2);
+    const matchedCat = findCategoryByQuery(queryText);
 
-    const matchesMap = new Map();
+    // Puntuación de relevancia para cada oferta
+    const scoredOffers = [];
 
-    // 1. Si coincide con una categoría de la taxonomía
-    if (matchedCat) {
-        const catOffers = filterOffersByCategory(allOffers, matchedCat);
-        catOffers.forEach(o => matchesMap.set(o.id, o));
-    }
-
-    // 2. Coincidencia directa por palabras clave en título, descripción o categoría de la oferta
     for (const off of allOffers) {
-        if (matchesMap.has(off.id)) continue;
         const offCat = normalizeText(off.categoria || '');
         const offTit = normalizeText(off.titulo || '');
         const offDesc = normalizeText(off.descripcion || '');
+        const offNom = normalizeText(off.contacto_nombre || '');
 
-        const hasMatch = queryWords.some(w => {
-            return offCat.includes(w) || offTit.includes(w) || offDesc.includes(w);
-        });
+        let score = 0;
 
-        if (hasMatch) {
-            matchesMap.set(off.id, off);
+        // 1. Coincidencia directa del query completo en Título o Categoría (Puntuación máxima: 100)
+        if (matchKeywordInText(normQuery, offTit) || matchKeywordInText(normQuery, offCat)) {
+            score += 100;
+        }
+
+        // 2. Coincidencia directa del query en nombre del negocio / contacto (Puntuación: 90)
+        if (matchKeywordInText(normQuery, offNom)) {
+            score += 90;
+        }
+
+        // 3. Coincidencia de palabras del query en Título o Categoría (Puntuación: 50 por palabra)
+        for (const w of queryWords) {
+            if (matchKeywordInText(w, offTit) || matchKeywordInText(w, offCat)) {
+                score += 50;
+            }
+        }
+
+        // 4. Si el query mapea a una categoría de la taxonomía
+        if (matchedCat) {
+            const catId = normalizeText(matchedCat.id);
+            const catShort = normalizeText(matchedCat.shortName);
+
+            // Si la categoría de la oferta es afín a la categoría taxonomía
+            if (matchKeywordInText(catId, offCat) || matchKeywordInText(catShort, offCat)) {
+                score += 45;
+            } else {
+                for (const kw of matchedCat.keywords) {
+                    const normKw = normalizeText(kw);
+                    if (matchKeywordInText(normKw, offCat)) {
+                        score += 35;
+                        break;
+                    }
+                }
+            }
+
+            // Coincidencia de palabras clave de la taxonomía en el título
+            for (const kw of matchedCat.keywords) {
+                const normKw = normalizeText(kw);
+                if (matchKeywordInText(normKw, offTit)) {
+                    score += 30;
+                    break;
+                }
+            }
+        }
+
+        // 5. Coincidencia en descripción
+        for (const w of queryWords) {
+            if (w.length >= 3 && matchKeywordInText(w, offDesc)) {
+                const genericWords = ['casa', 'hogar', 'espacio', 'espacios', 'facil', 'limpieza', 'eventos', 'calidad', 'servicio', 'contacto', 'mensaje'];
+                if (!genericWords.includes(w)) {
+                    score += 25;
+                }
+            }
+        }
+
+        // Bonificación extra para eventos/música/sonido/audio/dj
+        if (['musica', 'sonido', 'audio', 'dj'].includes(normQuery) && (offTit.includes('dj') || offCat.includes('sonido'))) {
+            score += 50;
+        }
+
+        if (score > 0) {
+            scoredOffers.push({ offer: off, score });
         }
     }
 
-    return Array.from(matchesMap.values());
+    // Ordenar por relevancia descendente
+    scoredOffers.sort((a, b) => b.score - a.score);
+
+    if (scoredOffers.length > 0) {
+        const topScore = scoredOffers[0].score;
+        const threshold = Math.max(35, topScore * 0.6);
+        return scoredOffers.filter(item => item.score >= threshold).map(item => item.offer);
+    }
+
+    return [];
 }
 
 async function sendSingleOffer(metaTo, rawPhone, finalName, off, idxNumber = 1) {

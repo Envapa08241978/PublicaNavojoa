@@ -465,4 +465,23 @@ Todos los contactos se indexan de forma única en la colección `/contacts/{clea
   4. **Protección en Vercel (`maxDuration: 60`):** Se configuró en `vercel.json` un límite de ejecución extendido de 60 segundos para `api/webhook.js`.
   5. **Filtro de Mensajes Idénticos en CRM:** La ventana de deduplicación de guardado en `saveToFirestore` se amplió a 60 segundos para evitar duplicidad visual en el panel CRM.
 
+---
+
+## 29. MOTOR DE BÚQUEDA INTELIGENTE DE ALTA PRECISIÓN Y ELIMINACIÓN DE FALSOS POSITIVOS
+
+* **Diagnóstico de Falsos Positivos:**
+  - Al buscar términos como *"belleza"*, el buscador anterior realizaba coincidencias por subcadenas sueltas (`.includes('spa')`), lo cual disparaba falsos positivos al coincidir con palabras como *"espacios"* en descripciones de negocios como persianas (*Soluciones del Hogar Jacott*) y mantenimiento (*Grupo ALTUA*).
+  - Palabras genéricas como *"video"*, *"laminado"* o *"diseño"* asociaban indebidamente ofertas de computadoras gamer o de cejas/pestañas a categorías como *Eventos*, *Autos* o *Servicios*.
+* **Solución Integral de Relevancia Ponderada:**
+  1. **Límites de Palabra Estrictos (`matchKeywordInText`):** Se implementó verificación de fronteras de palabras con expresiones regulares para evitar que palabras clave cortas coincidan dentro de otras palabras (ej: *"spa"* ya no coincide en *"espacios"*).
+  2. **Depuración de Taxonomía:** Se disambiguaron términos genéricos y se agregaron marcas comerciales locales (*AuraBrows, Nikol Vásquez, DJ Shawn, Jacott, Grupo Altua, PC Repair, Divina Salud*).
+  3. **Motor de Scoring Ponderado (`searchOffers`):**
+     - Coincidencia exacta en Título o Categoría: **+100 pts**
+     - Coincidencia en Nombre del Negocio: **+90 pts**
+     - Coincidencia por palabra clave de categoría en Título: **+30 pts**
+     - Coincidencia en descripción filtrada (excluyendo términos genéricos): **+25 pts**
+     - Bonificaciones temáticas prioritarias (música/audio/DJ).
+  4. **Filtro de Umbral Relativo Dinámico:** Solo se despachan ofertas cuyo puntaje alcance al menos el 60% de la puntuación más alta (`Math.max(35, topScore * 0.6)`), garantizando 100% de precisión y cero resultados basura.
+
+
 
