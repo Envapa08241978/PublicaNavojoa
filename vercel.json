@@ -1,5 +1,10 @@
 {
   "cleanUrls": true,
+  "functions": {
+    "api/webhook.js": {
+      "maxDuration": 60
+    }
+  },
   "rewrites": [
     { "source": "/", "destination": "/index.html" },
     { "source": "/precios", "destination": "/index.html" },

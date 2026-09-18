@@ -8,14 +8,8 @@ const FIRESTORE_BASE = 'https://firestore.googleapis.com/v1/projects/loquese-app
 // Colección: processed_msgs/{hash del msgId} → { msgId, ts }
 // ═══════════════════════════════════════════════════════════════════════════
 function hashMsgId(msgId) {
-    // Crear un ID seguro para Firestore: solo letras y números
-    let hash = 0;
-    for (let i = 0; i < msgId.length; i++) {
-        const char = msgId.charCodeAt(i);
-        hash = ((hash << 5) - hash) + char;
-        hash = hash & hash; // Convert to 32bit integer
-    }
-    return 'msg_' + Math.abs(hash).toString(36) + '_' + msgId.length;
+    if (!msgId) return 'unknown';
+    return 'msg_' + msgId.replace(/[^a-zA-Z0-9_-]/g, '_');
 }
 
 async function isDuplicateMessage(msgId) {
@@ -29,7 +23,7 @@ async function isDuplicateMessage(msgId) {
             console.log(`[DEDUP] Documento ${safeId} ya existe → DUPLICADO`);
             return true;
         }
-        // No existe (404) → marcarlo como procesado
+        // No existe (404) → marcarlo como procesado de inmediato
         console.log(`[DEDUP] Documento ${safeId} no existe → Registrando como nuevo`);
         await fetch(docUrl + '?updateMask.fieldPaths=ts&updateMask.fieldPaths=mid', {
             method: 'PATCH',
@@ -51,7 +45,7 @@ async function isDuplicateMessage(msgId) {
 // Colección: cooldowns/{phone} → { ts }
 // ═══════════════════════════════════════════════════════════════════════════
 async function isCatalogOnCooldown(cleanPhone) {
-    const COOLDOWN_MS = 10000; // 10 segundos de cooldown
+    const COOLDOWN_MS = 60000; // 60 segundos de cooldown anti-saturación
     const docUrl = `${FIRESTORE_BASE}/cooldowns/${cleanPhone}`;
     const now = Date.now();
     try {
@@ -94,10 +88,10 @@ async function saveToFirestore(cleanPhone, senderName, text, type, fileUrl = '',
             }
         } catch(e) {}
 
-        // Prevenir duplicados (si el ultimo mensaje es identico en < 30 segundos)
+        // Prevenir duplicados (si el ultimo mensaje es identico en < 60 segundos)
         if (existingMsgs.length > 0) {
             const lastM = existingMsgs[existingMsgs.length - 1];
-            if (lastM.text === text && lastM.type === type && (Date.now() - (lastM.timestamp || 0) < 30000)) {
+            if (lastM.text === text && lastM.type === type && (Date.now() - (lastM.timestamp || 0) < 60000)) {
                 console.log(`[SAVE DEDUP] Mensaje idéntico ignorado para ${cleanPhone}: "${text}"`);
                 return;
             }
@@ -571,19 +565,19 @@ async function sendOffersList(metaTo, rawPhone, finalName, offersList, introHead
 
     if (introHeader) {
         await sendWhatsAppMessage(metaTo, introHeader, rawPhone, finalName);
-        await new Promise(r => setTimeout(r, 1500));
+        await new Promise(r => setTimeout(r, 600));
     }
 
     for (let idx = 0; idx < offersList.length; idx++) {
         if (idx > 0) {
-            // Intervalo de 3 segundos entre cada imagen/publicidad
-            await new Promise(r => setTimeout(r, 3000));
+            // Intervalo ágil de 800ms entre cada imagen para entrega limpia y veloz
+            await new Promise(r => setTimeout(r, 800));
         }
         await sendSingleOffer(metaTo, rawPhone, finalName, offersList[idx], idx + 1);
     }
 
     // Mensaje final orientador de búsqueda tras terminar de enviar todas las publicaciones
-    await new Promise(r => setTimeout(r, 3000));
+    await new Promise(r => setTimeout(r, 800));
     const tipMsg = `*¿Buscas algo específico?* Escribe directamente lo que necesitas (ej: _evento_, _DJ_, _ferretería_, _comida_, _ropa_) y te mostraremos solo las ofertas de esa categoría.`;
     await sendWhatsAppMessage(metaTo, tipMsg, rawPhone, finalName);
 }
