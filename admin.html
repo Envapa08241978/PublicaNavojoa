@@ -3547,6 +3547,7 @@
     }
 
     // Copiar datos del formulario directamente al Catálogo del Bot de WhatsApp
+    // Copiar datos del formulario directamente al Catálogo del Bot de WhatsApp
     async function copyOrderToCatalog(orderId) {
         const order = currentOrders.find(o => (o.id === orderId || o.order_id === orderId));
         if (!order) return alert('No se encontró el pedido.');
@@ -3570,13 +3571,42 @@
 
         if (!confirm(`¿Deseas agregar el anuncio "${pub.titulo}" al Catálogo Dinámico de Ofertas del Bot de WhatsApp (${diasVigencia} días de vigencia)?`)) return;
 
+        let finalImageUrl = pub.foto_url || pub.imagen_url || '';
+        
+        // Si la imagen está en base64, subirla primero al CDN para no exceder el límite de 1MB de Firestore
+        if (!finalImageUrl && pub.foto_base64) {
+            if (pub.foto_base64.startsWith('http')) {
+                finalImageUrl = pub.foto_base64;
+            } else {
+                try {
+                    const upRes = await fetch('/api/upload-image', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            imageBase64: pub.foto_base64,
+                            filename: `anuncio_${orderId}.jpg`
+                        })
+                    });
+                    const upData = await upRes.json();
+                    if (upData && upData.url) {
+                        finalImageUrl = upData.url;
+                    }
+                } catch(upErr) {
+                    console.warn('No se pudo subir a CDN, usando base64 directo si cabe:', upErr);
+                    if (pub.foto_base64.length < 800000) {
+                        finalImageUrl = pub.foto_base64;
+                    }
+                }
+            }
+        }
+
         const docId = 'oferta_' + (order.order_id || Date.now());
         const offerData = {
             titulo: pub.titulo || 'Promoción Especial',
             categoria: pub.categoria || 'General',
             descripcion: pub.descripcion || '',
-            imagen_url: pub.foto_base64 || '',
-            imagenes_json: pub.foto_base64 ? JSON.stringify([pub.foto_base64]) : '[]',
+            imagen_url: finalImageUrl || '',
+            imagenes_json: finalImageUrl ? JSON.stringify([finalImageUrl]) : '[]',
             enlace_facebook: pub.facebook || '',
             enlace_instagram: pub.instagram || '',
             enlace_maps: pub.maps || '',
