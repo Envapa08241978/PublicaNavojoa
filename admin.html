@@ -1541,7 +1541,8 @@
         <div style="margin-bottom: 14px;">
             <label style="font-size: 0.85rem; font-weight: 700; color: #0f172a; margin-bottom: 4px; display: block;">1. Selecciona la Plantilla Aprobada por Meta:</label>
             <select id="bc-template-name" onchange="handleBroadcastTemplateChange()" style="padding: 10px 14px; border-radius: 10px; border: 1.5px solid #cbd5e1; font-size: 0.9rem; font-weight: 700; width: 100%; background: #ffffff;">
-                <option value="martha_avendano_salon" selected>🟢 martha_avendano_salon (Martha Avendaño - Extensiones y Color)</option>
+                <option value="nikol_vasquez_brows" selected>🟢 nikol_vasquez_brows (Nikol Vásquez - Pestañas y Cejas)</option>
+                <option value="martha_avendano_salon">🟢 martha_avendano_salon (Martha Avendaño - Extensiones y Color)</option>
                 <option value="cpu_gamer_adrian_almada">🟢 cpu_gamer_adrian_almada (CPU Gamer - Adrian Almada)</option>
                 <option value="bienvenida_club_vip">🟢 bienvenida_club_vip (Bienvenida Club VIP)</option>
                 <option value="custom">✏️ Otra plantilla personalizada...</option>
@@ -2226,7 +2227,11 @@
             if (customInput) customInput.style.display = 'none';
         }
 
-        if (sel === 'martha_avendano_salon') {
+        if (sel === 'nikol_vasquez_brows') {
+            if (imgBox) imgBox.style.display = 'block';
+            const imgInput = document.getElementById('bc-header-image-url');
+            if (imgInput) imgInput.value = 'https://iili.io/nx9mdKl.jpg';
+        } else if (sel === 'martha_avendano_salon') {
             if (imgBox) imgBox.style.display = 'block';
             const imgInput = document.getElementById('bc-header-image-url');
             if (imgInput) imgInput.value = 'https://iili.io/nopsdYJ.jpg';
@@ -2378,7 +2383,7 @@
                     }
                 };
 
-                if (templateName === 'cpu_gamer_adrian_almada' || templateName === 'martha_avendano_salon') {
+                if (templateName === 'nikol_vasquez_brows' || templateName === 'martha_avendano_salon' || templateName === 'cpu_gamer_adrian_almada') {
                     payload.template.components = [
                         {
                             type: 'header',
@@ -3465,7 +3470,7 @@
                     <button class="btn btn-green" style="flex: 1; padding: 7px 10px; font-size: 0.78rem; justify-content: center;" onclick="copyOrderToCatalog('${ord.id || ord.order_id}')" title="Copiar este anuncio automáticamente al Catálogo de Ofertas del Bot de WhatsApp">
                         🏷️ Pasar a Catálogo Bot
                     </button>
-                    <button class="btn" style="background: #16a34a; color: #fff; padding: 7px 10px; font-size: 0.78rem; font-weight: 800; cursor: pointer;" onclick="openBroadcastModal('${(pub.titulo || '').toLowerCase().includes('gamer') || (pub.titulo || '').toLowerCase().includes('cpu') ? 'cpu_gamer_adrian_almada' : 'martha_avendano_salon'}', '${ord.id || ord.order_id}')" title="Disparar difusión masiva de este anuncio a los contactos">
+                    <button class="btn" style="background: #16a34a; color: #fff; padding: 7px 10px; font-size: 0.78rem; font-weight: 800; cursor: pointer;" onclick="openBroadcastModal('${(pub.titulo || '').toLowerCase().includes('gamer') || (pub.titulo || '').toLowerCase().includes('cpu') ? 'cpu_gamer_adrian_almada' : ((pub.titulo || '').toLowerCase().includes('nikol') || (cont.nombre || '').toLowerCase().includes('nikol') || (pub.titulo || '').toLowerCase().includes('patrio') || (pub.titulo || '').toLowerCase().includes('pestaña') ? 'nikol_vasquez_brows' : 'martha_avendano_salon')}', '${ord.id || ord.order_id}')" title="Disparar difusión masiva de este anuncio a los contactos">
                         🚀 Difusión WhatsApp
                     </button>
                     <button class="btn" style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a; padding: 7px 10px; font-size: 0.78rem; font-weight: 700; cursor: pointer;" onclick="quickRegisterOrderFinance('${ord.id || ord.order_id}')" title="Registrar venta o comisión de este pedido en Finanzas">
