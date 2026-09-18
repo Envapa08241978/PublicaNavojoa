@@ -451,4 +451,18 @@ Todos los contactos se indexan de forma única en la colección `/contacts/{clea
   - **Backend (`api/webhook.js`, `api/send-message.js`, `api/qr.js`):** Generan timestamps y textos con `timeZone: 'America/Hermosillo'`.
   - **Frontend (`admin.html`):** El panel de chat formatea dinámicamente los timestamps de cada mensaje usando `America/Hermosillo` (`es-MX`), garantizando que las marcas de hora en las burbujas de conversación reflejen con 100% de precisión la hora local de Navojoa, Sonora.
 
+---
+
+## 28. CORRECCIÓN DEFINITIVA DE BUCLE DE REINTENTOS EN WEBHOOK (TIMEOUT DE META & DEDUP)
+
+* **Diagnóstico del Bucle de Reintentos:**
+  - El envío de 8 ofertas con pausas de 3 segundos acumulaba más de 35 segundos de ejecución por petición, superando el límite de tiempo de respuesta de Meta Cloud API (5-10s) y de Vercel Serverless.
+  - Al no recibir confirmación a tiempo, Meta colocaba el mensaje en su cola de reintentos automáticos, volviendo a disparar el webhook horas después (lo que generaba burbujas de mensaje entrante repetidas y re-despachos involuntarios de catálogo).
+* **Solución Integral Implementada:**
+  1. **Deduplicación Instantánea:** Sanitización estricta del identificador de Meta (`msg_` + `msgId`) y registro inmediato en Firestore `/processed_msgs/` para bloquear reintentos concurrentes.
+  2. **Cooldown Anti-Saturación Extendido (60 Segundos):** Si un contacto vuelve a solicitar el catálogo en menos de 60 segundos, el bot ignora la petición repetida protegiendo la línea.
+  3. **Entrega Ágil de Imágenes (800 ms):** Se redujo la pausa entre fotos de 3,000 ms a 800 ms, despachando el catálogo completo en ~7 segundos sin saturar la red ni exceder límites de tiempo.
+  4. **Protección en Vercel (`maxDuration: 60`):** Se configuró en `vercel.json` un límite de ejecución extendido de 60 segundos para `api/webhook.js`.
+  5. **Filtro de Mensajes Idénticos en CRM:** La ventana de deduplicación de guardado en `saveToFirestore` se amplió a 60 segundos para evitar duplicidad visual en el panel CRM.
+
 
