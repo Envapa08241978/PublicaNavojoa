@@ -2247,7 +2247,7 @@
     }
 
     function getBroadcastAudience() {
-        const leads = getLeads();
+        const leads = getLeads().filter(l => l.opt_in !== 'No' && l.marketing_status !== 'opt_out');
         const filter = document.getElementById('bc-audience-filter')?.value || 'todos';
 
         if (filter === 'comprador') {
