@@ -773,11 +773,81 @@ module.exports = async function handler(req, res) {
         const data = req.body;
 
         // ═══════════════════════════════════════════════════════════════
-        // PASO 1: Extraer el message ID lo más rápido posible
+        // PASO 1: Procesar eventos de Opt-Out / Preferencias de usuario
+        // Webhook "user_preferences" y estados de error 131050
         // ═══════════════════════════════════════════════════════════════
         const entry = data?.entry?.[0];
         const changes = entry?.changes?.[0];
+        const field = changes?.field;
         const value = changes?.value;
+
+        // Caso A: Evento oficial de Meta 'user_preferences'
+        if (field === 'user_preferences' || value?.user_preferences) {
+            const pref = value?.user_preferences || value;
+            const waId = pref?.wa_id || pref?.phone_number || pref?.recipient_id;
+            let cleanPhone = waId ? String(waId).replace(/\D/g, '') : '';
+            if (cleanPhone.startsWith('521') && cleanPhone.length === 13) cleanPhone = cleanPhone.slice(3);
+            else if (cleanPhone.startsWith('52') && cleanPhone.length === 12) cleanPhone = cleanPhone.slice(2);
+
+            const category = pref?.category || 'marketing';
+            const status = pref?.status || pref?.action; // 'opt_out' / 'opt_in' / 'STOP'
+
+            console.log(`[USER PREFERENCE] Phone: ${cleanPhone}, Cat: ${category}, Status: ${status}`);
+
+            if (cleanPhone) {
+                try {
+                    const isOptOut = status === 'opt_out' || status === 'STOP' || status === 'disabled';
+                    await fetch(`https://firestore.googleapis.com/v1/projects/loquese-app/databases/(default)/documents/contacts/${cleanPhone}?updateMask.fieldPaths=opt_in&updateMask.fieldPaths=marketing_status&updateMask.fieldPaths=motivo_baja`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            fields: {
+                                opt_in: { stringValue: isOptOut ? 'No' : 'Sí' },
+                                marketing_status: { stringValue: isOptOut ? 'opt_out' : 'active' },
+                                motivo_baja: { stringValue: isOptOut ? 'Usuario detuvo mensajes de marketing en WhatsApp (Meta 131050)' : '' }
+                            }
+                        })
+                    });
+                    console.log(`[USER PREFERENCE UPDATED] Contacto ${cleanPhone} actualizado a opt_in=${isOptOut ? 'No' : 'Sí'}`);
+                } catch(e) {
+                    console.error('[USER PREF ERROR]', e);
+                }
+            }
+            return res.status(200).json({ status: 'user_preferences_handled' });
+        }
+
+        // Caso B: Errores en 'statuses' como código 131050 (User opted out)
+        const statuses = value?.statuses;
+        if (statuses && statuses.length > 0) {
+            const st = statuses[0];
+            const recipientId = st?.recipient_id || '';
+            const errorCode = st?.errors?.[0]?.code;
+
+            if (errorCode === 131050 || errorCode === '131050') {
+                let cleanPhone = String(recipientId).replace(/\D/g, '');
+                if (cleanPhone.startsWith('521') && cleanPhone.length === 13) cleanPhone = cleanPhone.slice(3);
+                else if (cleanPhone.startsWith('52') && cleanPhone.length === 12) cleanPhone = cleanPhone.slice(2);
+
+                if (cleanPhone) {
+                    try {
+                        console.log(`[STATUS OPT-OUT 131050] Marcando ${cleanPhone} como No en opt-in`);
+                        await fetch(`https://firestore.googleapis.com/v1/projects/loquese-app/databases/(default)/documents/contacts/${cleanPhone}?updateMask.fieldPaths=opt_in&updateMask.fieldPaths=marketing_status&updateMask.fieldPaths=motivo_baja`, {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                fields: {
+                                    opt_in: { stringValue: 'No' },
+                                    marketing_status: { stringValue: 'opt_out' },
+                                    motivo_baja: { stringValue: 'Meta Error 131050: Usuario detuvo recepción de marketing' }
+                                }
+                            })
+                        });
+                    } catch(e) {}
+                }
+            }
+            return res.status(200).json({ status: 'statuses_handled' });
+        }
+
         const messages = value?.messages;
 
         // Si no hay mensajes (status updates, delivery receipts, etc.), responder y salir
