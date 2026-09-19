@@ -365,7 +365,9 @@ const CATEGORIES_TAXONOMY = [
             'pestañas', 'ceja', 'cejas', 'corte de pelo', 'corte de cabello', 'tinte', 'tintes', 'peinado', 
             'peinados', 'maquillaje', 'makeup', 'masaje', 'masajes', 'facial', 'faciales', 'depilacion', 
             'depilación', 'skincare', 'cuidado personal', 'cosmeticos', 'cosméticos', 'manicure', 'pedicure', 
-            'microblading', 'alisado', 'keratina', 'barba', 'aurabrows', 'nikol vasquez', 'cejas y pestañas'
+            'microblading', 'alisado', 'keratina', 'barba', 'aurabrows', 'nikol vasquez', 'cejas y pestañas',
+            'mb store', 'nail store', 'uñistas', 'material de uñas', 'gelish', 'esmaltes', 'mesa de trabajo',
+            'martha avendaño', 'extensiones'
         ]
     },
     {
