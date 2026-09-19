@@ -3602,29 +3602,60 @@
 
         let finalImageUrl = pub.foto_url || pub.imagen_url || '';
         
-        // Si la imagen está en base64, subirla primero al CDN para no exceder el límite de 1MB de Firestore
+        // Si la imagen está en base64, comprimirla en el navegador y subir a CDN
         if (!finalImageUrl && pub.foto_base64) {
             if (pub.foto_base64.startsWith('http')) {
                 finalImageUrl = pub.foto_base64;
             } else {
+                // Función auxiliar para comprimir base64 a JPEG ligero (max 800px)
+                const compressBase64Client = async (b64) => {
+                    return new Promise((resolve) => {
+                        const img = new Image();
+                        img.onload = () => {
+                            const canvas = document.createElement('canvas');
+                            let width = img.width;
+                            let height = img.height;
+                            const maxDim = 800;
+                            if (width > maxDim || height > maxDim) {
+                                if (width > height) {
+                                    height = Math.round((height * maxDim) / width);
+                                    width = maxDim;
+                                } else {
+                                    width = Math.round((width * maxDim) / height);
+                                    height = maxDim;
+                                }
+                            }
+                            canvas.width = width;
+                            canvas.height = height;
+                            const ctx = canvas.getContext('2d');
+                            ctx.drawImage(img, 0, 0, width, height);
+                            resolve(canvas.toDataURL('image/jpeg', 0.65));
+                        };
+                        img.onerror = () => resolve(b64);
+                        img.src = b64;
+                    });
+                };
+
+                let compressedB64 = await compressBase64Client(pub.foto_base64);
+
                 try {
                     const upRes = await fetch('/api/upload-image', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            imageBase64: pub.foto_base64,
+                            imageBase64: compressedB64,
                             filename: `anuncio_${orderId}.jpg`
                         })
                     });
                     const upData = await upRes.json();
                     if (upData && upData.url) {
                         finalImageUrl = upData.url;
+                    } else {
+                        finalImageUrl = compressedB64;
                     }
                 } catch(upErr) {
-                    console.warn('No se pudo subir a CDN, usando base64 directo si cabe:', upErr);
-                    if (pub.foto_base64.length < 800000) {
-                        finalImageUrl = pub.foto_base64;
-                    }
+                    console.warn('No se pudo subir a CDN, usando base64 comprimido:', upErr);
+                    finalImageUrl = compressedB64;
                 }
             }
         }
