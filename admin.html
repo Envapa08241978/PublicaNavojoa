@@ -2422,7 +2422,21 @@
 
                 if (data.error) {
                     errors++;
-                    logBroadcastConsole(`❌ Error con +52 ${contact.whatsapp}: ${data.error.message}`, 'error');
+                    const errMsg = data.error.message || '';
+                    const errCode = data.error.code || 0;
+                    logBroadcastConsole(`❌ Error con +52 ${contact.whatsapp}: ${errMsg}`, 'error');
+
+                    // Si el error es 131050 (usuario detuvo mensajes de marketing), marcarlo de inmediato en Firestore
+                    if (errCode === 131050 || errMsg.includes('131050') || errMsg.toLowerCase().includes('opted out')) {
+                        try {
+                            await db.collection('contacts').doc(contact.whatsapp).update({
+                                opt_in: 'No',
+                                marketing_status: 'opt_out',
+                                motivo_baja: 'Meta Error 131050: El usuario detuvo la recepción de marketing en WhatsApp'
+                            });
+                            logBroadcastConsole(`🚫 Contacto +52 ${contact.whatsapp} marcado automáticamente como Opt-Out (Baja).`, 'warn');
+                        } catch(e) {}
+                    }
                 } else {
                     success++;
                     logBroadcastConsole(`✅ Entregado con éxito a ${contact.nombre} (ID: ${data.messages?.[0]?.id || 'OK'})`, 'success');
