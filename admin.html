@@ -2620,6 +2620,55 @@
         renderCrmTable();
     }
 
+    async function editContactName(phone, currentName) {
+        let clean = String(phone).replace(/\D/g, '');
+        if (clean.startsWith('52') && clean.length === 12) clean = clean.slice(2);
+        if (clean.startsWith('521') && clean.length === 13) clean = clean.slice(3);
+
+        const newName = prompt(`Editar nombre para el contacto (+52 ${clean}):`, currentName || '');
+        if (newName === null) return; // Usuario canceló
+        const finalName = newName.trim();
+        if (!finalName) return alert('El nombre no puede estar vacío.');
+
+        try {
+            // 1. Actualizar en Firebase Firestore
+            await db.collection('contacts').doc(clean).set({
+                nombre: finalName
+            }, { merge: true });
+
+            // 2. Actualizar en localStorage / leads
+            let leads = getLeads();
+            let contact = leads.find(l => {
+                let p = String(l.whatsapp).replace(/\D/g, '');
+                if (p.startsWith('52') && p.length === 12) p = p.slice(2);
+                if (p.startsWith('521') && p.length === 13) p = p.slice(3);
+                return p === clean;
+            });
+
+            if (contact) {
+                contact.nombre = finalName;
+                localStorage.setItem('vip_navojoa_leads', JSON.stringify(leads));
+            }
+
+            renderCrmTable();
+            renderChatList();
+
+            // Si el contacto está abierto en el chat, actualizar vista de chat
+            const activeContact = leads.find(l => String(l.id) === String(activeContactId));
+            if (activeContact && (activeContact.whatsapp === clean || activeContact.whatsapp.endsWith(clean))) {
+                const headerName = document.getElementById('active-contact-name');
+                const infoName = document.getElementById('info-name');
+                if (headerName) headerName.innerText = finalName;
+                if (infoName) infoName.innerText = finalName;
+            }
+
+            alert(`✅ Nombre actualizado a "${finalName}" con éxito.`);
+        } catch (e) {
+            console.error('Error actualizando nombre en Firebase:', e);
+            alert('Error al actualizar el nombre en Firebase: ' + e.message);
+        }
+    }
+
     async function deleteContact(phone) {
         let clean = String(phone).replace(/\D/g, '');
         if (clean.startsWith('52') && clean.length === 12) clean = clean.slice(2);
@@ -2674,11 +2723,19 @@
 
         tbody.innerHTML = filtered.map(item => {
             const currentStatus = item.estado_comercial || (item.interes_anunciar === 'Sí' ? 'prospecto' : 'comprador');
+            const safeNombre = (item.nombre || 'Cliente').replace(/'/g, "\\'");
 
             return `
             <tr>
                 <td style="color: var(--text-muted); font-size: 0.85rem;">${item.fecha || '-'}</td>
-                <td style="font-weight: 700; color: var(--text-main);">${item.nombre || 'Cliente'}</td>
+                <td>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-weight: 700; color: var(--text-main);">${item.nombre || 'Cliente'}</span>
+                        <button type="button" onclick="editContactName('${item.whatsapp}', '${safeNombre}')" title="Editar nombre de este contacto" style="background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 6px; padding: 2px 6px; font-size: 0.75rem; cursor: pointer; color: #475569; display: inline-flex; align-items: center; gap: 3px;">
+                            ✏️
+                        </button>
+                    </div>
+                </td>
                 <td style="font-family: monospace; font-weight: 700; color: var(--accent-green);">${item.whatsapp}</td>
                 <td style="color: #334155;">${item.colonia || 'Navojoa'}</td>
                 <td>
