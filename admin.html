@@ -1594,7 +1594,47 @@
             </div>
         </div>
 
-        <!-- 6. Sección de Envío de Prueba a Número Determinado -->
+        <!-- 6. Panel de Reporte Detallado de Resultados & Diagnóstico de Errores -->
+        <div id="bc-report-container" style="display: none; background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 14px; margin-bottom: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+                <div>
+                    <h4 style="font-size: 0.95rem; font-weight: 800; color: #0f172a;">📊 Reporte Detallado de Envíos y Errores</h4>
+                    <p style="font-size: 0.78rem; color: #64748b;" id="bc-report-summary-text">Diagnóstico exacto retornado por Meta Cloud API.</p>
+                </div>
+                <div style="display: flex; gap: 6px;">
+                    <button type="button" class="btn btn-blue" onclick="downloadBroadcastReportCSV()" style="padding: 6px 12px; font-size: 0.8rem; font-weight: 700;">
+                        📥 Descargar Reporte CSV
+                    </button>
+                    <button type="button" class="btn btn-blue" onclick="copyBroadcastErrorReport()" style="padding: 6px 12px; font-size: 0.8rem; font-weight: 700;">
+                        📋 Copiar Errores
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Filtros del reporte: Todos / Solo Errores / Solo Exitosos -->
+            <div style="display: flex; gap: 6px; margin-bottom: 8px;">
+                <button type="button" class="btn" id="bc-filter-all-btn" onclick="filterReportTable('all')" style="padding: 4px 10px; font-size: 0.76rem; background: #0f172a; color: #fff; font-weight: 700;">Todos (<span id="bc-rep-all-count">0</span>)</button>
+                <button type="button" class="btn" id="bc-filter-err-btn" onclick="filterReportTable('error')" style="padding: 4px 10px; font-size: 0.76rem; background: #fee2e2; color: #dc2626; font-weight: 700;">❌ Fallidos (<span id="bc-rep-err-count">0</span>)</button>
+                <button type="button" class="btn" id="bc-filter-succ-btn" onclick="filterReportTable('success')" style="padding: 4px 10px; font-size: 0.76rem; background: #dcfce7; color: #166534; font-weight: 700;">✅ Exitosos (<span id="bc-rep-succ-count">0</span>)</button>
+            </div>
+
+            <div style="max-height: 180px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px;">
+                <table style="width: 100%; font-size: 0.78rem; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: #f8fafc; text-align: left; position: sticky; top: 0; border-bottom: 1px solid #cbd5e1;">
+                            <th style="padding: 6px 8px;">WhatsApp</th>
+                            <th style="padding: 6px 8px;">Nombre</th>
+                            <th style="padding: 6px 8px;">Estado</th>
+                            <th style="padding: 6px 8px;">Motivo / Diagnóstico Meta</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bc-report-tbody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 7. Sección de Envío de Prueba a Número Determinado -->
         <div style="background: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 12px; padding: 12px 14px; margin-bottom: 16px;">
             <div style="font-size: 0.84rem; font-weight: 800; color: #0f172a; margin-bottom: 6px;">
                 🧪 Enviar Mensaje de Prueba a un Número Determinado:
@@ -2297,6 +2337,9 @@
 
         const btnStart = document.getElementById('btn-start-bc');
         const btnStop = document.getElementById('btn-stop-bc');
+        const repBox = document.getElementById('bc-report-container');
+        if (repBox) repBox.style.display = 'none';
+        broadcastSessionResults = [];
         if (btnStart) {
             btnStart.style.display = 'block';
             btnStart.disabled = false;
@@ -2321,6 +2364,41 @@
         consoleEl.scrollTop = consoleEl.scrollHeight;
     }
 
+    let broadcastSessionResults = [];
+    let currentReportFilter = 'all';
+
+    function diagnoseMetaError(errObj) {
+        if (!errObj) return 'Error desconocido de conexión o API';
+        const code = errObj.code || 0;
+        const subcode = errObj.error_subcode || 0;
+        const msg = (errObj.message || '').toLowerCase();
+        const details = errObj.error_user_msg || errObj.error_data?.details || '';
+
+        if (code === 131050 || subcode === 131050 || msg.includes('131050') || msg.includes('opted out') || msg.includes('stopped receiving')) {
+            return '🚫 Error 131050: El usuario desactivó la recepción de marketing (Opt-Out en WhatsApp).';
+        }
+        if (code === 131026 || subcode === 131026 || msg.includes('131026')) {
+            return '⏳ Error 131026: Fuera de ventana de 24 horas o plantilla no aprobada en esta categoría.';
+        }
+        if (code === 131047 || subcode === 131047) {
+            return '⏰ Error 131047: Ventana de re-engagement expirada.';
+        }
+        if (code === 131000 || code === 131005 || code === 131056 || msg.includes('not a valid whatsapp user') || msg.includes('recipient is not a valid whatsapp user')) {
+            return '📵 Error 131000: El número de teléfono no tiene cuenta activa en WhatsApp.';
+        }
+        if (code === 130429 || code === 80007 || msg.includes('rate limit')) {
+            return '⚠️ Error 130429: Límite de mensajes por segundo de Meta alcanzado. Espera unos minutos.';
+        }
+        if (code === 100 || msg.includes('parameter') || msg.includes('invalid parameter')) {
+            return `⚠️ Error 100: Parámetro o formato de imagen/texto inválido (${errObj.message || ''})`;
+        }
+        if (code === 190 || msg.includes('access token') || msg.includes('expired')) {
+            return '🔑 Error 190: Token de acceso de Meta expirado. Requiere renovar Token en Meta Developers.';
+        }
+
+        return `⚠️ Error Meta #${code}${subcode ? ' (Sub #' + subcode + ')' : ''}: ${errObj.message || 'Sin descripción'}${details ? ' — ' + details : ''}`;
+    }
+
     async function startMassBroadcast() {
         const audience = getBroadcastAudience();
         if (audience.length === 0) return alert('No hay contactos en la audiencia seleccionada.');
@@ -2340,6 +2418,7 @@
         }
 
         isBroadcastRunning = true;
+        broadcastSessionResults = [];
         const btnStart = document.getElementById('btn-start-bc');
         const btnStop = document.getElementById('btn-stop-bc');
         const badge = document.getElementById('bc-status-badge');
@@ -2347,6 +2426,7 @@
         const pText = document.getElementById('bc-progress-text');
         const sCountEl = document.getElementById('bc-success-count');
         const eCountEl = document.getElementById('bc-error-count');
+        const reportBox = document.getElementById('bc-report-container');
 
         if (btnStart) btnStart.style.display = 'none';
         if (btnStop) btnStop.style.display = 'block';
@@ -2358,6 +2438,7 @@
 
         const consoleEl = document.getElementById('bc-log-console');
         if (consoleEl) consoleEl.innerHTML = '';
+        if (reportBox) reportBox.style.display = 'none';
 
         logBroadcastConsole(`Iniciando envío masivo de plantilla "${templateName}" a ${audience.length} contactos...`, 'warn');
 
@@ -2429,7 +2510,21 @@
                     errors++;
                     const errMsg = data.error.message || '';
                     const errCode = data.error.code || 0;
-                    logBroadcastConsole(`❌ Error con +52 ${contact.whatsapp}: ${errMsg}`, 'error');
+                    const errSubcode = data.error.error_subcode || 0;
+                    const diagnosis = diagnoseMetaError(data.error);
+
+                    logBroadcastConsole(`❌ Error con +52 ${contact.whatsapp}: ${diagnosis}`, 'error');
+
+                    broadcastSessionResults.push({
+                        whatsapp: contact.whatsapp,
+                        nombre: contact.nombre || 'Sin nombre',
+                        status: 'ERROR',
+                        code: errCode,
+                        subcode: errSubcode,
+                        motivo: diagnosis,
+                        rawError: errMsg,
+                        hora: timeStr
+                    });
 
                     // Si el error es 131050 (usuario detuvo mensajes de marketing), marcarlo de inmediato en Firestore
                     if (errCode === 131050 || errMsg.includes('131050') || errMsg.toLowerCase().includes('opted out')) {
@@ -2446,6 +2541,17 @@
                     success++;
                     logBroadcastConsole(`✅ Entregado con éxito a ${contact.nombre} (ID: ${data.messages?.[0]?.id || 'OK'})`, 'success');
 
+                    broadcastSessionResults.push({
+                        whatsapp: contact.whatsapp,
+                        nombre: contact.nombre || 'Sin nombre',
+                        status: 'EXITOSO',
+                        code: 200,
+                        subcode: 0,
+                        motivo: 'Entregado a Meta API correctamente',
+                        rawError: '',
+                        hora: timeStr
+                    });
+
                     // Registrar en historial de chat
                     saveMessage(contact.whatsapp, {
                         text: `🚀 [Envío Masivo]: ${templateName} entregada con éxito.`,
@@ -2455,7 +2561,19 @@
                 }
             } catch (err) {
                 errors++;
-                logBroadcastConsole(`❌ Error de red con +52 ${contact.whatsapp}: ${err.message}`, 'error');
+                const diag = `Error de red local: ${err.message}`;
+                logBroadcastConsole(`❌ Error de red con +52 ${contact.whatsapp}: ${diag}`, 'error');
+
+                broadcastSessionResults.push({
+                    whatsapp: contact.whatsapp,
+                    nombre: contact.nombre || 'Sin nombre',
+                    status: 'ERROR',
+                    code: 0,
+                    subcode: 0,
+                    motivo: diag,
+                    rawError: err.message,
+                    hora: timeStr
+                });
             }
 
             // Actualizar contadores y barra de progreso
@@ -2464,6 +2582,9 @@
             if (pText) pText.innerText = `${i + 1} / ${audience.length} (${pct}%)`;
             if (sCountEl) sCountEl.innerText = success;
             if (eCountEl) eCountEl.innerText = errors;
+
+            // Renderizar tabla de reporte en vivo
+            renderBroadcastReportTable();
 
             // Pausa de 600ms para evitar saturación de API
             await new Promise(resolve => setTimeout(resolve, 600));
@@ -2477,12 +2598,16 @@
         if (btnStop) btnStop.style.display = 'none';
 
         if (badge) {
-            badge.innerText = `✅ Completado (${success} exitosos)`;
-            badge.style.background = '#dcfce7';
-            badge.style.color = '#15803d';
+            badge.innerText = `✅ Completado (${success} exitosos, ${errors} fallidos)`;
+            badge.style.background = errors > 0 ? '#fee2e2' : '#dcfce7';
+            badge.style.color = errors > 0 ? '#dc2626' : '#15803d';
         }
 
-        logBroadcastConsole(`🏁 Proceso finalizado. Total enviados: ${success} | Errores: ${errors}`, 'success');
+        logBroadcastConsole(`🏁 Proceso finalizado. Total enviados: ${success} | Errores: ${errors}`, errors > 0 ? 'warn' : 'success');
+
+        // Mostrar panel de reporte detallado
+        if (reportBox) reportBox.style.display = 'block';
+        renderBroadcastReportTable();
 
         // Si fue desde un pedido, marcar como transmitido
         if (orderId) {
@@ -2494,7 +2619,129 @@
             } catch(e) {}
         }
 
-        alert(`✅ ¡Difusión Masiva Finalizada!\n\n• Enviados con éxito: ${success}\n• Fallidos: ${errors}\n\nLos mensajes quedaron registrados en el historial de cada contacto.`);
+        alert(`✅ ¡Difusión Masiva Finalizada!\n\n• Enviados con éxito: ${success}\n• Fallidos / Errores: ${errors}\n\nPuedes revisar el desglose y descargar el reporte CSV con las razones de cada error abajo.`);
+    }
+
+    function renderBroadcastReportTable() {
+        const reportBox = document.getElementById('bc-report-container');
+        const tbody = document.getElementById('bc-report-tbody');
+        const summaryText = document.getElementById('bc-report-summary-text');
+        const countAll = document.getElementById('bc-rep-all-count');
+        const countErr = document.getElementById('bc-rep-err-count');
+        const countSucc = document.getElementById('bc-rep-succ-count');
+
+        if (!tbody) return;
+
+        const total = broadcastSessionResults.length;
+        const errs = broadcastSessionResults.filter(r => r.status === 'ERROR');
+        const succs = broadcastSessionResults.filter(r => r.status === 'EXITOSO');
+
+        if (countAll) countAll.innerText = total;
+        if (countErr) countErr.innerText = errs.length;
+        if (countSucc) countSucc.innerText = succs.length;
+
+        if (summaryText) {
+            summaryText.innerText = `Total procesados: ${total} | Exitosos: ${succs.length} | Fallidos: ${errs.length}`;
+        }
+
+        if (total > 0 && reportBox) {
+            reportBox.style.display = 'block';
+        }
+
+        let filtered = broadcastSessionResults;
+        if (currentReportFilter === 'error') filtered = errs;
+        if (currentReportFilter === 'success') filtered = succs;
+
+        tbody.innerHTML = filtered.map(item => {
+            const isOk = item.status === 'EXITOSO';
+            const badgeBg = isOk ? '#dcfce7' : '#fee2e2';
+            const badgeColor = isOk ? '#166534' : '#b91c1c';
+            const badgeText = isOk ? '✅ Éxito' : '❌ Falló';
+
+            return `
+                <tr style="border-bottom: 1px solid #f1f5f9;">
+                    <td style="padding: 6px 8px; font-weight: 700;">+52 ${item.whatsapp}</td>
+                    <td style="padding: 6px 8px;">${item.nombre}</td>
+                    <td style="padding: 6px 8px;">
+                        <span style="background: ${badgeBg}; color: ${badgeColor}; padding: 2px 6px; border-radius: 4px; font-size: 0.72rem; font-weight: 800;">
+                            ${badgeText}
+                        </span>
+                    </td>
+                    <td style="padding: 6px 8px; color: ${isOk ? '#15803d' : '#dc2626'}; font-size: 0.75rem;">
+                        ${item.motivo}
+                    </td>
+                </tr>
+            `;
+        }).join('') || `<tr><td colspan="4" style="text-align: center; padding: 12px; color: #94a3b8;">No hay registros con este filtro.</td></tr>`;
+    }
+
+    function filterReportTable(filterType) {
+        currentReportFilter = filterType;
+        const btnAll = document.getElementById('bc-filter-all-btn');
+        const btnErr = document.getElementById('bc-filter-err-btn');
+        const btnSucc = document.getElementById('bc-filter-succ-btn');
+
+        if (btnAll) {
+            btnAll.style.background = filterType === 'all' ? '#0f172a' : '#e2e8f0';
+            btnAll.style.color = filterType === 'all' ? '#ffffff' : '#0f172a';
+        }
+        if (btnErr) {
+            btnErr.style.background = filterType === 'error' ? '#dc2626' : '#fee2e2';
+            btnErr.style.color = filterType === 'error' ? '#ffffff' : '#dc2626';
+        }
+        if (btnSucc) {
+            btnSucc.style.background = filterType === 'success' ? '#16a34a' : '#dcfce7';
+            btnSucc.style.color = filterType === 'success' ? '#ffffff' : '#166534';
+        }
+
+        renderBroadcastReportTable();
+    }
+
+    function downloadBroadcastReportCSV() {
+        if (broadcastSessionResults.length === 0) {
+            return alert('Aún no hay resultados de difusión para exportar.');
+        }
+
+        const templateName = document.getElementById('bc-template-name')?.value || 'difusion';
+        const dateStr = new Date().toISOString().slice(0, 10);
+        let csv = 'WhatsApp,Nombre,Estado,Codigo_Error,Subcodigo,Diagnostico_Meta,Mensaje_Raw_Meta,Hora\n';
+
+        broadcastSessionResults.forEach(r => {
+            const cleanPhone = `52${r.whatsapp}`;
+            const nom = `"${(r.nombre || '').replace(/"/g, '""')}"`;
+            const motivo = `"${(r.motivo || '').replace(/"/g, '""')}"`;
+            const raw = `"${(r.rawError || '').replace(/"/g, '""')}"`;
+            csv += `${cleanPhone},${nom},${r.status},${r.code},${r.subcode},${motivo},${raw},${r.hora}\n`;
+        });
+
+        const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.setAttribute('download', `reporte_difusion_${templateName}_${dateStr}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    function copyBroadcastErrorReport() {
+        const errs = broadcastSessionResults.filter(r => r.status === 'ERROR');
+        if (errs.length === 0) {
+            return alert('🎉 ¡Excelente! No hubo ningún error registrado en este envío masivo.');
+        }
+
+        let text = `📋 REPORTE DE ERRORES DE DIFUSIÓN - PUBLICA NAVOJOA\n`;
+        text += `Fecha: ${new Date().toLocaleString()}\n`;
+        text += `Total Errores: ${errs.length}\n\n`;
+
+        errs.forEach((e, idx) => {
+            text += `${idx + 1}. +52 ${e.whatsapp} (${e.nombre})\n   Razón: ${e.motivo}\n\n`;
+        });
+
+        navigator.clipboard.writeText(text).then(() => {
+            alert(`✅ ${errs.length} errores copiados al portapapeles. Puedes pegarlos en WhatsApp o en tus notas.`);
+        }).catch(() => {
+            prompt('Copia manualmente los errores:', text);
+        });
     }
 
     function stopMassBroadcast() {

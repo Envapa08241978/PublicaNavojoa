@@ -12,7 +12,7 @@
 ## 🏗️ 1. Arquitectura y Componentes Clave
 
 1. **`admin.html` (Panel de Administración y CRM):**
-   - **Pestaña Chat WhatsApp:** Interfaz en tiempo real con historial de mensajes entrantes/salientes, soporte de multimedia (imágenes, audios, PDFs), búsqueda y botón para enviar plantillas oficiales.
+   - **Pestaña Chat WhatsApp:** Interfaz en tiempo real con historial de mensajes entrantes/salientes, soporte completo de multimedia (imágenes, audios de voz, notas de audio, PDFs, stickers y reacciones con emojis `👍`, `❤️`), búsqueda y envío de plantillas oficiales.
    - **Pestaña CRM (Directorio de Contactos):** 
      - Tabla con fecha, nombre, teléfono, colonia, perfil comercial y estado Opt-in.
      - **Botón de Edición de Nombre (`✏️`):** Permite corregir los nombres capturados de WhatsApp directamente a Firestore y actualizar la UI al instante.
@@ -28,8 +28,14 @@
      - Filtro por audiencia (Todos con Opt-in, Compradores VIP, Anunciantes).
      - Envío de prueba a número específico.
      - Consola en tiempo real con pausas de seguridad y auto-detección de errores.
+     - **Sistema de Auditoría y Reportes de Error en Vivo:**
+       - Diagnóstico traducido al español para errores de Meta (`#131050 Opt-out`, `#131026 Ventana/Aprobación`, `#131000 No tiene WhatsApp`, `#130429 Rate Limit`, `#132001 Idioma`).
+       - Tabla interactiva con filtros: *Todos*, *❌ Fallidos*, *✅ Exitosos*.
+       - **Botón `📥 Descargar Reporte CSV`:** Exportación completa para Excel.
+       - **Botón `📋 Copiar Errores`:** Copia de fallos al portapapeles.
 
 2. **`api/webhook.js` (Servidor Webhook en Vercel):**
+   - **Soporte Multimedios Completo:** Captura y renderizado de texto, imágenes, documentos PDF, reacciones con emojis (`👍`, `❤️`, etc.), stickers (`🎭 Sticker`), notas de voz / audios (`🎤 Mensaje de voz`) y ubicaciones (`📍 Ubicación`).
    - **Motor de Búsqueda Inteligente:** Ponderación por palabras clave, límites de palabra (`\b`) para evitar falsos positivos, taxonomías por categorías (Belleza, Autos, Eventos, Muebles, etc.).
    - **Gestión de Opt-Out / Bajas:**
      - Suscripción al webhook `user_preferences`.
@@ -60,7 +66,8 @@
 
 3. **Martha Avendaño Salón (`ORD-990554`):**
    - **Categoría:** `Belleza, Barberías & Spa` (Extensiones y Diseño de Color).
-   - **Plantilla Meta:** `martha_avendano_salon` (Aprobada en Meta, imagen: `https://iili.io/nopsdYJ.jpg`).
+   - **Plantilla Meta:** `martha_avendano_salon` (Aprobada en Meta, idioma `es_MX`, imagen: `https://iili.io/nopsdYJ.jpg`).
+   - **Campaña de Difusión Realizada:** 22 de Septiembre 2026 — 105 contactos procesados (100% aceptados por API).
 
 4. **PC Repair / CPU Gamer — Adrian Almada (`ORD-586036`):**
    - **Categoría:** `Tecnología & Computación`.
@@ -68,8 +75,20 @@
 
 ---
 
-## 🔒 3. Buenas Prácticas y Reglas del Sistema
+## 📊 3. Comportamiento y Estadísticas de Meta WhatsApp Cloud API
+
+Al realizar difusiones de marketing en Meta, existen dos etapas:
+1. **Aceptación por API (`HTTP 200 message_status: accepted`):**
+   - El servidor de Meta valida los tokens, nombres de plantilla y variables y acepta el lote.
+2. **Entrega Final en el Dispositivo (Algoritmos Internos de Meta):**
+   - **Opt-out (#131050):** Usuarios que silenciaron/detuvieron promociones en su app de WhatsApp (se marcan como baja automática en Firestore).
+   - **Estado del ecosistema / Meta eligió no enviarlo (Ecosystem Rate Limit):** Filtro anti-saturación de Meta para proteger a usuarios que ya recibieron mucho marketing ese día (no tiene costo y no afecta la calidad de la línea).
+   - **Grupo de experimento / Control:** Muestra aleatoria (1%) que Meta retiene para métricas comparativas.
+
+---
+
+## 🔒 4. Buenas Prácticas y Reglas del Sistema
 
 - **Exclusión de Opt-Out:** Cualquier contacto con `opt_in === 'No'` o `marketing_status === 'opt_out'` se excluye automáticamente de las audiencias masivas.
 - **Compresión de Imágenes:** Antes de registrar cualquier oferta o foto pesada en Firestore, se comprime en el navegador a un tamaño menor a 100 KB o se usa una URL pública HTTPS para no exceder el límite de 1MB por documento.
-- **Despliegues:** Todo cambio se sincroniza a través de Git y se despliega en producción mediante el repositorio principal en GitHub.
+- **Despliegues:** Todo cambio se sincroniza a través de Git y se despliega en producción mediante el repositorio principal en GitHub y Vercel.

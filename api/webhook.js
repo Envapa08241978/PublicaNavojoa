@@ -110,10 +110,18 @@ async function saveToFirestore(cleanPhone, senderName, text, type, fileUrl = '',
         existingMsgs.push(newMsg);
         if (existingMsgs.length > 100) existingMsgs = existingMsgs.slice(-100);
 
+        let lastMsgSummary = text;
+        if (!lastMsgSummary) {
+            if (fileType?.startsWith('image/')) lastMsgSummary = '🖼️ Imagen';
+            else if (fileType?.includes('pdf')) lastMsgSummary = '📄 PDF';
+            else if (fileType?.startsWith('audio/')) lastMsgSummary = '🎤 Audio';
+            else lastMsgSummary = '💬 Mensaje';
+        }
+
         const bodyFields = {
             whatsapp: { stringValue: cleanPhone },
             origen: { stringValue: 'WhatsApp Cloud Bot' },
-            last_msg: { stringValue: text || (fileType?.startsWith('image/') ? '🖼️ Imagen' : '📄 PDF') },
+            last_msg: { stringValue: lastMsgSummary },
             last_time: { stringValue: timeStr },
             messages_json: { stringValue: JSON.stringify(existingMsgs) }
         };
@@ -905,6 +913,22 @@ module.exports = async function handler(req, res) {
                 msgText = msg.document?.caption || `📄 PDF: ${fileName}`;
                 fileType = 'application/pdf';
                 if (msg.document?.id) fileUrl = await getMetaMediaUrl(msg.document.id);
+            } else if (msg.type === 'reaction') {
+                const emoji = msg.reaction?.emoji || '👍';
+                msgText = `${emoji} Reaccionó al mensaje`;
+            } else if (msg.type === 'sticker') {
+                msgText = '🎭 Sticker';
+                fileType = 'image/webp';
+                fileName = 'Sticker WhatsApp';
+                if (msg.sticker?.id) fileUrl = await getMetaMediaUrl(msg.sticker.id);
+            } else if (msg.type === 'audio' || msg.type === 'voice') {
+                msgText = '🎤 Mensaje de voz';
+                fileType = 'audio/ogg';
+                fileName = 'Audio WhatsApp';
+                const audioId = msg.audio?.id || msg.voice?.id;
+                if (audioId) fileUrl = await getMetaMediaUrl(audioId);
+            } else if (msg.type === 'location') {
+                msgText = `📍 Ubicación: ${msg.location?.name || ''} (${msg.location?.latitude}, ${msg.location?.longitude})`.trim();
             } else if (msg.type === 'button') {
                 msgText = msg.button?.text || '';
             } else if (msg.type === 'interactive') {

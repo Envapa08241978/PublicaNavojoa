@@ -481,7 +481,52 @@ Todos los contactos se indexan de forma única en la colección `/contacts/{clea
      - Coincidencia por palabra clave de categoría en Título: **+30 pts**
      - Coincidencia en descripción filtrada (excluyendo términos genéricos): **+25 pts**
      - Bonificaciones temáticas prioritarias (música/audio/DJ).
-  4. **Filtro de Umbral Relativo Dinámico:** Solo se despachan ofertas cuyo puntaje alcance al menos el 60% de la puntuación más alta (`Math.max(35, topScore * 0.6)`), garantizando 100% de precisión y cero resultados basura.
+   4. **Filtro de Umbral Relativo Dinámico:** Solo se despachan ofertas cuyo puntaje alcance al menos el 60% de la puntuación más alta (`Math.max(35, topScore * 0.6)`), garantizando 100% de precisión y cero resultados basura.
 
+---
 
+## 30. SISTEMA DE AUDITORÍA Y REPORTE DE ERRORES EN DIFUSIONES MASIVAS (`admin.html`)
 
+* **Diagnóstico de Errores de Meta en Tiempo Real:**
+  - Se implementó la función `diagnoseMetaError(errObj)` que interpreta y traduce al español los códigos técnicos de Meta Cloud API:
+    - **`#131050` (Opt-out):** El usuario desactivó mensajes de marketing en los ajustes de WhatsApp.
+    - **`#131026` (Ventana 24h / Plantilla):** Fuera de ventana de 24 horas o plantilla no aprobada.
+    - **`#131000 / #131056` (Inactivo):** El número de teléfono no tiene cuenta activa en WhatsApp.
+    - **`#130429` (Rate Limit):** Límite de mensajes por segundo de Meta alcanzado.
+    - **`#100` (Parámetros inválidos):** Formato de teléfono o parámetro de imagen/texto inválido.
+    - **`#132001` (Idioma):** Nombre de plantilla inexistente en el código de idioma solicitado.
+* **Panel de Resultados Interactivo:**
+  - Al completar o pausar un envío, se despliega una tabla interactiva con filtros:
+    - `Todos (N)`
+    - `❌ Fallidos (N)`
+    - `✅ Exitosos (N)`
+  - **Botón `📥 Descargar Reporte CSV`:** Genera un archivo CSV compatible con Excel (`reporte_difusion_[plantilla]_[fecha].csv`) con columnas completas (`WhatsApp`, `Nombre`, `Estado`, `Codigo_Error`, `Subcodigo`, `Diagnostico_Meta`, `Mensaje_Raw_Meta`, `Hora`).
+  - **Botón `📋 Copiar Errores`:** Copia el resumen de errores al portapapeles en 1 clic.
+
+---
+
+## 31. EJECUCIÓN DE DIFUSIÓN DE MARTHA AVENDAÑO SALÓN (`ORD-990554`)
+
+* **Fecha de Ejecución:** 22 de Septiembre de 2026.
+* **Plantilla:** `martha_avendano_salon` (Categoría *Marketing*, idioma `es_MX`, imagen de cabecera `https://iili.io/nopsdYJ.jpg`).
+* **Audiencia Procesada:** 105 contactos con Opt-in.
+* **Resultados en Meta Cloud API:**
+  - **105 / 105 aceptados exitosamente por la API.**
+* **Análisis de Filtros Internos de Entrega de Meta:**
+  - **Entrega efectiva en pantalla:** 99 contactos (94.3%).
+  - **Filtro de ecosistema / Protección anti-saturación de Meta (*Ecosystem Rate Limit*):** 3 contactos (usuarios que habían recibido saturación publicitaria ese día).
+  - **Opt-out en WhatsApp (*#131050*):** 2 contactos (*Diana* `6471221828` y *Luis Robles* `6421350707`), marcados automáticamente como baja en Firestore.
+  - **Grupo de experimento / Control de Meta (1%):** 1 contacto.
+
+---
+
+## 32. SOPORTE MULTIMEDIOS COMPLETO EN WEBHOOK (`api/webhook.js`)
+
+* **Captura de Reacciones y Tipos Especiales:**
+  - Se extendió el procesador de mensajes entrantes de Meta para registrar adecuadamente:
+    - **Reacciones de Emojis (`reaction`):** Se guardan como `👍 / ❤️ Reaccionó al mensaje`.
+    - **Stickers (`sticker`):** Se guardan como `🎭 Sticker` con su URL WebP.
+    - **Mensajes de voz / Audios (`audio` / `voice`):** Se guardan como `🎤 Mensaje de voz`.
+    - **Ubicaciones (`location`):** Se guardan como `📍 Ubicación: [Nombre] (Lat, Long)`.
+* **Corrección de Resumen de Lista:**
+  - Se eliminó el comportamiento donde mensajes sin texto se marcaban erróneamente como `📄 PDF`.
