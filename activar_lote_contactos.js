@@ -1,6 +1,6 @@
 // Script para activar lotes diarios de contactos desde el Excel depurado
 // Uso: node activar_lote_contactos.js [--limit=30] [--test=642XXXXXXX]
-const openpyxl = require('child_process');
+const { exec } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
@@ -10,7 +10,6 @@ const TEMPLATE_NAME = 'invitacion_club_vip';
 const HEADER_IMAGE_URL = 'https://publicanavojoa.com/logo-compartir.png';
 
 const BASE_DIR = __dirname;
-const EXCEL_PATH = path.join(BASE_DIR, 'BASE_DE_DATOS_DEPURADA_WHATSAPP_2026.xlsx');
 const PROCESSED_FILE = path.join(BASE_DIR, 'contactos_procesados.json');
 
 // Cargar o inicializar estado de contactos procesados
@@ -29,64 +28,19 @@ function saveProcessed(data) {
     fs.writeFileSync(PROCESSED_FILE, JSON.stringify(data, null, 2), 'utf8');
 }
 
-// Extraer los siguientes N contactos del Excel usando un script auxiliar en Python
+// Extraer los siguientes N contactos del Excel llamando a get_excel_batch.py
 async function getNextBatchFromExcel(limit = 30) {
-    const processed = loadProcessed();
-    const processedPhones = Object.keys(processed);
-
-    const pyScript = `
-import openpyxl, sys, json, os
-
-excel_path = r"${EXCEL_PATH}"
-processed_phones = set(${JSON.stringify(processedPhones)})
-limit = ${limit}
-
-wb = openpyxl.load_workbook(excel_path, read_only=True)
-ws = wb['Contactos WhatsApp (40k)']
-
-batch = []
-for i, row in enumerate(ws.iter_rows(values_only=True)):
-    if i == 0: continue # Header
-    # Row format: [ID, Nombre Completo, Primer Nombre, Celular (10), WA Int (+52), Formato Visual, Colonia, Municipio, Lada, Estado]
-    if not row or len(row) < 4: continue
-    
-    phone = str(row[3]).strip()
-    if not phone or len(phone) != 10 or phone in processed_phones:
-        continue
-        
-    nombre = str(row[1] or 'Contacto').strip()
-    primer_nombre = str(row[2] or 'Amigo(a)').strip()
-    colonia = str(row[6] or 'Navojoa').strip()
-    municipio = str(row[7] or 'Navojoa').strip()
-    lada = str(row[8] or '642').strip()
-    
-    batch.append({
-        'phone': phone,
-        'nombre': nombre,
-        'primer_nombre': primer_nombre,
-        'colonia': colonia,
-        'municipio': municipio,
-        'lada': lada
-    })
-    
-    if len(batch) >= limit:
-        break
-
-sys.stdout.write(json.stringify(batch))
-`;
-
-    return new Promise((resolve, reject) => {
-        const { exec } = require('child_process');
-        exec(`python -c "${pyScript.replace(/\n/g, ' ')}"`, { maxBuffer: 1024 * 1024 * 10 }, (err, stdout, stderr) => {
+    return new Promise((resolve) => {
+        exec(`python get_excel_batch.py --limit=${limit}`, { cwd: BASE_DIR, maxBuffer: 1024 * 1024 * 10 }, (err, stdout, stderr) => {
             if (err) {
-                console.error('[EXCEL READ ERR]', stderr);
+                console.error('[EXCEL READ ERR]', stderr || err.message);
                 return resolve([]);
             }
             try {
                 const batch = JSON.parse(stdout.trim());
                 resolve(batch);
             } catch (e) {
-                console.error('[JSON PARSE ERR]', e);
+                console.error('[JSON PARSE ERR]', e.message);
                 resolve([]);
             }
         });
@@ -114,9 +68,7 @@ async function registerInFirestore(contact) {
                 }
             })
         });
-    } catch(e) {
-        console.error('[FIRESTORE SAVE ERR]', e);
-    }
+    } catch(e) {}
 }
 
 async function main() {
