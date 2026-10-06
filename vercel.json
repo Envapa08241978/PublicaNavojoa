@@ -14,6 +14,7 @@
     { "source": "/formulario", "destination": "/formulario.html" },
     { "source": "/contratar", "destination": "/formulario.html" },
     { "source": "/privacidad", "destination": "/privacidad.html" },
+    { "source": "/flyer", "destination": "/flyer.html" },
     { "source": "/qr1", "destination": "/api/qr?p=1" },
     { "source": "/qr2", "destination": "/api/qr?p=2" }
   ]

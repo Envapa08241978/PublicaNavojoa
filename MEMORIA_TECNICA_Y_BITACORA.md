@@ -530,3 +530,19 @@ Todos los contactos se indexan de forma única en la colección `/contacts/{clea
     - **Ubicaciones (`location`):** Se guardan como `📍 Ubicación: [Nombre] (Lat, Long)`.
 * **Corrección de Resumen de Lista:**
   - Se eliminó el comportamiento donde mensajes sin texto se marcaban erróneamente como `📄 PDF`.
+
+---
+
+## 33. EJECUCIÓN DE DIFUSIÓN DE MB STORE — MATERIAL & UÑAS (`ORD-951916`)
+
+* **Fecha de Ejecución:** 25 de Septiembre de 2026.
+* **Cliente / Anuncio:** MB STORE — Material profesional para uñas y pestañas (`!VEN Y CONOCE NUESTRA TIENDA!`).
+* **Plantilla Meta:** `mb_store_navojoa` (Categoría *Marketing*, idioma `es_MX`).
+* **Header Multimedia:** Imagen oficial de alta resolución de la tienda alojada en CDN `https://iili.io/nR3LWYB.jpg`.
+* **Botones de Acción:**
+  - 📞 *Contactar Tienda:* Enlace telefónico a `+52 642 147 8275`.
+  - 📍 *Cómo Llegar:* Enlace a Google Maps `https://maps.app.goo.gl/mvchwc4m5tdwSLcr5`.
+* **Integración en Ecosistema:**
+  - Oferta activa en el Catálogo del Bot de WhatsApp (`oferta_ORD-951916`).
+  - Mapeo de sinónimos en `api/webhook.js` para búsquedas inmediatas (*uñas, acrílicos, gelish, esmaltes, nail store, material de uñas, mb store*).
+

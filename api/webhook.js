@@ -661,6 +661,47 @@ async function processBotRules(senderPhone, rawPhone, senderName, msgText) {
     console.log(`[BOT RULES] User: '${finalName || senderName}' (${rawPhone}) Registered: ${isRegistered} Msg: '${textLower}'`);
 
     // ═══════════════════════════════════════════════════════════════════
+    // GESTIÓN DIRECTA DE OPT-IN / OPT-OUT (Respuestas a Plantillas)
+    // ═══════════════════════════════════════════════════════════════════
+    if (textLower.includes('baja') || textLower.includes('cancelar') || textLower.includes('detener') || textLower === 'stop' || textLower.includes('dar de baja')) {
+        try {
+            await fetch(`https://firestore.googleapis.com/v1/projects/loquese-app/databases/(default)/documents/contacts/${rawPhone}?updateMask.fieldPaths=opt_in&updateMask.fieldPaths=marketing_status&updateMask.fieldPaths=motivo_baja`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    fields: {
+                        opt_in: { stringValue: 'No' },
+                        marketing_status: { stringValue: 'opt_out' },
+                        motivo_baja: { stringValue: 'El usuario solicitó baja por WhatsApp' }
+                    }
+                })
+            });
+        } catch(e) {}
+        const respuesta = `✅ ${nameSalute} Has sido dado de baja de la lista de difusión de Publica Navojoa. No recibirás más mensajes promocionales. ¡Gracias por habernos acompañado!`;
+        await sendWhatsAppMessage(metaTo, respuesta, rawPhone, finalName);
+        return;
+    }
+
+    if (textLower.includes('activar alertas') || textLower === 'activar alertas vip' || textLower === 'activar' || textLower === 'si' || textLower === 'sí' || textLower.includes('quiero ofertas')) {
+        try {
+            await fetch(`https://firestore.googleapis.com/v1/projects/loquese-app/databases/(default)/documents/contacts/${rawPhone}?updateMask.fieldPaths=opt_in&updateMask.fieldPaths=marketing_status`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    fields: {
+                        opt_in: { stringValue: 'Autorizado' },
+                        marketing_status: { stringValue: 'active' }
+                    }
+                })
+            });
+        } catch(e) {}
+        const welcomeText = `${nameSalute} 🎉 ¡Tu suscripción al *Club VIP de Publica Navojoa* ha quedado 100% activada!\n\nRecibirás aquí nuestro Catálogo Semanal con los mejores remates, ofertas y eventos en Navojoa.\n\n_Te compartimos las promociones más destacadas de esta semana 👇_`;
+        const activeOffers = await getOffersFromFirestore();
+        await sendOffersList(metaTo, rawPhone, finalName || senderName, activeOffers, welcomeText);
+        return;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
     // BLOQUEO PARA USUARIOS NO REGISTRADOS: Redirigir al formulario web
     // ═══════════════════════════════════════════════════════════════════
     if (!isRegistered) {
