@@ -546,3 +546,75 @@ Todos los contactos se indexan de forma única en la colección `/contacts/{clea
   - Oferta activa en el Catálogo del Bot de WhatsApp (`oferta_ORD-951916`).
   - Mapeo de sinónimos en `api/webhook.js` para búsquedas inmediatas (*uñas, acrílicos, gelish, esmaltes, nail store, material de uñas, mb store*).
 
+---
+
+## 34. REPORTE EJECUTIVO Y PROPUESTA COMERCIAL MB STORE (`REPORTE_RENDIMIENTO_MB_STORE.pdf`)
+
+* **Fecha de Emisión:** 06 de Octubre de 2026.
+* **Cliente / Asesora:** MB STORE — Material & Uñas | Asesora Comercial: **Mónica Obregón** (`+52 647 482 0862`).
+* **Documento Generado:** Documento PDF institucional de 2 páginas con diseño premium en paleta Guinda, Oro y Verde WhatsApp ([`REPORTE_RENDIMIENTO_MB_STORE.pdf`](file:///c:/Users/ENRIQ/OneDrive/Documents/PROYECTO%20CON%20MONICA/REPORTE_RENDIMIENTO_MB_STORE.pdf)).
+* **Métricas Auditadas e Incluidas:**
+  - **Alcance en Facebook:** 8,450+ personas en una comunidad que superó los **81,100 miembros**.
+  - **Interacciones en FB:** 98 acciones (42 reacciones, 38 veces compartido, 18 comentarios).
+  - **WhatsApp Broadcast VIP:** 125 suscriptores, 120 entregados (96%), **82 leídos confirmados (65.6% tasa de apertura)**.
+  - **Chatbot / Catálogo 24/7:** **34 consultas orgánicas directas** en el bot de la ciudad buscando *"material de uñas, esmaltes, acrílicos"*.
+  - **Costo por Persona Impactada:** **$0.07 MXN** (7 centavos por persona en Navojoa).
+* **Estrategia Comercial de Cierre / Renovación a $600 MXN:**
+  - Se fundamenta que la campaña previa fue una **"Tarifa Preferencial Piloto de $300 MXN"** (50% descuento de introducción).
+  - Para la renovación al precio regular de **$600 MXN (Paquete Bronce)** o **$1,200 MXN (Paquete Plata)** se resalta el crecimiento del **+40% en contactos de WhatsApp** y la recurrencia de compra quincenal (15-21 días) de las manicuristas de Navojoa.
+
+---
+
+## 35. AUDITORÍA, LIMPIEZA Y DEPURACIÓN DE BASE DE DATOS (66,691 ➔ 40,751 CONTACTOS)
+
+* **Fecha:** 06 de Octubre de 2026.
+* **Archivo Fuente:** `celulares y nombre 2024.xlsx` (66,691 filas).
+* **Archivo Generado:** [`BASE_DE_DATOS_DEPURADA_WHATSAPP_2026.xlsx`](file:///c:/Users/ENRIQ/OneDrive/Documents/PROYECTO%20CON%20MONICA/BASE_DE_DATOS_DEPURADA_WHATSAPP_2026.xlsx) (2.7 MB).
+* **Script de Procesamiento:** [`depurar_base_datos_whatsapp.py`](file:///c:/Users/ENRIQ/OneDrive/Documents/PROYECTO%20CON%20MONICA/depurar_base_datos_whatsapp.py).
+* **Resumen de Depuración Técnica:**
+  - **(-) 14,722 descartados:** Teléfonos vacíos, incompletos o longitud inválida.
+  - **(-) 1,819 descartados:** Números falsos / dummies (`0000000000`, `1111111111`, etc.).
+  - **(-) 9,394 descartados:** Números duplicados (coordinadores o promotores que repetían su celular).
+  - **(=) TOTAL BASE LIMPIA Y VÁLIDA:** **40,751 CONTACTOS ÚNICOS**.
+* **Distribución Geográfica:**
+  - **Lada 642 (Navojoa):** 34,705 contactos (**85.2%**).
+  - **Lada 644 (Cd. Obregón):** 1,823 contactos (**4.5%**).
+  - **Lada 647 (Álamos / Huatabampo):** 742 contactos (**1.8%**).
+  - **Lada 662 (Hermosillo):** 615 contactos (**1.5%**).
+  - Otras regiones de Sonora y norte: 2,866 contactos (7.0%).
+* **Estandarización de Datos:**
+  - Nombres limpios en Title Case (removidos `▶`, `(28)`, códigos numéricos).
+  - Columna "Primer Nombre" para plantillas `{{1}}`.
+  - Columnas de 10 dígitos y formato internacional `+52`.
+  - Colonias y municipios normalizados.
+
+---
+
+## 36. APROBACIÓN DE PLANTILLA META: `invitacion_club_vip` CON LOGOTIPO & BOTONES
+
+* **Fecha de Aprobación por Meta:** 06 de Octubre de 2026.
+* **Nombre de Plantilla:** `invitacion_club_vip` (Categoría *Marketing*, idioma `es_MX` e `es`).
+* **Header Multimedia:** Imagen oficial con logotipo institucional `https://publicanavojoa.com/logo-compartir.png`.
+* **Cuerpo:** Invitación al Club VIP para recibir el Catálogo Semanal de Ofertas de Navojoa con variable `{{1}}` (Primer Nombre).
+* **Botones de Respuesta Rápida (Quick Replies):**
+  - `✅ Activar Alertas VIP`
+  - `🚫 Dar de Baja`
+* **Pie de Página:** `Publica Navojoa • Servicio gratuito para la comunidad`.
+* **Automatización en Webhook (`api/webhook.js`):**
+  - **Al presionar `Activar Alertas VIP`:** Se marca `opt_in = "Autorizado"` en Firestore, se envía mensaje de bienvenida y se entrega automáticamente el catálogo de ofertas activas con fotos.
+  - **Al presionar `Dar de Baja`:** Se marca `opt_in = "No"` y `marketing_status = "opt_out"` para excluirlo permanentemente sin riesgo de reportes.
+* **Integración en Panel Web (`admin.html`):**
+  - Se agregó la plantilla `invitacion_club_vip` al selector del modal de difusión masiva con pre-carga automática de imagen.
+
+---
+
+## 37. DESPLIEGUE DEL SISTEMA DE ACTIVACIÓN POR LOTES & 1ER LOTE DE 30 CONTACTOS
+
+* **Fecha de Lanzamiento:** 06 de Octubre de 2026.
+* **Scripts Creados:** [`activar_lote_contactos.js`](file:///c:/Users/ENRIQ/OneDrive/Documents/PROYECTO%20CON%20MONICA/activar_lote_contactos.js), [`activar_lote_contactos.py`](file:///c:/Users/ENRIQ/OneDrive/Documents/PROYECTO%20CON%20MONICA/activar_lote_contactos.py), [`get_excel_batch.py`](file:///c:/Users/ENRIQ/OneDrive/Documents/PROYECTO%20CON%20MONICA/get_excel_batch.py).
+* **Histórico y Deduplicación:** Archivo local `contactos_procesados.json` para garantizar que ningún número del Excel de 40k se repita jamás.
+* **Resultados del 1er Lote:**
+  - **30 / 30 contactos enviados con 100% de éxito (0 errores).**
+  - Pausas de seguridad de 2.5 segundos entre mensajes para mantener el semáforo de Meta en **Verde (High Quality)**.
+  - **Sincronización en Base de Datos:** Los 30 contactos se registraron automáticamente en Firestore `/contacts`, incrementando el total de la base de 107 a **137 contactos**.
+

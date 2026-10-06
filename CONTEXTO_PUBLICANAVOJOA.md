@@ -72,6 +72,14 @@
 4. **PC Repair / CPU Gamer — Adrian Almada (`ORD-586036`):**
    - **Categoría:** `Tecnología & Computación`.
    - **Plantilla Meta:** `cpu_gamer_adrian_almada` (Aprobada en Meta, imagen: `https://publicanavojoa.com/cpu_gamer_adrian_almada.jpg`).
+   - **Vigencia:** 09 Sep a 09 Oct 2026 ($1,200 MXN).
+
+5. **Invitación & Activación Club VIP (`invitacion_club_vip`):**
+   - **Categoría:** `Marketing` (Aprobada en Meta el 06 de Octubre 2026).
+   - **Header:** Logotipo oficial `https://publicanavojoa.com/logo-compartir.png`.
+   - **Botones Interactivos:** `✅ Activar Alertas VIP` y `🚫 Dar de Baja`.
+   - **Base de Datos Depurada:** [`BASE_DE_DATOS_DEPURADA_WHATSAPP_2026.xlsx`](file:///c:/Users/ENRIQ/OneDrive/Documents/PROYECTO%20CON%20MONICA/BASE_DE_DATOS_DEPURADA_WHATSAPP_2026.xlsx) (40,751 registros únicos y normalizados).
+   - **Progreso de Activación:** Lote 1 de 30 contactos enviado el 06 de Octubre 2026 (100% exitoso). Base en Firestore: **137 contactos**.
 
 ---
 
