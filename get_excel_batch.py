@@ -23,6 +23,13 @@ def is_valid_phone(phone):
     # Descartar secuencias comunes
     if phone in ['1234567890', '0123456789', '9876543210', '0000000000', '1111111111']:
         return False
+
+    # 🚫 FILTRO DE TELEFONÍA FIJA (Telmex / Megacable - Números de casa sin WhatsApp):
+    # En Navojoa (642): 64242..., 64248..., 64285... son fijos tradicionales
+    # En Cd. Obregón (644): 6444... son fijos tradicionales
+    if phone.startswith('64242') or phone.startswith('64248') or phone.startswith('64285') or phone.startswith('6444'):
+        return False
+
     return True
 
 def get_batch(limit=30):
