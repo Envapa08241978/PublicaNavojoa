@@ -47,22 +47,24 @@ async function getNextBatchFromExcel(limit = 30) {
     });
 }
 
-// Registrar en Firestore que se le envió invitación
+// Registrar en Firestore que se le envió invitación y queda activo
 async function registerInFirestore(contact) {
     const cleanPhone = contact.phone;
     const nowStr = new Date().toLocaleString('es-MX', { timeZone: 'America/Hermosillo' });
     
     try {
         const docUrl = `https://firestore.googleapis.com/v1/projects/loquese-app/databases/(default)/documents/contacts/${cleanPhone}`;
-        await fetch(docUrl + '?updateMask.fieldPaths=nombre&updateMask.fieldPaths=colonia&updateMask.fieldPaths=municipio&updateMask.fieldPaths=opt_in&updateMask.fieldPaths=origen&updateMask.fieldPaths=fecha_invitacion', {
+        await fetch(docUrl + '?updateMask.fieldPaths=nombre&updateMask.fieldPaths=colonia&updateMask.fieldPaths=municipio&updateMask.fieldPaths=whatsapp&updateMask.fieldPaths=opt_in&updateMask.fieldPaths=marketing_status&updateMask.fieldPaths=origen&updateMask.fieldPaths=fecha_invitacion', {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 fields: {
                     nombre: { stringValue: contact.nombre },
-                    colonia: { stringValue: contact.colonia },
-                    municipio: { stringValue: contact.municipio },
-                    opt_in: { stringValue: 'Pendiente_Confirmacion' },
+                    colonia: { stringValue: contact.colonia || 'Navojoa' },
+                    municipio: { stringValue: contact.municipio || 'Navojoa' },
+                    whatsapp: { stringValue: cleanPhone },
+                    opt_in: { stringValue: 'Autorizado' },
+                    marketing_status: { stringValue: 'active' },
                     origen: { stringValue: 'Base_Depurada_2026' },
                     fecha_invitacion: { stringValue: nowStr }
                 }

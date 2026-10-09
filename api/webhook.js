@@ -663,21 +663,16 @@ async function processBotRules(senderPhone, rawPhone, senderName, msgText) {
     // ═══════════════════════════════════════════════════════════════════
     // GESTIÓN DIRECTA DE OPT-IN / OPT-OUT (Respuestas a Plantillas)
     // ═══════════════════════════════════════════════════════════════════
+    // CASO ESPECIAL: Usuario solicita darse de baja (Borrado total de Firestore)
+    // ═══════════════════════════════════════════════════════════════════
     if (textLower.includes('baja') || textLower.includes('cancelar') || textLower.includes('detener') || textLower === 'stop' || textLower.includes('dar de baja')) {
         try {
-            await fetch(`https://firestore.googleapis.com/v1/projects/loquese-app/databases/(default)/documents/contacts/${rawPhone}?updateMask.fieldPaths=opt_in&updateMask.fieldPaths=marketing_status&updateMask.fieldPaths=motivo_baja`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    fields: {
-                        opt_in: { stringValue: 'No' },
-                        marketing_status: { stringValue: 'opt_out' },
-                        motivo_baja: { stringValue: 'El usuario solicitó baja por WhatsApp' }
-                    }
-                })
+            await fetch(`https://firestore.googleapis.com/v1/projects/loquese-app/databases/(default)/documents/contacts/${rawPhone}`, {
+                method: 'DELETE'
             });
+            console.log(`[BAJA PROCESADA] Contacto ${rawPhone} eliminado exitosamente de Firestore`);
         } catch(e) {}
-        const respuesta = `✅ ${nameSalute} Has sido dado de baja de la lista de difusión de Publica Navojoa. No recibirás más mensajes promocionales. ¡Gracias por habernos acompañado!`;
+        const respuesta = `✅ ${nameSalute} Has sido dado de baja de la lista de difusión de Publica Navojoa y tu número ha sido eliminado de nuestro sistema. ¡Gracias por habernos acompañado!`;
         await sendWhatsAppMessage(metaTo, respuesta, rawPhone, finalName);
         return;
     }
@@ -867,19 +862,32 @@ module.exports = async function handler(req, res) {
             return res.status(200).json({ status: 'user_preferences_handled' });
         }
 
-        // Caso B: Errores en 'statuses' como código 131050 (User opted out)
+        // Caso B: Errores en 'statuses' (131000/131056 Sin WhatsApp, 131050 Opt-out)
         const statuses = value?.statuses;
         if (statuses && statuses.length > 0) {
             const st = statuses[0];
             const recipientId = st?.recipient_id || '';
-            const errorCode = st?.errors?.[0]?.code;
+            const errorObj = st?.errors?.[0];
+            const errorCode = errorObj?.code;
 
-            if (errorCode === 131050 || errorCode === '131050') {
-                let cleanPhone = String(recipientId).replace(/\D/g, '');
-                if (cleanPhone.startsWith('521') && cleanPhone.length === 13) cleanPhone = cleanPhone.slice(3);
-                else if (cleanPhone.startsWith('52') && cleanPhone.length === 12) cleanPhone = cleanPhone.slice(2);
+            let cleanPhone = String(recipientId).replace(/\D/g, '');
+            if (cleanPhone.startsWith('521') && cleanPhone.length === 13) cleanPhone = cleanPhone.slice(3);
+            else if (cleanPhone.startsWith('52') && cleanPhone.length === 12) cleanPhone = cleanPhone.slice(2);
 
-                if (cleanPhone) {
+            if (cleanPhone) {
+                // Si el error es 131000 o 131056 (El número NO tiene cuenta activa en WhatsApp)
+                if (errorCode === 131000 || errorCode === 131056 || String(errorCode) === '131000' || String(errorCode) === '131056') {
+                    console.log(`[STATUS NO-WHATSAPP #${errorCode}] Eliminando contacto inexistente ${cleanPhone} de Firestore`);
+                    try {
+                        await fetch(`https://firestore.googleapis.com/v1/projects/loquese-app/databases/(default)/documents/contacts/${cleanPhone}`, {
+                            method: 'DELETE'
+                        });
+                    } catch(e) {
+                        console.error('[STATUS DELETE ERR]', e);
+                    }
+                }
+                // Si el error es 131050 (Opt-out: el usuario desactivó promociones)
+                else if (errorCode === 131050 || String(errorCode) === '131050') {
                     try {
                         console.log(`[STATUS OPT-OUT 131050] Marcando ${cleanPhone} como No en opt-in`);
                         await fetch(`https://firestore.googleapis.com/v1/projects/loquese-app/databases/(default)/documents/contacts/${cleanPhone}?updateMask.fieldPaths=opt_in&updateMask.fieldPaths=marketing_status&updateMask.fieldPaths=motivo_baja`, {

@@ -7,6 +7,24 @@ BASE_DIR = r"c:\Users\ENRIQ\OneDrive\Documents\PROYECTO CON MONICA"
 EXCEL_PATH = os.path.join(BASE_DIR, "BASE_DE_DATOS_DEPURADA_WHATSAPP_2026.xlsx")
 PROCESSED_FILE = os.path.join(BASE_DIR, "contactos_procesados.json")
 
+def is_valid_phone(phone):
+    if not phone or len(phone) != 10 or not phone.isdigit():
+        return False
+    # No puede empezar con 0 ni 1
+    if phone[0] in ['0', '1']:
+        return False
+    # No puede tener 4 o más dígitos idénticos consecutivos (ej: 7777, 0000, 1111)
+    import re
+    if re.search(r'(\d)\1{3,}', phone):
+        return False
+    # Debe tener al menos 4 dígitos únicos distintos
+    if len(set(phone)) < 4:
+        return False
+    # Descartar secuencias comunes
+    if phone in ['1234567890', '0123456789', '9876543210', '0000000000', '1111111111']:
+        return False
+    return True
+
 def get_batch(limit=30):
     processed_phones = set()
     if os.path.exists(PROCESSED_FILE):
@@ -20,7 +38,24 @@ def get_batch(limit=30):
     if not os.path.exists(EXCEL_PATH):
         return []
 
-    wb = openpyxl.load_workbook(EXCEL_PATH, read_only=True)
+    wb = None
+    temp_copy = None
+    try:
+        wb = openpyxl.load_workbook(EXCEL_PATH, read_only=True)
+    except PermissionError:
+        import subprocess
+        import tempfile
+        temp_dir = tempfile.gettempdir()
+        temp_copy = os.path.join(temp_dir, f"batch_excel_copy_{os.getpid()}.xlsx")
+        cmd = f"Copy-Item -Path '{EXCEL_PATH}' -Destination '{temp_copy}' -Force"
+        subprocess.run(["powershell", "-Command", cmd], capture_output=True)
+        if os.path.exists(temp_copy):
+            wb = openpyxl.load_workbook(temp_copy, read_only=True)
+        else:
+            return []
+    except Exception as e:
+        return []
+
     ws = wb['Contactos WhatsApp (40k)']
 
     batch = []
@@ -31,7 +66,7 @@ def get_batch(limit=30):
             continue
         
         phone = str(row[3]).strip() if row[3] is not None else ''
-        if not phone or len(phone) != 10 or phone in processed_phones:
+        if not is_valid_phone(phone) or phone in processed_phones:
             continue
             
         nombre = str(row[1] or 'Contacto').strip()
@@ -51,6 +86,17 @@ def get_batch(limit=30):
         
         if len(batch) >= limit:
             break
+
+    try:
+        wb.close()
+    except Exception:
+        pass
+
+    if temp_copy and os.path.exists(temp_copy):
+        try:
+            os.remove(temp_copy)
+        except Exception:
+            pass
 
     return batch
 
